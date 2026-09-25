@@ -2,173 +2,3559 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>KAKIKOMIN</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="description"
+    content="KAKIKOMI - みんなで自由に書き込める総合掲示板"
+  >
+
+  <meta name="theme-color" content="#ffffff">
+
+  <title>KAKIKOMI</title>
 
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-  <!-- ヘッダー -->
-  <header>
-    <h1>KAKIKOMIN</h1>
+  <!-- =========================================================
+       KAKIKOMI
+       Main Application
+  ========================================================== -->
 
-    <nav>
-      <a href="#home">ホーム</a>
-      <a href="#board">掲示板</a>
-      <a href="#post">投稿する</a>
-    </nav>
+
+  <!-- =========================================================
+       HEADER
+  ========================================================== -->
+
+  <header id="site-header">
+
+    <div class="header-inner">
+
+      <!-- ロゴ -->
+      <a
+        href="#home"
+        class="site-logo"
+        id="site-logo"
+        aria-label="KAKIKOMI ホーム"
+      >
+        KAKIKOMI
+      </a>
+
+
+      <!-- メインナビゲーション -->
+      <nav
+        id="main-navigation"
+        class="main-navigation"
+        aria-label="メインメニュー"
+      >
+
+        <a href="#home">
+          ホーム
+        </a>
+
+        <a href="#board">
+          掲示板
+        </a>
+
+        <a href="#questions">
+          質問
+        </a>
+
+        <a href="#consultations">
+          相談
+        </a>
+
+        <a href="#search">
+          検索
+        </a>
+
+      </nav>
+
+
+      <!-- ヘッダー右側 -->
+      <div class="header-actions">
+
+        <button
+          type="button"
+          id="notification-button"
+          class="header-button"
+          aria-label="通知"
+        >
+          通知
+        </button>
+
+        <a
+          href="#account"
+          id="account-button"
+          class="header-button"
+        >
+          アカウント
+        </a>
+
+      </div>
+
+    </div>
+
   </header>
 
 
-  <main>
 
-    <!-- ホーム -->
-    <section id="home">
-      <h2>KAKIKOMINへようこそ</h2>
+  <!-- =========================================================
+       MAIN
+  ========================================================== -->
 
-      <p>
-        みんなで自由に書き込める掲示板です。
-      </p>
-    </section>
+  <main id="main-content">
 
 
-    <!-- 掲示板 -->
-    <section id="board">
+    <!-- =======================================================
+         HOME
+    ======================================================== -->
 
-      <h2>掲示板</h2>
+    <section
+      id="home"
+      class="page-section home-section"
+    >
 
-      <!-- カテゴリー -->
-      <div id="categories">
+      <div class="section-inner">
 
-        <button type="button" data-category="すべて">
-          すべて
-        </button>
+        <div class="hero">
 
-        <button type="button" data-category="一言">
-          一言
-        </button>
+          <div class="hero-content">
 
-        <button type="button" data-category="質問">
-          質問
-        </button>
+            <p class="hero-label">
+              KAKIKOMI
+            </p>
 
-        <button type="button" data-category="相談">
-          相談
-        </button>
+            <h1>
+              みんなで自由に<br>
+              書き込もう。
+            </h1>
 
-        <button type="button" data-category="願い事">
-          願い事
-        </button>
+            <p class="hero-description">
+              一言、質問、相談、ネタなど、
+              いろいろなことを書き込める総合掲示板です。
+            </p>
 
-        <button type="button" data-category="ネタ">
-          ネタ
-        </button>
+            <div class="hero-actions">
 
-        <button type="button" data-category="その他">
-          その他
-        </button>
+              <a
+                href="#create-post"
+                class="primary-button"
+              >
+                投稿する
+              </a>
+
+              <a
+                href="#board"
+                class="secondary-button"
+              >
+                掲示板を見る
+              </a>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- お知らせ -->
+
+        <section
+          id="announcements"
+          class="content-section"
+        >
+
+          <div class="section-heading">
+
+            <div>
+              <p class="section-label">
+                INFORMATION
+              </p>
+
+              <h2>
+                お知らせ
+              </h2>
+            </div>
+
+          </div>
+
+          <div
+            id="announcement-list"
+            class="announcement-list"
+          >
+
+            <article class="announcement-item">
+
+              <time datetime="2026-09-25">
+                2026/09/25
+              </time>
+
+              <h3>
+                KAKIKOMIへようこそ！
+              </h3>
+
+              <p>
+                みんなで楽しく書き込みましょう。
+              </p>
+
+            </article>
+
+          </div>
+
+        </section>
+
+
+
+        <!-- 人気カテゴリー -->
+
+        <section
+          id="popular-categories"
+          class="content-section"
+        >
+
+          <div class="section-heading">
+
+            <div>
+              <p class="section-label">
+                CATEGORY
+              </p>
+
+              <h2>
+                カテゴリー
+              </h2>
+            </div>
+
+          </div>
+
+
+          <div class="category-grid">
+
+            <a
+              href="#category-one-word"
+              class="category-card"
+              data-category="一言"
+            >
+              <span class="category-icon">
+                一
+              </span>
+
+              <span class="category-name">
+                一言
+              </span>
+
+              <span class="category-description">
+                気軽なひとこと
+              </span>
+            </a>
+
+
+            <a
+              href="#category-board"
+              class="category-card"
+              data-category="掲示板"
+            >
+              <span class="category-icon">
+                掲
+              </span>
+
+              <span class="category-name">
+                掲示板
+              </span>
+
+              <span class="category-description">
+                みんなで話そう
+              </span>
+            </a>
+
+
+            <a
+              href="#category-question"
+              class="category-card"
+              data-category="質問"
+            >
+              <span class="category-icon">
+                ?
+              </span>
+
+              <span class="category-name">
+                質問
+              </span>
+
+              <span class="category-description">
+                わからないことを質問
+              </span>
+            </a>
+
+
+            <a
+              href="#category-consultation"
+              class="category-card"
+              data-category="相談"
+            >
+              <span class="category-icon">
+                相
+              </span>
+
+              <span class="category-name">
+                相談
+              </span>
+
+              <span class="category-description">
+                誰かに相談しよう
+              </span>
+            </a>
+
+
+            <a
+              href="#category-wish"
+              class="category-card"
+              data-category="願い事"
+            >
+              <span class="category-icon">
+                願
+              </span>
+
+              <span class="category-name">
+                願い事
+              </span>
+
+              <span class="category-description">
+                願いを書き込もう
+              </span>
+            </a>
+
+
+            <a
+              href="#category-joke"
+              class="category-card"
+              data-category="ネタ"
+            >
+              <span class="category-icon">
+                ネ
+              </span>
+
+              <span class="category-name">
+                ネタ
+              </span>
+
+              <span class="category-description">
+                面白い投稿
+              </span>
+            </a>
+
+
+            <a
+              href="#category-other"
+              class="category-card"
+              data-category="その他"
+            >
+              <span class="category-icon">
+                他
+              </span>
+
+              <span class="category-name">
+                その他
+              </span>
+
+              <span class="category-description">
+                その他の投稿
+              </span>
+            </a>
+
+          </div>
+
+        </section>
 
       </div>
 
-
-      <!-- 新しい投稿 -->
-      <div id="post-list">
-
-        <article class="post">
-
-          <div class="post-header">
-            <span class="post-category">質問</span>
-            <span class="post-date">2026/09/25</span>
-          </div>
-
-          <p class="post-content">
-            ここに投稿内容が表示されます。
-          </p>
-
-          <div class="post-actions">
-            <button type="button">👍 0</button>
-            <button type="button">返信</button>
-          </div>
-
-        </article>
-
-      </div>
-
     </section>
 
 
-    <!-- 投稿 -->
-    <section id="post">
 
-      <h2>新しく投稿する</h2>
+    <!-- =======================================================
+         BOARD
+    ======================================================== -->
 
-      <form id="post-form">
+    <section
+      id="board"
+      class="page-section"
+    >
 
-        <!-- カテゴリー -->
-        <label for="category">
-          カテゴリー
-        </label>
+      <div class="section-inner">
 
-        <select id="category" required>
-          <option value="">選択してください</option>
-          <option value="一言">一言</option>
-          <option value="質問">質問</option>
-          <option value="相談">相談</option>
-          <option value="願い事">願い事</option>
-          <option value="ネタ">ネタ</option>
-          <option value="その他">その他</option>
-        </select>
+        <div class="page-header">
+
+          <div>
+
+            <p class="section-label">
+              BOARD
+            </p>
+
+            <h1>
+              掲示板
+            </h1>
+
+            <p>
+              最新の書き込みをチェックできます。
+            </p>
+
+          </div>
+
+          <a
+            href="#create-post"
+            class="primary-button"
+          >
+            新しく投稿
+          </a>
+
+        </div>
 
 
-        <!-- 投稿内容 -->
-        <label for="content">
-          内容
-        </label>
+        <!-- 掲示板タブ -->
 
-        <textarea
-          id="content"
-          maxlength="1000"
-          placeholder="ここに書き込んでください..."
-          required
-        ></textarea>
+        <div
+          class="board-tabs"
+          role="tablist"
+          aria-label="投稿表示"
+        >
+
+          <button
+            type="button"
+            class="board-tab active"
+            data-sort="new"
+            role="tab"
+          >
+            新着
+          </button>
+
+          <button
+            type="button"
+            class="board-tab"
+            data-sort="popular"
+            role="tab"
+          >
+            人気
+          </button>
+
+          <button
+            type="button"
+            class="board-tab"
+            data-sort="following"
+            role="tab"
+          >
+            フォロー中
+          </button>
+
+        </div>
 
 
-        <!-- 画像 -->
-        <label for="image">
-          画像を追加
-        </label>
+        <!-- カテゴリーフィルター -->
 
-        <input
-          type="file"
-          id="image"
-          accept="image/*"
+        <div
+          id="board-category-filter"
+          class="filter-area"
+        >
+
+          <label for="board-category">
+            カテゴリー
+          </label>
+
+          <select id="board-category">
+
+            <option value="all">
+              すべて
+            </option>
+
+            <option value="一言">
+              一言
+            </option>
+
+            <option value="掲示板">
+              掲示板
+            </option>
+
+            <option value="質問">
+              質問
+            </option>
+
+            <option value="相談">
+              相談
+            </option>
+
+            <option value="願い事">
+              願い事
+            </option>
+
+            <option value="ネタ">
+              ネタ
+            </option>
+
+            <option value="その他">
+              その他
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <!-- 投稿一覧 -->
+
+        <div
+          id="post-list"
+          class="post-list"
         >
 
 
-        <!-- 画像プレビュー -->
-        <div id="image-preview"></div>
+          <!-- 投稿サンプル -->
+
+          <article
+            class="post-card"
+            data-post-id="sample-post-1"
+            data-category="質問"
+          >
+
+            <div class="post-card-header">
+
+              <div class="post-user">
+
+                <div class="user-avatar">
+                  ?
+                </div>
+
+                <div class="user-information">
+
+                  <a
+                    href="#user"
+                    class="username"
+                  >
+                    ゲスト
+                  </a>
+
+                  <time
+                    class="post-time"
+                    datetime="2026-09-25T08:00:00"
+                  >
+                    2026/09/25 08:00
+                  </time>
+
+                </div>
+
+              </div>
 
 
-        <!-- 投稿ボタン -->
-        <button type="submit">
-          投稿する
-        </button>
+              <span class="post-category">
+                質問
+              </span>
 
-      </form>
+            </div>
+
+
+            <div class="post-card-body">
+
+              <p class="post-text">
+                KAKIKOMIへようこそ！
+              </p>
+
+            </div>
+
+
+            <div class="post-card-footer">
+
+              <button
+                type="button"
+                class="post-action like-button"
+                data-action="like"
+              >
+                いいね
+                <span class="like-count">
+                  0
+                </span>
+              </button>
+
+              <button
+                type="button"
+                class="post-action reply-button"
+                data-action="reply"
+              >
+                返信
+                <span class="reply-count">
+                  0
+                </span>
+              </button>
+
+              <button
+                type="button"
+                class="post-action share-button"
+                data-action="share"
+              >
+                共有
+              </button>
+
+              <button
+                type="button"
+                class="post-action report-button"
+                data-action="report"
+              >
+                通報
+              </button>
+
+            </div>
+
+          </article>
+
+
+        </div>
+
+
+        <!-- 投稿がない場合 -->
+
+        <div
+          id="no-posts"
+          class="empty-state"
+          hidden
+        >
+
+          <h2>
+            投稿がありません
+          </h2>
+
+          <p>
+            最初の投稿をしてみませんか？
+          </p>
+
+          <a
+            href="#create-post"
+            class="primary-button"
+          >
+            投稿する
+          </a>
+
+        </div>
+
+      </div>
 
     </section>
+
+
+
+    <!-- =======================================================
+         CREATE POST
+    ======================================================== -->
+
+    <section
+      id="create-post"
+      class="page-section"
+    >
+
+      <div class="section-inner">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="section-label">
+              CREATE
+            </p>
+
+            <h1>
+              投稿する
+            </h1>
+
+            <p>
+              書き込みたい内容を入力してください。
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <form
+          id="post-form"
+          class="post-form"
+        >
+
+          <!-- カテゴリー -->
+
+          <div class="form-group">
+
+            <label for="post-category">
+              カテゴリー
+            </label>
+
+            <select
+              id="post-category"
+              name="category"
+              required
+            >
+
+              <option value="">
+                選択してください
+              </option>
+
+              <option value="一言">
+                一言
+              </option>
+
+              <option value="掲示板">
+                掲示板
+              </option>
+
+              <option value="質問">
+                質問
+              </option>
+
+              <option value="相談">
+                相談
+              </option>
+
+              <option value="願い事">
+                願い事
+              </option>
+
+              <option value="ネタ">
+                ネタ
+              </option>
+
+              <option value="その他">
+                その他
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- タイトル -->
+
+          <div class="form-group">
+
+            <label for="post-title">
+              タイトル
+              <span class="optional">
+                任意
+              </span>
+            </label>
+
+            <input
+              type="text"
+              id="post-title"
+              name="title"
+              maxlength="100"
+              placeholder="タイトルを入力"
+            >
+
+          </div>
+
+
+          <!-- 本文 -->
+
+          <div class="form-group">
+
+            <label for="post-content">
+              内容
+            </label>
+
+            <textarea
+              id="post-content"
+              name="content"
+              maxlength="5000"
+              placeholder="ここに書き込んでください..."
+              required
+            ></textarea>
+
+            <div class="character-counter">
+              <span id="post-character-count">
+                0
+              </span>
+              /
+              5000
+            </div>
+
+          </div>
+
+
+          <!-- 画像 -->
+
+          <div class="form-group">
+
+            <label for="post-image">
+              画像
+              <span class="optional">
+                任意
+              </span>
+            </label>
+
+            <input
+              type="file"
+              id="post-image"
+              name="image"
+              accept="image/png,image/jpeg,image/gif,image/webp"
+            >
+
+            <div
+              id="image-preview"
+              class="image-preview"
+            ></div>
+
+          </div>
+
+
+          <!-- 投稿設定 -->
+
+          <fieldset class="form-fieldset">
+
+            <legend>
+              投稿設定
+            </legend>
+
+
+            <div class="form-option">
+
+              <input
+                type="checkbox"
+                id="allow-replies"
+                name="allowReplies"
+                checked
+              >
+
+              <label for="allow-replies">
+                返信を許可する
+              </label>
+
+            </div>
+
+
+            <div class="form-option">
+
+              <input
+                type="checkbox"
+                id="allow-share"
+                name="allowShare"
+                checked
+              >
+
+              <label for="allow-share">
+                共有を許可する
+              </label>
+
+            </div>
+
+          </fieldset>
+
+
+          <!-- 送信 -->
+
+          <div class="form-actions">
+
+            <button
+              type="reset"
+              class="secondary-button"
+            >
+              リセット
+            </button>
+
+            <button
+              type="submit"
+              class="primary-button"
+            >
+              投稿する
+            </button>
+
+          </div>
+
+        </form>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         QUESTIONS
+    ======================================================== -->
+
+    <section
+      id="questions"
+      class="page-section"
+    >
+
+      <div class="section-inner">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="section-label">
+              QUESTIONS
+            </p>
+
+            <h1>
+              質問
+            </h1>
+
+            <p>
+              わからないことを質問してみよう。
+            </p>
+
+          </div>
+
+          <a
+            href="#create-post"
+            class="primary-button"
+          >
+            質問する
+          </a>
+
+        </div>
+
+
+        <div
+          id="question-list"
+          class="post-list"
+        >
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         CONSULTATIONS
+    ======================================================== -->
+
+    <section
+      id="consultations"
+      class="page-section"
+    >
+
+      <div class="section-inner">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="section-label">
+              CONSULTATION
+            </p>
+
+            <h1>
+              相談
+            </h1>
+
+            <p>
+              誰かに相談してみよう。
+            </p>
+
+          </div>
+
+          <a
+            href="#create-post"
+            class="primary-button"
+          >
+            相談する
+          </a>
+
+        </div>
+
+
+        <div
+          id="consultation-list"
+          class="post-list"
+        >
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         SEARCH
+    ======================================================== -->
+
+    <section
+      id="search"
+      class="page-section"
+    >
+
+      <div class="section-inner">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="section-label">
+              SEARCH
+            </p>
+
+            <h1>
+              検索
+            </h1>
+
+          </div>
+
+        </div>
+
+
+        <form
+          id="search-form"
+          class="search-form"
+        >
+
+          <label
+            for="search-input"
+            class="visually-hidden"
+          >
+            検索
+          </label>
+
+          <input
+            type="search"
+            id="search-input"
+            name="q"
+            placeholder="投稿やユーザーを検索..."
+            autocomplete="off"
+          >
+
+          <button
+            type="submit"
+            class="primary-button"
+          >
+            検索
+          </button>
+
+        </form>
+
+
+        <div
+          id="search-results"
+          class="search-results"
+        >
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         PRIVATE BOARDS
+    ======================================================== -->
+
+    <section
+      id="private-boards"
+      class="page-section"
+    >
+
+      <div class="section-inner">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="section-label">
+              PRIVATE BOARD
+            </p>
+
+            <h1>
+              プライベート掲示板
+            </h1>
+
+            <p>
+              限られたメンバーで利用する掲示板です。
+            </p>
+
+          </div>
+
+          <button
+            type="button"
+            id="create-private-board-button"
+            class="primary-button"
+          >
+            掲示板を作成
+          </button>
+
+        </div>
+
+
+        <div
+          id="private-board-list"
+          class="board-list"
+        >
+
+          <!--
+            JavaScript + Supabaseで
+            ユーザーが参加できる掲示板を表示する
+          -->
+
+        </div>
+
+
+        <!-- プライベート掲示板参加 -->
+
+        <div
+          id="private-board-join"
+          class="private-board-join"
+        >
+
+          <h2>
+            招待コードで参加
+          </h2>
+
+          <form id="join-private-board-form">
+
+            <label for="private-board-code">
+              招待コード
+            </label>
+
+            <input
+              type="text"
+              id="private-board-code"
+              name="code"
+              maxlength="100"
+              placeholder="招待コードを入力"
+            >
+
+            <button
+              type="submit"
+              class="primary-button"
+            >
+              参加
+            </button>
+
+          </form>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         ACCOUNT
+    ======================================================== -->
+
+    <section
+      id="account"
+      class="page-section"
+    >
+
+      <div class="section-inner">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="section-label">
+              ACCOUNT
+            </p>
+
+            <h1>
+              アカウント
+            </h1>
+
+          </div>
+
+        </div>
+
+
+        <!-- 未ログイン -->
+
+        <div
+          id="guest-account"
+          class="account-panel"
+        >
+
+          <h2>
+            KAKIKOMIアカウント
+          </h2>
+
+          <p>
+            アカウントを作成すると、
+            投稿や設定を管理できます。
+          </p>
+
+          <div class="account-actions">
+
+            <a
+              href="#login"
+              class="primary-button"
+            >
+              ログイン
+            </a>
+
+            <a
+              href="#register"
+              class="secondary-button"
+            >
+              アカウント作成
+            </a>
+
+          </div>
+
+        </div>
+
+
+        <!-- ログイン後 -->
+
+        <div
+          id="logged-in-account"
+          class="account-panel"
+          hidden
+        >
+
+          <div class="profile-header">
+
+            <div class="large-avatar">
+              ?
+            </div>
+
+            <div>
+
+              <h2 id="account-username">
+                ユーザー名
+              </h2>
+
+              <p id="account-user-id">
+                ID: -
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <nav
+            class="account-navigation"
+            aria-label="アカウントメニュー"
+          >
+
+            <a href="#profile">
+              プロフィール
+            </a>
+
+            <a href="#my-posts">
+              自分の投稿
+            </a>
+
+            <a href="#bookmarks">
+              保存した投稿
+            </a>
+
+            <a href="#account-settings">
+              アカウント設定
+            </a>
+
+            <a href="#security-settings">
+              セキュリティ
+            </a>
+
+          </nav>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         LOGIN
+    ======================================================== -->
+
+    <section
+      id="login"
+      class="page-section"
+    >
+
+      <div class="section-inner narrow-section">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="section-label">
+              LOGIN
+            </p>
+
+            <h1>
+              ログイン
+            </h1>
+
+          </div>
+
+        </div>
+
+
+        <form
+          id="login-form"
+          class="auth-form"
+        >
+
+          <div class="form-group">
+
+            <label for="login-email">
+              メールアドレス
+            </label>
+
+            <input
+              type="email"
+              id="login-email"
+              name="email"
+              autocomplete="email"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="login-password">
+              パスワード
+            </label>
+
+            <input
+              type="password"
+              id="login-password"
+              name="password"
+              autocomplete="current-password"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-option">
+
+            <input
+              type="checkbox"
+              id="remember-login"
+              name="remember"
+            >
+
+            <label for="remember-login">
+              ログイン状態を保持する
+            </label>
+
+          </div>
+
+
+          <button
+            type="submit"
+            class="primary-button full-width"
+          >
+            ログイン
+          </button>
+
+
+          <a
+            href="#forgot-password"
+            class="text-link"
+          >
+            パスワードを忘れた場合
+          </a>
+
+        </form>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         REGISTER
+    ======================================================== -->
+
+    <section
+      id="register"
+      class="page-section"
+    >
+
+      <div class="section-inner narrow-section">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="section-label">
+              REGISTER
+            </p>
+
+            <h1>
+              アカウント作成
+            </h1>
+
+          </div>
+
+        </div>
+
+
+        <form
+          id="register-form"
+          class="auth-form"
+        >
+
+          <div class="form-group">
+
+            <label for="register-username">
+              ユーザー名
+            </label>
+
+            <input
+              type="text"
+              id="register-username"
+              name="username"
+              minlength="3"
+              maxlength="30"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="register-email">
+              メールアドレス
+            </label>
+
+            <input
+              type="email"
+              id="register-email"
+              name="email"
+              autocomplete="email"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="register-password">
+              パスワード
+            </label>
+
+            <input
+              type="password"
+              id="register-password"
+              name="password"
+              minlength="8"
+              autocomplete="new-password"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="register-password-confirm">
+              パスワード（確認）
+            </label>
+
+            <input
+              type="password"
+              id="register-password-confirm"
+              name="passwordConfirm"
+              minlength="8"
+              autocomplete="new-password"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-option">
+
+            <input
+              type="checkbox"
+              id="agree-rules"
+              name="agree"
+              required
+            >
+
+            <label for="agree-rules">
+              利用ルールに同意する
+            </label>
+
+          </div>
+
+
+          <button
+            type="submit"
+            class="primary-button full-width"
+          >
+            アカウントを作成
+          </button>
+
+        </form>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         PROFILE
+    ======================================================== -->
+
+    <section
+      id="profile"
+      class="page-section"
+    >
+
+      <div class="section-inner">
+
+        <div
+          id="profile-header"
+          class="profile-page-header"
+        >
+
+          <div class="large-avatar">
+            ?
+          </div>
+
+          <div>
+
+            <h1 id="profile-name">
+              ユーザー名
+            </h1>
+
+            <p id="profile-description">
+              プロフィール
+            </p>
+
+          </div>
+
+          <button
+            type="button"
+            id="follow-button"
+            class="secondary-button"
+          >
+            フォロー
+          </button>
+
+        </div>
+
+
+        <div class="profile-stats">
+
+          <div>
+            <strong id="profile-post-count">
+              0
+            </strong>
+
+            <span>
+              投稿
+            </span>
+          </div>
+
+          <div>
+            <strong id="profile-followers">
+              0
+            </strong>
+
+            <span>
+              フォロワー
+            </span>
+          </div>
+
+          <div>
+            <strong id="profile-following">
+              0
+            </strong>
+
+            <span>
+              フォロー中
+            </span>
+          </div>
+
+        </div>
+
+
+        <div
+          id="profile-posts"
+          class="post-list"
+        >
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         NOTIFICATIONS
+    ======================================================== -->
+
+    <section
+      id="notifications"
+      class="page-section"
+    >
+
+      <div class="section-inner">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="section-label">
+              NOTIFICATIONS
+            </p>
+
+            <h1>
+              通知
+            </h1>
+
+          </div>
+
+          <button
+            type="button"
+            id="mark-notifications-read"
+            class="secondary-button"
+          >
+            すべて既読
+          </button>
+
+        </div>
+
+
+        <div
+          id="notification-list"
+          class="notification-list"
+        >
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         REPORT
+    ======================================================== -->
+
+    <section
+      id="report"
+      class="page-section"
+    >
+
+      <div class="section-inner narrow-section">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="section-label">
+              REPORT
+            </p>
+
+            <h1>
+              通報
+            </h1>
+
+            <p>
+              ルール違反などの投稿を通報できます。
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <form
+          id="report-form"
+          class="report-form"
+        >
+
+          <input
+            type="hidden"
+            id="report-post-id"
+            name="postId"
+          >
+
+
+          <div class="form-group">
+
+            <label for="report-reason">
+              通報理由
+            </label>
+
+            <select
+              id="report-reason"
+              name="reason"
+              required
+            >
+
+              <option value="">
+                選択してください
+              </option>
+
+              <option value="spam">
+                スパム・迷惑行為
+              </option>
+
+              <option value="harassment">
+                嫌がらせ
+              </option>
+
+              <option value="illegal">
+                不適切な内容
+              </option>
+
+              <option value="copyright">
+                著作権に関する問題
+              </option>
+
+              <option value="impersonation">
+                なりすまし
+              </option>
+
+              <option value="other">
+                その他
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="report-detail">
+              詳細
+            </label>
+
+            <textarea
+              id="report-detail"
+              name="detail"
+              maxlength="2000"
+              placeholder="問題の内容を入力してください"
+            ></textarea>
+
+          </div>
+
+
+          <button
+            type="submit"
+            class="danger-button"
+          >
+            通報する
+          </button>
+
+        </form>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         SHARING
+    ======================================================== -->
+
+    <section
+      id="share"
+      class="page-section"
+    >
+
+      <div class="section-inner narrow-section">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="section-label">
+              SHARE
+            </p>
+
+            <h1>
+              共有
+            </h1>
+
+          </div>
+
+        </div>
+
+
+        <div class="share-panel">
+
+          <p>
+            この投稿を共有できます。
+          </p>
+
+
+          <div class="share-url-area">
+
+            <label for="share-url">
+              共有URL
+            </label>
+
+            <input
+              type="text"
+              id="share-url"
+              readonly
+            >
+
+            <button
+              type="button"
+              id="copy-share-url"
+              class="primary-button"
+            >
+              URLをコピー
+            </button>
+
+          </div>
+
+
+          <div class="share-options">
+
+            <button
+              type="button"
+              data-share="native"
+            >
+              端末の共有機能
+            </button>
+
+            <button
+              type="button"
+              data-share="copy"
+            >
+              URLをコピー
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         SETTINGS
+    ======================================================== -->
+
+    <section
+      id="account-settings"
+      class="page-section"
+    >
+
+      <div class="section-inner">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="section-label">
+              SETTINGS
+            </p>
+
+            <h1>
+              アカウント設定
+            </h1>
+
+          </div>
+
+        </div>
+
+
+        <form
+          id="profile-settings-form"
+          class="settings-form"
+        >
+
+          <div class="form-group">
+
+            <label for="settings-username">
+              ユーザー名
+            </label>
+
+            <input
+              type="text"
+              id="settings-username"
+              maxlength="30"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="settings-bio">
+              自己紹介
+            </label>
+
+            <textarea
+              id="settings-bio"
+              maxlength="500"
+            ></textarea>
+
+          </div>
+
+
+          <button
+            type="submit"
+            class="primary-button"
+          >
+            保存
+          </button>
+
+        </form>
+
+
+        <hr>
+
+
+        <div class="settings-danger-zone">
+
+          <h2>
+            アカウント
+          </h2>
+
+          <button
+            type="button"
+            id="logout-button"
+            class="secondary-button"
+          >
+            ログアウト
+          </button>
+
+          <button
+            type="button"
+            id="delete-account-button"
+            class="danger-button"
+          >
+            アカウントを削除
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         SECURITY SETTINGS
+    ======================================================== -->
+
+    <section
+      id="security-settings"
+      class="page-section"
+    >
+
+      <div class="section-inner narrow-section">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="section-label">
+              SECURITY
+            </p>
+
+            <h1>
+              セキュリティ
+            </h1>
+
+          </div>
+
+        </div>
+
+
+        <form
+          id="change-password-form"
+          class="settings-form"
+        >
+
+          <div class="form-group">
+
+            <label for="current-password">
+              現在のパスワード
+            </label>
+
+            <input
+              type="password"
+              id="current-password"
+              autocomplete="current-password"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="new-password">
+              新しいパスワード
+            </label>
+
+            <input
+              type="password"
+              id="new-password"
+              minlength="8"
+              autocomplete="new-password"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="new-password-confirm">
+              新しいパスワード（確認）
+            </label>
+
+            <input
+              type="password"
+              id="new-password-confirm"
+              minlength="8"
+              autocomplete="new-password"
+              required
+            >
+
+          </div>
+
+
+          <button
+            type="submit"
+            class="primary-button"
+          >
+            パスワードを変更
+          </button>
+
+        </form>
+
+
+        <!-- 強制変更通知 -->
+
+        <div
+          id="forced-password-change"
+          class="security-notice"
+          hidden
+        >
+
+          <h2>
+            パスワードの変更が必要です
+          </h2>
+
+          <p>
+            管理者によってパスワード変更が必要に設定されています。
+          </p>
+
+          <a
+            href="#security-settings"
+            class="primary-button"
+          >
+            パスワードを変更する
+          </a>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         BOT
+    ======================================================== -->
+
+    <section
+      id="bot"
+      class="page-section"
+    >
+
+      <div class="section-inner">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="section-label">
+              BOT
+            </p>
+
+            <h1>
+              Bot
+            </h1>
+
+            <p>
+              KAKIKOMIのBot機能。
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div
+          id="bot-list"
+          class="bot-list"
+        >
+
+          <article class="bot-card">
+
+            <div class="bot-avatar">
+              B
+            </div>
+
+            <div class="bot-information">
+
+              <h2>
+                KAKIKOMI Bot
+              </h2>
+
+              <p>
+                システムBot
+              </p>
+
+            </div>
+
+            <span class="bot-status">
+              稼働中
+            </span>
+
+          </article>
+
+        </div>
+
+
+        <!-- Bot管理は将来管理者だけに表示 -->
+
+        <div
+          id="bot-management"
+          class="bot-management"
+          hidden
+        >
+
+          <h2>
+            Bot管理
+          </h2>
+
+          <button
+            type="button"
+            id="create-bot-button"
+            class="primary-button"
+          >
+            Botを作成
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         ADMIN PAGE
+    ======================================================== -->
+
+    <section
+      id="admin-page"
+      class="page-section admin-page"
+    >
+
+      <div class="section-inner">
+
+        <div class="admin-header">
+
+          <div>
+
+            <p class="section-label">
+              ADMINISTRATION
+            </p>
+
+            <h1>
+              ADMINPAGE
+            </h1>
+
+            <p>
+              KAKIKOMI管理者用ページ
+            </p>
+
+          </div>
+
+          <span class="admin-badge">
+            ADMIN
+          </span>
+
+        </div>
+
+
+        <!-- ===================================================
+             ADMIN DASHBOARD
+        ==================================================== -->
+
+        <div class="admin-dashboard">
+
+          <div class="admin-stat-card">
+
+            <span>
+              ユーザー
+            </span>
+
+            <strong id="admin-user-count">
+              0
+            </strong>
+
+          </div>
+
+
+          <div class="admin-stat-card">
+
+            <span>
+              投稿
+            </span>
+
+            <strong id="admin-post-count">
+              0
+            </strong>
+
+          </div>
+
+
+          <div class="admin-stat-card">
+
+            <span>
+              通報
+            </span>
+
+            <strong id="admin-report-count">
+              0
+            </strong>
+
+          </div>
+
+
+          <div class="admin-stat-card">
+
+            <span>
+              BAN中
+            </span>
+
+            <strong id="admin-ban-count">
+              0
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <!-- ===================================================
+             ADMIN NAVIGATION
+        ==================================================== -->
+
+        <nav
+          class="admin-navigation"
+          aria-label="管理メニュー"
+        >
+
+          <a href="#admin-users">
+            ユーザー管理
+          </a>
+
+          <a href="#admin-posts">
+            投稿管理
+          </a>
+
+          <a href="#admin-reports">
+            通報管理
+          </a>
+
+          <a href="#admin-ip-ban">
+            IP制限
+          </a>
+
+          <a href="#admin-bots">
+            Bot管理
+          </a>
+
+          <a href="#admin-private-boards">
+            掲示板管理
+          </a>
+
+          <a href="#admin-site-settings">
+            サイト設定
+          </a>
+
+        </nav>
+
+
+
+        <!-- ===================================================
+             USER MANAGEMENT
+        ==================================================== -->
+
+        <section
+          id="admin-users"
+          class="admin-section"
+        >
+
+          <div class="admin-section-header">
+
+            <div>
+
+              <p class="section-label">
+                USERS
+              </p>
+
+              <h2>
+                ユーザー管理
+              </h2>
+
+            </div>
+
+
+            <form
+              id="admin-user-search-form"
+              class="admin-search-form"
+            >
+
+              <input
+                type="search"
+                id="admin-user-search"
+                placeholder="ユーザーを検索..."
+              >
+
+              <button
+                type="submit"
+                class="secondary-button"
+              >
+                検索
+              </button>
+
+            </form>
+
+          </div>
+
+
+          <div
+            id="admin-user-list"
+            class="admin-table-wrapper"
+          >
+
+            <table class="admin-table">
+
+              <thead>
+
+                <tr>
+
+                  <th>
+                    ユーザー
+                  </th>
+
+                  <th>
+                    ID
+                  </th>
+
+                  <th>
+                    状態
+                  </th>
+
+                  <th>
+                    登録日
+                  </th>
+
+                  <th>
+                    操作
+                  </th>
+
+                </tr>
+
+              </thead>
+
+              <tbody id="admin-users-table-body">
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+
+
+        <!-- ===================================================
+             USER DETAIL
+        ==================================================== -->
+
+        <section
+          id="admin-user-detail"
+          class="admin-section"
+        >
+
+          <div class="admin-section-header">
+
+            <div>
+
+              <p class="section-label">
+                USER DETAIL
+              </p>
+
+              <h2>
+                アカウント個別設定
+              </h2>
+
+            </div>
+
+          </div>
+
+
+          <form
+            id="admin-user-settings-form"
+            class="admin-form"
+          >
+
+            <input
+              type="hidden"
+              id="admin-target-user-id"
+            >
+
+
+            <div class="form-group">
+
+              <label for="admin-target-username">
+                ユーザー名
+              </label>
+
+              <input
+                type="text"
+                id="admin-target-username"
+              >
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label for="admin-target-status">
+                アカウント状態
+              </label>
+
+              <select id="admin-target-status">
+
+                <option value="active">
+                  有効
+                </option>
+
+                <option value="suspended">
+                  一時停止
+                </option>
+
+                <option value="banned">
+                  BAN
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="form-option">
+
+              <input
+                type="checkbox"
+                id="admin-force-password-change"
+              >
+
+              <label for="admin-force-password-change">
+                次回ログイン時にパスワード変更を要求
+              </label>
+
+            </div>
+
+
+            <div class="form-option">
+
+              <input
+                type="checkbox"
+                id="admin-disable-posting"
+              >
+
+              <label for="admin-disable-posting">
+                投稿を禁止する
+              </label>
+
+            </div>
+
+
+            <div class="form-option">
+
+              <input
+                type="checkbox"
+                id="admin-disable-replies"
+              >
+
+              <label for="admin-disable-replies">
+                返信を禁止する
+              </label>
+
+            </div>
+
+
+            <div class="form-actions">
+
+              <button
+                type="submit"
+                class="primary-button"
+              >
+                設定を保存
+              </button>
+
+              <button
+                type="button"
+                id="admin-force-logout"
+                class="secondary-button"
+              >
+                強制ログアウト
+              </button>
+
+            </div>
+
+          </form>
+
+        </section>
+
+
+
+        <!-- ===================================================
+             POST MANAGEMENT
+        ==================================================== -->
+
+        <section
+          id="admin-posts"
+          class="admin-section"
+        >
+
+          <div class="admin-section-header">
+
+            <div>
+
+              <p class="section-label">
+                POSTS
+              </p>
+
+              <h2>
+                投稿管理
+              </h2>
+
+            </div>
+
+          </div>
+
+
+          <div class="admin-post-tools">
+
+            <button
+              type="button"
+              class="secondary-button"
+              data-admin-post-filter="all"
+            >
+              すべて
+            </button>
+
+            <button
+              type="button"
+              class="secondary-button"
+              data-admin-post-filter="reported"
+            >
+              通報済み
+            </button>
+
+            <button
+              type="button"
+              class="secondary-button"
+              data-admin-post-filter="hidden"
+            >
+              非表示
+            </button>
+
+          </div>
+
+
+          <div
+            id="admin-post-list"
+            class="admin-post-list"
+          >
+
+          </div>
+
+        </section>
+
+
+
+        <!-- ===================================================
+             REPORT MANAGEMENT
+        ==================================================== -->
+
+        <section
+          id="admin-reports"
+          class="admin-section"
+        >
+
+          <div class="admin-section-header">
+
+            <div>
+
+              <p class="section-label">
+                REPORTS
+              </p>
+
+              <h2>
+                通報管理
+              </h2>
+
+            </div>
+
+          </div>
+
+
+          <div
+            id="admin-report-list"
+            class="report-list"
+          >
+
+          </div>
+
+        </section>
+
+
+
+        <!-- ===================================================
+             IP BAN
+        ==================================================== -->
+
+        <section
+          id="admin-ip-ban"
+          class="admin-section"
+        >
+
+          <div class="admin-section-header">
+
+            <div>
+
+              <p class="section-label">
+                ACCESS CONTROL
+              </p>
+
+              <h2>
+                IPアクセス制限
+              </h2>
+
+              <p>
+                不正利用や迷惑行為などへのアクセス制限を管理します。
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <form
+            id="ip-ban-form"
+            class="admin-form"
+          >
+
+            <div class="form-group">
+
+              <label for="ban-ip">
+                IPアドレス
+              </label>
+
+              <input
+                type="text"
+                id="ban-ip"
+                name="ip"
+                placeholder="IPアドレス"
+              >
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label for="ban-reason">
+                理由
+              </label>
+
+              <input
+                type="text"
+                id="ban-reason"
+                name="reason"
+                maxlength="500"
+              >
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label for="ban-duration">
+                期間
+              </label>
+
+              <select id="ban-duration">
+
+                <option value="temporary">
+                  一時的
+                </option>
+
+                <option value="permanent">
+                  無期限
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <button
+              type="submit"
+              class="danger-button"
+            >
+              アクセス制限を追加
+            </button>
+
+          </form>
+
+
+          <div
+            id="ip-ban-list"
+            class="admin-table-wrapper"
+          >
+
+            <table class="admin-table">
+
+              <thead>
+
+                <tr>
+
+                  <th>
+                    IP
+                  </th>
+
+                  <th>
+                    理由
+                  </th>
+
+                  <th>
+                    期間
+                  </th>
+
+                  <th>
+                    操作
+                  </th>
+
+                </tr>
+
+              </thead>
+
+              <tbody id="ip-ban-table-body">
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+
+
+        <!-- ===================================================
+             BOT MANAGEMENT
+        ==================================================== -->
+
+        <section
+          id="admin-bots"
+          class="admin-section"
+        >
+
+          <div class="admin-section-header">
+
+            <div>
+
+              <p class="section-label">
+                BOTS
+              </p>
+
+              <h2>
+                Bot管理
+              </h2>
+
+            </div>
+
+            <button
+              type="button"
+              id="admin-create-bot"
+              class="primary-button"
+            >
+              Botを作成
+            </button>
+
+          </div>
+
+
+          <div
+            id="admin-bot-list"
+            class="admin-bot-list"
+          >
+
+          </div>
+
+        </section>
+
+
+
+        <!-- ===================================================
+             PRIVATE BOARD MANAGEMENT
+        ==================================================== -->
+
+        <section
+          id="admin-private-boards"
+          class="admin-section"
+        >
+
+          <div class="admin-section-header">
+
+            <div>
+
+              <p class="section-label">
+                PRIVATE BOARDS
+              </p>
+
+              <h2>
+                プライベート掲示板管理
+              </h2>
+
+            </div>
+
+          </div>
+
+
+          <div
+            id="admin-private-board-list"
+            class="admin-table-wrapper"
+          >
+
+            <table class="admin-table">
+
+              <thead>
+
+                <tr>
+
+                  <th>
+                    掲示板名
+                  </th>
+
+                  <th>
+                    作成者
+                  </th>
+
+                  <th>
+                    公開設定
+                  </th>
+
+                  <th>
+                    メンバー
+                  </th>
+
+                  <th>
+                    操作
+                  </th>
+
+                </tr>
+
+              </thead>
+
+              <tbody id="admin-private-board-table-body">
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+
+
+        <!-- ===================================================
+             SITE SETTINGS
+        ==================================================== -->
+
+        <section
+          id="admin-site-settings"
+          class="admin-section"
+        >
+
+          <div class="admin-section-header">
+
+            <div>
+
+              <p class="section-label">
+                SITE SETTINGS
+              </p>
+
+              <h2>
+                サイト設定
+              </h2>
+
+            </div>
+
+          </div>
+
+
+          <form
+            id="admin-site-settings-form"
+            class="admin-form"
+          >
+
+            <div class="form-group">
+
+              <label for="site-name">
+                サイト名
+              </label>
+
+              <input
+                type="text"
+                id="site-name"
+                value="KAKIKOMI"
+                maxlength="100"
+              >
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label for="site-description">
+                サイト説明
+              </label>
+
+              <textarea
+                id="site-description"
+                maxlength="1000"
+              >みんなで自由に書き込める総合掲示板</textarea>
+
+            </div>
+
+
+            <div class="form-option">
+
+              <input
+                type="checkbox"
+                id="site-registration-enabled"
+                checked
+              >
+
+              <label for="site-registration-enabled">
+                新規アカウント登録を許可
+              </label>
+
+            </div>
+
+
+            <div class="form-option">
+
+              <input
+                type="checkbox"
+                id="site-posting-enabled"
+                checked
+              >
+
+              <label for="site-posting-enabled">
+                投稿を許可
+              </label>
+
+            </div>
+
+
+            <div class="form-option">
+
+              <input
+                type="checkbox"
+                id="site-maintenance-mode"
+              >
+
+              <label for="site-maintenance-mode">
+                メンテナンスモード
+              </label>
+
+            </div>
+
+
+            <button
+              type="submit"
+              class="primary-button"
+            >
+              設定を保存
+            </button>
+
+          </form>
+
+        </section>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         RULES
+    ======================================================== -->
+
+    <section
+      id="rules"
+      class="page-section"
+    >
+
+      <div class="section-inner narrow-section">
+
+        <div class="page-header">
+
+          <div>
+
+            <p class="section-label">
+              RULES
+            </p>
+
+            <h1>
+              利用ルール
+            </h1>
+
+          </div>
+
+        </div>
+
+
+        <div class="rules-content">
+
+          <h2>
+            基本ルール
+          </h2>
+
+          <ol>
+
+            <li>
+              他の利用者への迷惑行為をしない。
+            </li>
+
+            <li>
+              他人の個人情報を投稿しない。
+            </li>
+
+            <li>
+              法律やサービスのルールに反する投稿をしない。
+            </li>
+
+            <li>
+              他人になりすまさない。
+            </li>
+
+            <li>
+              スパムなどの迷惑行為をしない。
+            </li>
+
+          </ol>
+
+          <p>
+            ルール違反の投稿は削除される場合があります。
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =======================================================
+         404 / ERROR
+    ======================================================== -->
+
+    <section
+      id="error-page"
+      class="page-section error-page"
+      hidden
+    >
+
+      <div class="section-inner narrow-section">
+
+        <h1>
+          ページが見つかりません
+        </h1>
+
+        <p>
+          お探しのページは存在しないか、
+          削除された可能性があります。
+        </p>
+
+        <a
+          href="#home"
+          class="primary-button"
+        >
+          ホームへ戻る
+        </a>
+
+      </div>
+
+    </section>
+
 
   </main>
 
 
-  <!-- フッター -->
-  <footer>
-    <p>© KAKIKOMIN</p>
+
+  <!-- =========================================================
+       FOOTER
+  ========================================================== -->
+
+  <footer id="site-footer">
+
+    <div class="footer-inner">
+
+      <div class="footer-brand">
+
+        <strong>
+          KAKIKOMI
+        </strong>
+
+        <p>
+          みんなで自由に書き込める総合掲示板
+        </p>
+
+      </div>
+
+
+      <nav
+        class="footer-navigation"
+        aria-label="フッターメニュー"
+      >
+
+        <a href="#rules">
+          利用ルール
+        </a>
+
+        <a href="#privacy">
+          プライバシー
+        </a>
+
+        <a href="#contact">
+          お問い合わせ
+        </a>
+
+      </nav>
+
+
+      <p class="copyright">
+        © KAKIKOMI
+      </p>
+
+    </div>
+
   </footer>
 
+
+
+  <!-- =========================================================
+       MODALS
+  ========================================================== -->
+
+
+  <!-- 通報モーダル -->
+
+  <dialog
+    id="report-dialog"
+    class="modal"
+  >
+
+    <form
+      method="dialog"
+      id="modal-report-form"
+    >
+
+      <header class="modal-header">
+
+        <h2>
+          投稿を通報
+        </h2>
+
+        <button
+          type="button"
+          class="modal-close"
+          data-close-modal="report-dialog"
+          aria-label="閉じる"
+        >
+          ×
+        </button>
+
+      </header>
+
+
+      <div class="modal-body">
+
+        <input
+          type="hidden"
+          id="modal-report-post-id"
+        >
+
+        <label for="modal-report-reason">
+          通報理由
+        </label>
+
+        <select id="modal-report-reason">
+
+          <option value="">
+            選択してください
+          </option>
+
+          <option value="spam">
+            スパム
+          </option>
+
+          <option value="harassment">
+            嫌がらせ
+          </option>
+
+          <option value="inappropriate">
+            不適切な内容
+          </option>
+
+          <option value="other">
+            その他
+          </option>
+
+        </select>
+
+        <label for="modal-report-detail">
+          詳細
+        </label>
+
+        <textarea
+          id="modal-report-detail"
+          maxlength="2000"
+        ></textarea>
+
+      </div>
+
+
+      <footer class="modal-footer">
+
+        <button
+          type="button"
+          class="secondary-button"
+          data-close-modal="report-dialog"
+        >
+          キャンセル
+        </button>
+
+        <button
+          type="submit"
+          class="danger-button"
+        >
+          通報する
+        </button>
+
+      </footer>
+
+    </form>
+
+  </dialog>
+
+
+
+  <!-- 投稿削除確認 -->
+
+  <dialog
+    id="delete-post-dialog"
+    class="modal"
+  >
+
+    <form
+      method="dialog"
+      id="delete-post-form"
+    >
+
+      <header class="modal-header">
+
+        <h2>
+          投稿を削除
+        </h2>
+
+        <button
+          type="button"
+          class="modal-close"
+          data-close-modal="delete-post-dialog"
+        >
+          ×
+        </button>
+
+      </header>
+
+
+      <div class="modal-body">
+
+        <p>
+          この投稿を削除しますか？
+        </p>
+
+        <p>
+          削除した投稿は元に戻せません。
+        </p>
+
+        <input
+          type="hidden"
+          id="delete-post-id"
+        >
+
+      </div>
+
+
+      <footer class="modal-footer">
+
+        <button
+          type="button"
+          class="secondary-button"
+          data-close-modal="delete-post-dialog"
+        >
+          キャンセル
+        </button>
+
+        <button
+          type="submit"
+          class="danger-button"
+        >
+          削除する
+        </button>
+
+      </footer>
+
+    </form>
+
+  </dialog>
+
+
+
+  <!-- アカウント削除確認 -->
+
+  <dialog
+    id="delete-account-dialog"
+    class="modal"
+  >
+
+    <form
+      method="dialog"
+      id="delete-account-form"
+    >
+
+      <header class="modal-header">
+
+        <h2>
+          アカウントを削除
+        </h2>
+
+      </header>
+
+
+      <div class="modal-body">
+
+        <p>
+          アカウントを削除しますか？
+        </p>
+
+        <p>
+          この操作については、実際のSupabase側でも
+          適切な権限確認を行います。
+        </p>
+
+      </div>
+
+
+      <footer class="modal-footer">
+
+        <button
+          type="button"
+          class="secondary-button"
+          data-close-modal="delete-account-dialog"
+        >
+          キャンセル
+        </button>
+
+        <button
+          type="submit"
+          class="danger-button"
+        >
+          削除する
+        </button>
+
+      </footer>
+
+    </form>
+
+  </dialog>
+
+
+
+  <!-- Bot作成 -->
+
+  <dialog
+    id="create-bot-dialog"
+    class="modal"
+  >
+
+    <form
+      method="dialog"
+      id="create-bot-form"
+    >
+
+      <header class="modal-header">
+
+        <h2>
+          Botを作成
+        </h2>
+
+      </header>
+
+
+      <div class="modal-body">
+
+        <div class="form-group">
+
+          <label for="bot-name">
+            Bot名
+          </label>
+
+          <input
+            type="text"
+            id="bot-name"
+            maxlength="50"
+            required
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="bot-description">
+            説明
+          </label>
+
+          <textarea
+            id="bot-description"
+            maxlength="500"
+          ></textarea>
+
+        </div>
+
+      </div>
+
+
+      <footer class="modal-footer">
+
+        <button
+          type="button"
+          class="secondary-button"
+          data-close-modal="create-bot-dialog"
+        >
+          キャンセル
+        </button>
+
+        <button
+          type="submit"
+          class="primary-button"
+        >
+          作成
+        </button>
+
+      </footer>
+
+    </form>
+
+  </dialog>
+
+
+
+  <!-- =========================================================
+       TOAST / MESSAGE
+  ========================================================== -->
+
+  <div
+    id="toast-container"
+    class="toast-container"
+    aria-live="polite"
+    aria-atomic="true"
+  ></div>
+
+
+
+  <!-- =========================================================
+       LOADING
+  ========================================================== -->
+
+  <div
+    id="global-loading"
+    class="global-loading"
+    hidden
+    aria-hidden="true"
+  >
+
+    <div class="loading-spinner"></div>
+
+    <p>
+      読み込み中...
+    </p>
+
+  </div>
+
+
+
+  <!-- =========================================================
+       JAVASCRIPT
+  ========================================================== -->
 
   <script src="script.js"></script>
 
