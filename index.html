@@ -600,6 +600,15 @@
 
               <button
                 type="button"
+                class="post-action delete-post-button"
+                data-action="delete-post"
+                data-post-id="sample-post-1"
+              >
+                削除
+              </button>
+
+              <button
+                type="button"
                 class="post-action report-button"
                 data-action="report"
               >
@@ -851,6 +860,9 @@
           </fieldset>
 
 
+          <p id="post-form-error" class="form-error" hidden></p>
+
+
           <!-- 送信 -->
 
           <div class="form-actions">
@@ -864,6 +876,7 @@
 
             <button
               type="submit"
+              id="submit-post-button"
               class="primary-button"
             >
               投稿する
@@ -3518,6 +3531,288 @@
 
 
 
+
+
+  <!-- =========================================================
+       JS STATE / UI HOOKS
+       JavaScriptから状態を参照・更新するための共通要素
+  ========================================================== -->
+
+  <input type="hidden" id="auth-state" value="guest">
+  <input type="hidden" id="current-user-id" value="">
+  <input type="hidden" id="current-username" value="">
+  <input type="hidden" id="current-post-id" value="">
+  <input type="hidden" id="current-category" value="">
+  <input type="hidden" id="site-registration-enabled" value="true">
+  <input type="hidden" id="site-posting-enabled" value="true">
+  <input type="hidden" id="site-maintenance-mode" value="false">
+  <input type="hidden" id="force-password-change" value="false">
+
+
+  <!-- =========================================================
+       USER MENU
+  ========================================================== -->
+
+  <div id="user-menu" class="user-menu" hidden>
+    <div class="user-menu-inner">
+      <button type="button" data-action="open-profile">プロフィール</button>
+      <button type="button" data-action="open-account-settings">アカウント設定</button>
+      <button type="button" data-action="open-security-settings">セキュリティ</button>
+      <button type="button" data-action="logout">ログアウト</button>
+    </div>
+  </div>
+
+
+  <!-- =========================================================
+       NOTIFICATION PANEL
+  ========================================================== -->
+
+  <aside
+    id="notification-panel"
+    class="notification-panel"
+    hidden
+    aria-label="通知"
+  >
+    <div class="notification-panel-header">
+      <h2>通知</h2>
+      <button
+        type="button"
+        class="modal-close"
+        data-action="close-notifications"
+        aria-label="通知を閉じる"
+      >×</button>
+    </div>
+    <div id="notification-panel-list" class="notification-list"></div>
+    <div class="notification-panel-footer">
+      <a href="#notifications">すべての通知を見る</a>
+    </div>
+  </aside>
+
+
+  <!-- =========================================================
+       GENERIC MODAL
+  ========================================================== -->
+
+  <dialog id="generic-modal" class="modal">
+    <div class="modal-header">
+      <h2 id="generic-modal-title">確認</h2>
+      <button
+        type="button"
+        class="modal-close"
+        data-close-modal="generic-modal"
+        aria-label="閉じる"
+      >×</button>
+    </div>
+    <div id="generic-modal-body" class="modal-body"></div>
+    <footer class="modal-footer" id="generic-modal-footer"></footer>
+  </dialog>
+
+
+  <!-- =========================================================
+       FORCE PASSWORD CHANGE
+  ========================================================== -->
+
+  <dialog id="force-password-dialog" class="modal">
+    <form id="force-password-form">
+      <header class="modal-header">
+        <h2>パスワードを変更してください</h2>
+      </header>
+      <div class="modal-body">
+        <p>セキュリティのため、新しいパスワードを設定してください。</p>
+        <div class="form-group">
+          <label for="force-password-new">新しいパスワード</label>
+          <input
+            type="password"
+            id="force-password-new"
+            minlength="8"
+            autocomplete="new-password"
+            required
+          >
+        </div>
+        <div class="form-group">
+          <label for="force-password-confirm">新しいパスワード（確認）</label>
+          <input
+            type="password"
+            id="force-password-confirm"
+            minlength="8"
+            autocomplete="new-password"
+            required
+          >
+        </div>
+        <p id="force-password-error" class="form-error" hidden></p>
+      </div>
+      <footer class="modal-footer">
+        <button type="submit" class="primary-button">変更する</button>
+      </footer>
+    </form>
+  </dialog>
+
+
+  <!-- =========================================================
+       ADMIN USER SETTINGS
+  ========================================================== -->
+
+  <dialog id="admin-user-settings-dialog" class="modal">
+    <form id="admin-user-settings-form">
+      <header class="modal-header">
+        <h2>ユーザー個別設定</h2>
+        <button
+          type="button"
+          class="modal-close"
+          data-close-modal="admin-user-settings-dialog"
+          aria-label="閉じる"
+        >×</button>
+      </header>
+
+      <div class="modal-body">
+        <input type="hidden" id="admin-modal-user-id">
+
+        <div class="form-group">
+          <label for="admin-modal-username">ユーザー名</label>
+          <input type="text" id="admin-modal-username" readonly>
+        </div>
+
+        <div class="form-group">
+          <label for="admin-modal-status">アカウント状態</label>
+          <select id="admin-modal-status">
+            <option value="active">有効</option>
+            <option value="suspended">停止</option>
+            <option value="banned">BAN</option>
+          </select>
+        </div>
+
+        <div class="form-option">
+          <input type="checkbox" id="admin-modal-force-password">
+          <label for="admin-modal-force-password">次回ログイン時にパスワード変更を要求</label>
+        </div>
+
+        <div class="form-option">
+          <input type="checkbox" id="admin-modal-disable-posting">
+          <label for="admin-modal-disable-posting">投稿を禁止</label>
+        </div>
+
+        <div class="form-option">
+          <input type="checkbox" id="admin-modal-disable-replies">
+          <label for="admin-modal-disable-replies">返信を禁止</label>
+        </div>
+
+        <div class="form-option">
+          <input type="checkbox" id="admin-modal-force-logout">
+          <label for="admin-modal-force-logout">強制ログアウト</label>
+        </div>
+
+        <p id="admin-user-settings-error" class="form-error" hidden></p>
+      </div>
+
+      <footer class="modal-footer">
+        <button
+          type="button"
+          class="secondary-button"
+          data-close-modal="admin-user-settings-dialog"
+        >キャンセル</button>
+        <button type="submit" class="primary-button">保存する</button>
+      </footer>
+    </form>
+  </dialog>
+
+
+  <!-- =========================================================
+       IP BAN
+  ========================================================== -->
+
+  <dialog id="ip-ban-dialog" class="modal">
+    <form id="ip-ban-form">
+      <header class="modal-header">
+        <h2>IP BAN</h2>
+        <button
+          type="button"
+          class="modal-close"
+          data-close-modal="ip-ban-dialog"
+          aria-label="閉じる"
+        >×</button>
+      </header>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="ip-ban-address">IPアドレス</label>
+          <input
+            type="text"
+            id="ip-ban-address"
+            placeholder="例: 192.0.2.1"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="ip-ban-reason">理由</label>
+          <textarea id="ip-ban-reason" maxlength="1000"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="ip-ban-expires">期限</label>
+          <select id="ip-ban-expires">
+            <option value="permanent">無期限</option>
+            <option value="1h">1時間</option>
+            <option value="1d">1日</option>
+            <option value="7d">7日</option>
+            <option value="30d">30日</option>
+          </select>
+        </div>
+
+        <p id="ip-ban-error" class="form-error" hidden></p>
+      </div>
+
+      <footer class="modal-footer">
+        <button
+          type="button"
+          class="secondary-button"
+          data-close-modal="ip-ban-dialog"
+        >キャンセル</button>
+        <button type="submit" class="danger-button">BANする</button>
+      </footer>
+    </form>
+  </dialog>
+
+
+  <!-- =========================================================
+       REPLY MODAL
+  ========================================================== -->
+
+  <dialog id="reply-dialog" class="modal">
+    <form id="reply-form">
+      <header class="modal-header">
+        <h2>返信する</h2>
+        <button
+          type="button"
+          class="modal-close"
+          data-close-modal="reply-dialog"
+          aria-label="閉じる"
+        >×</button>
+      </header>
+      <div class="modal-body">
+        <input type="hidden" id="reply-post-id">
+        <div class="form-group">
+          <label for="reply-content">返信内容</label>
+          <textarea
+            id="reply-content"
+            maxlength="3000"
+            placeholder="返信を書き込んでください..."
+            required
+          ></textarea>
+        </div>
+        <p id="reply-error" class="form-error" hidden></p>
+      </div>
+      <footer class="modal-footer">
+        <button
+          type="button"
+          class="secondary-button"
+          data-close-modal="reply-dialog"
+        >キャンセル</button>
+        <button type="submit" class="primary-button">返信する</button>
+      </footer>
+    </form>
+  </dialog>
+
   <!-- =========================================================
        TOAST / MESSAGE
   ========================================================== -->
@@ -3556,7 +3851,9 @@
        JAVASCRIPT
   ========================================================== -->
 
-  <script src="script.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/supabase.js"></script>
+  <script src="./js/app.js"></script>
 
 </body>
 </html>
