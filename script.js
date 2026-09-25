@@ -1,2609 +1,3262 @@
+```javascript
+/* =========================================================
+   KAKIKOMI - script.js
+   Front-end application logic
+   ========================================================= */
+
 (() => {
-  'use strict';
+  "use strict";
 
-  const KEY = 'kakikomi_local_v3';
-  const SESSION_KEY = 'kakikomi_session_v3';
-  const ADMIN_EMAIL = 'admin@kakikomi.local';
-  const ADMIN_PASSWORD = 'KAKIKOMI-admin-2026';
+  const STORAGE_KEY = "kakikomi_state_v1";
 
-  const now = () => new Date().toISOString();
-  const uid = (prefix = 'id') => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-  const $ = (s, root = document) => root.querySelector(s);
-  const $$ = (s, root = document) => [...root.querySelectorAll(s)];
-  const esc = (v = '') => String(v).replace(/[&<>"']/g, c => ({
-    '&':'&amp;',
-    '<':'&lt;',
-    '>':'&gt;',
-    '"':'&quot;',
-    "'":'&#39;'
-  }[c]));
-  const formatDate = iso =>
-    new Intl.DateTimeFormat('ja-JP', {
-      dateStyle:'medium',
-      timeStyle:'short'
-    }).format(new Date(iso));
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
-  const save = () =>
-    localStorage.setItem(KEY, JSON.stringify(db));
-
-  const load = () => {
-    try {
-      return JSON.parse(localStorage.getItem(KEY)) || null;
-    } catch {
-      return null;
-    }
-  };
-
-  const seed = () => ({
-    site: {
-      name: 'KAKIKOMI',
-      description: 'みんなで自由に書き込める総合掲示板',
+  const state = {
+    currentUser: null,
+    posts: [],
+    reports: [],
+    notifications: [],
+    users: [],
+    privateBoards: [],
+    bots: [],
+    settings: {
+      siteName: "KAKIKOMI",
+      siteDescription: "みんなで自由に書き込める総合掲示板",
       registrationEnabled: true,
       postingEnabled: true,
       maintenanceMode: false
     },
+    currentCategory: "all"
+  };
 
-    users: [{
-      id: 'user_admin',
-      username: 'KAKIKOMI管理者',
-      email: ADMIN_EMAIL,
-      password: ADMIN_PASSWORD,
-      role: 'owner',
-      status: 'active',
-      bio: 'KAKIKOMI管理者です。',
-      forcePasswordChange: false,
-      disablePosting: false,
-      disableReplies: false,
-      createdAt: now(),
-      lastLoginAt: null,
-      notificationsReadAt: null
-    }],
+  const uid = (prefix = "id") =>
+    `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
 
-    posts: [
+  const escapeHTML = (value = "") =>
+    String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+
+  const formatDate = (date) => {
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleString("ja-JP", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
+
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function loadState() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+      if (!saved) return;
+
+      Object.assign(state, saved);
+
+      state.settings = {
+        siteName: "KAKIKOMI",
+        siteDescription: "みんなで自由に書き込める総合掲示板",
+        registrationEnabled: true,
+        postingEnabled: true,
+        maintenanceMode: false,
+        ...(saved.settings || {})
+      };
+
+      state.posts ||= [];
+      state.reports ||= [];
+      state.notifications ||= [];
+      state.users ||= [];
+      state.privateBoards ||= [];
+      state.bots ||= [];
+      state.ipBans ||= [];
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+
+  function seedData() {
+    if (state.posts.length || state.users.length) return;
+
+    state.posts = [
       {
-        id:'post_welcome',
-        userId:'user_admin',
-        category:'一言',
-        title:'KAKIKOMIへようこそ！',
-        content:'ここに自由に書き込めます。まずはルールを確認して、楽しく利用してください。',
-        allowReplies:true,
-        allowShare:true,
-        likes:0,
-        createdAt:now(),
-        deleted:false
-      },
-      {
-        id:'post_question',
-        userId:'user_admin',
-        category:'質問',
-        title:'テスト投稿',
-        content:'これはローカル版のサンプル投稿です。ログインして自分の投稿も作ってみてください。',
-        allowReplies:true,
-        allowShare:true,
-        likes:2,
-        createdAt:new Date(Date.now()-3600000).toISOString(),
-        deleted:false
+        id: "sample_1",
+        userId: "demo_user",
+        username: "KAKIKOMI運営",
+        category: "general",
+        title: "KAKIKOMIへようこそ",
+        content:
+          "ここでは自由に投稿できます。みんなが気持ちよく使えるように、利用ルールを守ってください。",
+        createdAt: new Date().toISOString(),
+        likes: 0,
+        likedBy: [],
+        replies: 0,
+        allowReplies: true,
+        allowShare: true
       }
-    ],
+    ];
 
-    reports: [],
-    notifications: [],
-    bans: [],
-    bots: [{
-      id:'bot_system',
-      name:'KAKIKOMI Bot',
-      description:'システムBot',
-      status:'active',
-      createdAt:now()
-    }],
-    privateBoards: [],
-    follows: [],
-    bookmarks: []
-  });
+    state.users = [
+      {
+        id: "demo_user",
+        username: "KAKIKOMI運営",
+        email: "admin@example.com",
+        password: "demo",
+        bio: "KAKIKOMI運営アカウント",
+        role: "admin",
+        status: "active",
+        forcePasswordChange: false,
+        disablePosting: false,
+        disableReplies: false,
+        followers: 0,
+        following: 0
+      }
+    ];
 
-  let db = load() || seed();
+    state.reports = [];
+    state.notifications = [];
+    state.privateBoards = [];
+    state.bots = [];
+    state.ipBans = [];
 
-  save();
-
-  let sessionId =
-    localStorage.getItem(SESSION_KEY) || null;
-
-  function currentUser() {
-    return db.users.find(
-      u => u.id === sessionId && u.status !== 'deleted'
-    ) || null;
+    saveState();
   }
 
-  function isAdmin() {
-    const u = currentUser();
-    return !!u && ['admin','owner'].includes(u.role);
-  }
+  function toast(message, type = "normal") {
+    const container = $("#toast-container");
+    if (!container) return;
 
-  function requireLogin() {
-    if (!currentUser()) {
-      location.hash = '#login';
-      toast('ログインしてください');
-      return false;
-    }
-
-    return true;
-  }
-
-  function requireAdmin() {
-    if (!isAdmin()) {
-      location.hash = '#home';
-      toast('管理者のみ利用できます');
-      return false;
-    }
-
-    return true;
-  }
-
-  function toast(message, type='info') {
-    const box =
-      $('#toast-container') ||
-      $('#toastContainer');
-
-    if (!box) return;
-
-    const item = document.createElement('div');
-
+    const item = document.createElement("div");
     item.className = `toast toast-${type}`;
     item.textContent = message;
 
-    box.appendChild(item);
+    container.appendChild(item);
 
-    setTimeout(() => item.remove(), 3200);
+    setTimeout(() => {
+      item.remove();
+    }, 3200);
   }
 
-  function setLoading(on) {
-    const el = $('#global-loading');
+  function showLoading(show) {
+    const loading = $("#global-loading");
+    if (!loading) return;
 
-    if (el) {
-      el.hidden = !on;
-    }
+    loading.hidden = !show;
+    loading.setAttribute("aria-hidden", String(!show));
   }
 
-  function ensureRuntimeUI() {
-    let toastBox = $('#toast-container');
+  function navigate(hash) {
+    if (!hash.startsWith("#")) hash = `#${hash}`;
 
-    if (!toastBox) {
-      toastBox = document.createElement('div');
-      toastBox.id = 'toast-container';
-      toastBox.className = 'toast-container';
-
-      document.body.appendChild(toastBox);
-    }
-
-    let loading = $('#global-loading');
-
-    if (!loading) {
-      loading = document.createElement('div');
-
-      loading.id = 'global-loading';
-      loading.className = 'global-loading';
-      loading.hidden = true;
-
-      loading.innerHTML = `
-        <div class="loading-card">
-          <div class="spinner"></div>
-          <span>処理中…</span>
-        </div>
-      `;
-
-      document.body.appendChild(loading);
+    if (location.hash !== hash) {
+      location.hash = hash;
+    } else {
+      renderRoute();
     }
   }
 
-  function route() {
-    const raw =
-      location.hash.replace(/^#/, '') || 'home';
+  function renderRoute() {
+    const raw = location.hash.replace(/^#/, "") || "home";
+    const target = document.getElementById(raw);
 
-    const valid =
-      new Set(
-        $$('.page-section').map(x => x.id)
-      );
+    $$("main > section").forEach(section => {
+      section.hidden = true;
+    });
 
-    let target = raw;
-
-    if (
-      raw.startsWith('admin') &&
-      !isAdmin()
-    ) {
-      target = 'home';
+    if (target) {
+      target.hidden = false;
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    } else {
+      const error = $("#error-page");
+      if (error) error.hidden = false;
     }
 
-    if (!valid.has(target)) {
-      target = 'error-page';
+    updateHeaderState();
+  }
+
+  function updateHeaderState() {
+    const accountButton = $("#account-button");
+    const notificationButton = $("#notification-button");
+
+    if (accountButton) {
+      accountButton.textContent = state.currentUser
+        ? `アカウント (${state.currentUser.username})`
+        : "アカウント";
     }
 
-    $$('.page-section').forEach(
-      s => s.hidden = s.id !== target
+    if (notificationButton) {
+      const unread = state.notifications.filter(n => !n.read).length;
+
+      notificationButton.textContent = unread
+        ? `通知 (${unread})`
+        : "通知";
+    }
+  }
+
+  function categoryName(category) {
+    const names = {
+      general: "雑談",
+      school: "学校",
+      game: "ゲーム",
+      hobby: "趣味",
+      question: "質問",
+      consultation: "相談",
+      other: "その他"
+    };
+
+    return names[category] || category || "その他";
+  }
+
+  function canDeletePost(post) {
+    return Boolean(
+      state.currentUser &&
+      (
+        post.userId === state.currentUser.id ||
+        state.currentUser.role === "admin"
+      )
     );
-
-    if (target === 'admin-page') {
-      renderAdmin();
-    }
-
-    if (target === 'board') {
-      renderPosts();
-    }
-
-    if (target === 'questions') {
-      renderCategoryList(
-        '質問',
-        '#question-list'
-      );
-    }
-
-    if (target === 'consultations') {
-      renderCategoryList(
-        '相談',
-        '#consultation-list'
-      );
-    }
-
-    if (target === 'search') {
-      renderSearchResults(
-        $('#search-input')?.value || ''
-      );
-    }
-
-    if (target === 'account') {
-      renderAccount();
-    }
-
-    if (target === 'profile') {
-      renderProfile(currentUser()?.id);
-    }
-
-    if (target === 'notifications') {
-      renderNotifications();
-    }
-
-    if (target === 'private-boards') {
-      renderPrivateBoards();
-    }
-
-    if (target === 'bot') {
-      renderBots();
-    }
-
-    updateHeader();
-  }
-
-  function updateHeader() {
-    const user = currentUser();
-
-    const accountBtn =
-      $('#account-button');
-
-    if (accountBtn) {
-      accountBtn.textContent =
-        user
-          ? `@${user.username}`
-          : 'アカウント';
-    }
-
-    const notifBtn =
-      $('#notification-button');
-
-    if (notifBtn) {
-      notifBtn.textContent =
-        `通知${
-          unreadCount()
-            ? ` (${unreadCount()})`
-            : ''
-        }`;
-    }
-
-    const admin =
-      $('#admin-page');
-
-    if (admin) {
-      admin.hidden =
-        !isAdmin() &&
-        admin.hidden !== false
-          ? true
-          : admin.hidden;
-    }
-
-    const botMgmt =
-      $('#bot-management');
-
-    if (botMgmt) {
-      botMgmt.hidden = !isAdmin();
-    }
-
-    injectAdminLink();
-  }
-
-  function injectAdminLink() {
-    const nav =
-      $('.account-navigation');
-
-    if (!nav) return;
-
-    let a =
-      nav.querySelector(
-        '[data-admin-link]'
-      );
-
-    if (isAdmin()) {
-      if (!a) {
-        a = document.createElement('a');
-
-        a.href = '#admin-page';
-        a.dataset.adminLink = '1';
-        a.textContent = '管理者ページ';
-
-        nav.appendChild(a);
-      }
-    } else if (a) {
-      a.remove();
-    }
-  }
-
-  function renderAccount() {
-    const u = currentUser();
-
-    const guest =
-      $('#guest-account');
-
-    const logged =
-      $('#logged-in-account');
-
-    if (guest) {
-      guest.hidden = !!u;
-    }
-
-    if (logged) {
-      logged.hidden = !u;
-    }
-
-    if (u) {
-      if ($('#account-username')) {
-        $('#account-username').textContent =
-          u.username;
-      }
-
-      if ($('#account-user-id')) {
-        $('#account-user-id').textContent =
-          `ID: ${u.id}`;
-      }
-    }
-  }
-
-  function renderProfile(userId) {
-    const u =
-      db.users.find(x => x.id === userId) ||
-      currentUser();
-
-    if (!u) return;
-
-    const name =
-      $('#profile-name');
-
-    const desc =
-      $('#profile-description');
-
-    if (name) {
-      name.textContent = u.username;
-    }
-
-    if (desc) {
-      desc.textContent =
-        u.bio ||
-        'プロフィール文はまだありません。';
-    }
-
-    if ($('#profile-post-count')) {
-      $('#profile-post-count').textContent =
-        db.posts.filter(
-          p =>
-            p.userId === u.id &&
-            !p.deleted
-        ).length;
-    }
-
-    if ($('#profile-followers')) {
-      $('#profile-followers').textContent =
-        db.follows.filter(
-          f => f.to === u.id
-        ).length;
-    }
-
-    if ($('#profile-following')) {
-      $('#profile-following').textContent =
-        db.follows.filter(
-          f => f.from === u.id
-        ).length;
-    }
-
-    const list =
-      $('#profile-posts');
-
-    if (list) {
-      list.innerHTML =
-        db.posts
-          .filter(
-            p =>
-              p.userId === u.id &&
-              !p.deleted
-          )
-          .map(postCard)
-          .join('') ||
-        '<p class="empty-state">投稿はありません。</p>';
-
-      bindPostActions(list);
-    }
   }
 
   function renderPosts() {
-    const list =
-      $('#post-list');
-
+    const list = $("#post-list");
     if (!list) return;
 
-    const cat =
-      $('#board-category')?.value || '';
+    const category = state.currentCategory;
 
-    let posts =
-      db.posts
-        .filter(
-          p =>
-            !p.deleted &&
-            (!cat || p.category === cat)
-        )
-        .sort(
-          (a,b) =>
-            new Date(b.createdAt) -
-            new Date(a.createdAt)
-        );
+    const posts = state.posts.filter(post =>
+      category === "all"
+        ? true
+        : post.category === category
+    );
 
-    list.innerHTML =
-      posts.map(postCard).join('');
+    list.innerHTML = "";
 
-    const empty =
-      $('#no-posts');
+    const sample = $("#sample-post-1");
+    if (sample) sample.hidden = true;
 
-    if (empty) {
-      empty.hidden =
-        posts.length !== 0;
+    const empty = $("#no-posts");
+
+    if (!posts.length) {
+      if (empty) empty.hidden = false;
+      return;
     }
 
-    bindPostActions(list);
-  }
+    if (empty) empty.hidden = true;
 
-  function postCard(p) {
-    const u =
-      db.users.find(
-        x => x.id === p.userId
-      ) || {
-        username:'削除されたユーザー',
-        id:'-'
-      };
+    posts
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt) - new Date(a.createdAt)
+      )
+      .forEach(post => {
+        const card = document.createElement("article");
 
-    const me =
-      currentUser();
+        card.className = "post-card";
+        card.dataset.postId = post.id;
 
-    const canDelete =
-      me &&
-      (
-        me.id === p.userId ||
-        isAdmin()
-      );
+        const liked =
+          state.currentUser &&
+          (post.likedBy || []).includes(state.currentUser.id);
 
-    const liked =
-      !!me &&
-      db.bookmarks.some(
-        x =>
-          x.type === 'like' &&
-          x.userId === me.id &&
-          x.targetId === p.id
-      );
+        card.innerHTML = `
+          <div class="post-card-header">
+            <div class="post-user">
+              <div class="user-avatar">
+                ${escapeHTML((post.username || "?").slice(0, 1))}
+              </div>
 
-    return `
-      <article
-        class="post-card"
-        data-post-id="${esc(p.id)}"
-      >
+              <div class="user-information">
+                <span class="username">
+                  ${escapeHTML(post.username || "ユーザー")}
+                </span>
 
-        <div class="post-card-header">
-          <div>
-            <strong class="post-author">
-              ${esc(u.username)}
-            </strong>
+                <time class="post-time">
+                  ${escapeHTML(formatDate(post.createdAt))}
+                </time>
+              </div>
+            </div>
 
-            <span class="post-meta">
-              ${esc(p.category)}
-              ・
-              ${esc(formatDate(p.createdAt))}
+            <span class="post-category">
+              ${escapeHTML(categoryName(post.category))}
             </span>
           </div>
-        </div>
 
-        <div class="post-card-body">
-          <h3>
-            ${esc(p.title || '無題')}
-          </h3>
+          <div class="post-card-body">
+            ${
+              post.title
+                ? `<h3>${escapeHTML(post.title)}</h3>`
+                : ""
+            }
 
-          <p>
-            ${esc(p.content)
-              .replace(/\n/g,'<br>')}
-          </p>
-        </div>
+            <p class="post-text">
+              ${escapeHTML(post.content || "")}
+            </p>
 
-        <div class="post-card-footer">
+            ${
+              post.image
+                ? `
+                  <div class="post-image-wrapper">
+                    <img
+                      class="post-image"
+                      src="${escapeHTML(post.image)}"
+                      alt="投稿画像"
+                    >
+                  </div>
+                `
+                : ""
+            }
+          </div>
 
-          <span>
-            ♡ ${p.likes || 0}
-          </span>
-
-          <div class="post-actions">
+          <div class="post-card-footer">
 
             <button
               type="button"
+              class="post-action"
               data-action="like"
-              data-post-id="${esc(p.id)}"
+              data-post-id="${escapeHTML(post.id)}"
             >
-              ${liked ? 'いいね済み' : 'いいね'}
+              ${liked ? "いいね済み" : "いいね"}
+              <span class="like-count">
+                ${post.likes || 0}
+              </span>
             </button>
 
             ${
-              p.allowReplies
+              post.allowReplies !== false
                 ? `
                   <button
                     type="button"
+                    class="post-action"
                     data-action="reply"
-                    data-post-id="${esc(p.id)}"
+                    data-post-id="${escapeHTML(post.id)}"
                   >
                     返信
+                    <span class="reply-count">
+                      ${post.replies || 0}
+                    </span>
                   </button>
                 `
-                : ''
+                : ""
             }
 
             ${
-              p.allowShare
+              post.allowShare !== false
                 ? `
                   <button
                     type="button"
+                    class="post-action"
                     data-action="share"
-                    data-post-id="${esc(p.id)}"
+                    data-post-id="${escapeHTML(post.id)}"
                   >
                     共有
                   </button>
                 `
-                : ''
+                : ""
             }
 
             <button
               type="button"
+              class="post-action"
               data-action="report"
-              data-post-id="${esc(p.id)}"
+              data-post-id="${escapeHTML(post.id)}"
             >
               通報
             </button>
 
             ${
-              canDelete
+              canDeletePost(post)
                 ? `
                   <button
                     type="button"
-                    class="danger-text"
+                    class="post-action danger"
                     data-action="delete"
-                    data-post-id="${esc(p.id)}"
+                    data-post-id="${escapeHTML(post.id)}"
                   >
                     削除
                   </button>
                 `
-                : ''
+                : ""
             }
 
           </div>
-        </div>
+        `;
 
-      </article>
-    `;
-  }
-
-  function bindPostActions(root=document) {
-    $$('[data-action]',root)
-      .forEach(btn => {
-
-        btn.onclick = () => {
-
-          const id =
-            btn.dataset.postId;
-
-          const action =
-            btn.dataset.action;
-
-          if (action === 'like') {
-            toggleLike(id);
-          }
-
-          if (action === 'report') {
-            openReport(id);
-          }
-
-          if (action === 'share') {
-            openShare(id);
-          }
-
-          if (action === 'delete') {
-            deletePost(id);
-          }
-
-          if (action === 'reply') {
-            toast(
-              '返信機能は次のSupabase版でコメント保存に対応します。'
-            );
-          }
-        };
+        list.appendChild(card);
       });
   }
 
-  function toggleLike(id) {
-    if (!requireLogin()) return;
+  function setText(id, value) {
+    const el = document.getElementById(id);
 
-    const p =
-      db.posts.find(
-        x => x.id === id
-      );
+    if (el) {
+      el.textContent = value ?? "";
+    }
+  }
 
-    if (!p) return;
+  function renderAccount() {
+    const guest = $("#guest-account");
+    const loggedIn = $("#logged-in-account");
 
-    const me =
-      currentUser();
-
-    const idx =
-      db.bookmarks.findIndex(
-        x =>
-          x.type === 'like' &&
-          x.userId === me.id &&
-          x.targetId === id
-      );
-
-    if (idx >= 0) {
-
-      db.bookmarks.splice(idx,1);
-
-      p.likes =
-        Math.max(
-          0,
-          (p.likes || 0) - 1
-        );
-
-    } else {
-
-      db.bookmarks.push({
-        type:'like',
-        userId:me.id,
-        targetId:id
-      });
-
-      p.likes =
-        (p.likes || 0) + 1;
+    if (!state.currentUser) {
+      if (guest) guest.hidden = false;
+      if (loggedIn) loggedIn.hidden = true;
+      return;
     }
 
-    save();
+    if (guest) guest.hidden = true;
+    if (loggedIn) loggedIn.hidden = false;
 
-    renderPosts();
+    setText(
+      "account-username",
+      state.currentUser.username
+    );
 
-    toast(
-      idx >= 0
-        ? 'いいねを取り消しました'
-        : 'いいねしました'
+    setText(
+      "account-user-id",
+      state.currentUser.id
+    );
+
+    setText(
+      "profile-name",
+      state.currentUser.username
+    );
+
+    setText(
+      "profile-description",
+      state.currentUser.bio ||
+      "プロフィールはまだありません。"
+    );
+
+    setText(
+      "profile-post-count",
+      state.posts.filter(
+        p => p.userId === state.currentUser.id
+      ).length
+    );
+
+    setText(
+      "profile-followers",
+      state.currentUser.followers || 0
+    );
+
+    setText(
+      "profile-following",
+      state.currentUser.following || 0
+    );
+
+    const username = $("#settings-username");
+    const bio = $("#settings-bio");
+
+    if (
+      username &&
+      document.activeElement !== username
+    ) {
+      username.value =
+        state.currentUser.username || "";
+    }
+
+    if (
+      bio &&
+      document.activeElement !== bio
+    ) {
+      bio.value =
+        state.currentUser.bio || "";
+    }
+
+    const force = $("#forced-password-change");
+
+    if (force) {
+      force.hidden =
+        !state.currentUser.forcePasswordChange;
+    }
+  }
+
+  function updatePostCount() {
+    if (!state.currentUser) return;
+
+    setText(
+      "profile-post-count",
+      state.posts.filter(
+        post =>
+          post.userId === state.currentUser.id
+      ).length
     );
   }
 
-  function createPost(e) {
-    e.preventDefault();
+  function login(
+    email,
+    password,
+    remember = false
+  ) {
+    const user = state.users.find(
+      u =>
+        String(u.email).toLowerCase() ===
+        String(email).toLowerCase()
+    );
 
-    if (!requireLogin()) return;
-
-    const me =
-      currentUser();
-
-    if (me.disablePosting) {
+    if (!user || user.password !== password) {
       toast(
-        '現在、投稿が制限されています',
-        'error'
+        "メールアドレスまたはパスワードが違います。",
+        "error"
       );
-
-      return;
+      return false;
     }
 
-    if (!db.site.postingEnabled) {
+    if (user.status === "banned") {
       toast(
-        '現在、投稿は停止されています',
-        'error'
+        "このアカウントは利用できません。",
+        "error"
       );
-
-      return;
+      return false;
     }
 
-    const f =
-      e.currentTarget;
+    state.currentUser = {
+      ...user
+    };
 
-    const content =
-      $('#post-content')
-        ?.value
-        .trim();
+    if (remember) {
+      localStorage.setItem(
+        "kakikomi_remember",
+        "1"
+      );
+    } else {
+      localStorage.removeItem(
+        "kakikomi_remember"
+      );
+    }
+
+    saveState();
+
+    renderAccount();
+    updateHeaderState();
+
+    toast(
+      `ログインしました。ようこそ、${user.username}さん！`,
+      "success"
+    );
+
+    navigate("#home");
+
+    return true;
+  }
+
+  function logout() {
+    state.currentUser = null;
+
+    localStorage.removeItem(
+      "kakikomi_remember"
+    );
+
+    saveState();
+
+    renderAccount();
+    updateHeaderState();
+
+    toast("ログアウトしました。");
+
+    navigate("#home");
+  }
+
+  function register(
+    username,
+    email,
+    password,
+    passwordConfirm
+  ) {
+    if (!state.settings.registrationEnabled) {
+      toast(
+        "現在、新規登録を停止しています。",
+        "error"
+      );
+      return false;
+    }
+
+    if (!username || !email || !password) {
+      toast(
+        "必要な項目を入力してください。",
+        "error"
+      );
+      return false;
+    }
+
+    if (password !== passwordConfirm) {
+      toast(
+        "パスワードが一致しません。",
+        "error"
+      );
+      return false;
+    }
+
+    if (password.length < 6) {
+      toast(
+        "パスワードは6文字以上にしてください。",
+        "error"
+      );
+      return false;
+    }
+
+    if (
+      state.users.some(
+        user =>
+          user.email.toLowerCase() ===
+          email.toLowerCase()
+      )
+    ) {
+      toast(
+        "このメールアドレスはすでに登録されています。",
+        "error"
+      );
+      return false;
+    }
+
+    if (
+      state.users.some(
+        user =>
+          user.username.toLowerCase() ===
+          username.toLowerCase()
+      )
+    ) {
+      toast(
+        "このユーザー名はすでに使われています。",
+        "error"
+      );
+      return false;
+    }
+
+    const user = {
+      id: uid("user"),
+      username,
+      email,
+      password,
+      bio: "",
+      role: "user",
+      status: "active",
+      forcePasswordChange: false,
+      disablePosting: false,
+      disableReplies: false,
+      followers: 0,
+      following: 0,
+      createdAt: new Date().toISOString()
+    };
+
+    state.users.push(user);
+
+    state.notifications.push({
+      id: uid("notification"),
+      userId: user.id,
+      type: "system",
+      message:
+        "KAKIKOMIへの登録ありがとうございます！",
+      createdAt: new Date().toISOString(),
+      read: false
+    });
+
+    state.currentUser = {
+      ...user
+    };
+
+    saveState();
+
+    renderAccount();
+    updateHeaderState();
+
+    toast(
+      "アカウントを作成しました！",
+      "success"
+    );
+
+    navigate("#home");
+
+    return true;
+  }
+
+  function createPost() {
+    if (!state.currentUser) {
+      toast(
+        "投稿するにはログインしてください。",
+        "error"
+      );
+      navigate("#login");
+      return false;
+    }
+
+    if (!state.settings.postingEnabled) {
+      toast(
+        "現在、投稿を停止しています。",
+        "error"
+      );
+      return false;
+    }
+
+    if (
+      state.currentUser.disablePosting
+    ) {
+      toast(
+        "現在、投稿が制限されています。",
+        "error"
+      );
+      return false;
+    }
 
     const title =
-      $('#post-title')
-        ?.value
-        .trim();
+      $("#post-title")?.value.trim() || "";
 
-    const cat =
-      $('#post-category')
-        ?.value ||
-      '一言';
+    const content =
+      $("#post-content")?.value.trim() || "";
+
+    const category =
+      $("#post-category")?.value || "general";
+
+    const allowReplies =
+      $("#allow-replies")?.checked ?? true;
+
+    const allowShare =
+      $("#allow-share")?.checked ?? true;
+
+    const imageInput =
+      $("#post-image");
+
+    let image = "";
+
+    if (
+      imageInput &&
+      imageInput.files &&
+      imageInput.files[0]
+    ) {
+      const file =
+        imageInput.files[0];
+
+      if (
+        file.size >
+        3 * 1024 * 1024
+      ) {
+        toast(
+          "画像は3MB以下にしてください。",
+          "error"
+        );
+        return false;
+      }
+
+      image =
+        $("#image-preview")?.dataset.preview ||
+        "";
+    }
 
     if (!content) {
       toast(
-        '本文を入力してください',
-        'error'
+        "本文を入力してください。",
+        "error"
       );
-
-      return;
+      return false;
     }
 
-    const p = {
-      id:uid('post'),
-      userId:me.id,
-      category:cat,
-      title:title || '無題',
+    if (content.length > 5000) {
+      toast(
+        "本文は5000文字以内にしてください。",
+        "error"
+      );
+      return false;
+    }
+
+    const post = {
+      id: uid("post"),
+      userId: state.currentUser.id,
+      username: state.currentUser.username,
+      category,
+      title,
       content,
-      allowReplies:
-        $('#allow-replies')
-          ?.checked !== false,
-      allowShare:
-        $('#allow-share')
-          ?.checked !== false,
-      likes:0,
-      createdAt:now(),
-      deleted:false
+      image,
+      createdAt: new Date().toISOString(),
+      likes: 0,
+      likedBy: [],
+      replies: 0,
+      allowReplies,
+      allowShare
     };
 
-    db.posts.unshift(p);
+    state.posts.push(post);
 
-    save();
+    saveState();
 
-    f.reset();
+    const form =
+      $("#post-form");
 
-    if ($('#post-character-count')) {
-      $('#post-character-count').textContent =
-        '0 / 2000';
+    if (form) {
+      form.reset();
     }
+
+    const preview =
+      $("#image-preview");
+
+    if (preview) {
+      preview.hidden = true;
+      preview.removeAttribute("src");
+      delete preview.dataset.preview;
+    }
+
+    updateCharacterCount();
+    renderPosts();
 
     toast(
-      '投稿しました',
-      'success'
+      "投稿しました！",
+      "success"
     );
 
-    location.hash = '#board';
+    navigate("#board");
 
-    renderPosts();
+    return true;
   }
 
-  function openReport(id) {
-    if (!requireLogin()) return;
-
-    const d =
-      $('#report-dialog');
-
-    const hidden =
-      $('#modal-report-post-id');
-
-    if (hidden) {
-      hidden.value = id;
+  function toggleLike(postId) {
+    if (!state.currentUser) {
+      toast(
+        "いいねするにはログインしてください。",
+        "error"
+      );
+      navigate("#login");
+      return;
     }
 
-    if (d?.showModal) {
-      d.showModal();
+    const post =
+      state.posts.find(
+        p => p.id === postId
+      );
+
+    if (!post) return;
+
+    post.likedBy ||= [];
+
+    const index =
+      post.likedBy.indexOf(
+        state.currentUser.id
+      );
+
+    if (index >= 0) {
+      post.likedBy.splice(index, 1);
+      post.likes =
+        Math.max(
+          0,
+          (post.likes || 0) - 1
+        );
     } else {
+      post.likedBy.push(
+        state.currentUser.id
+      );
 
-      location.hash = '#report';
+      post.likes =
+        (post.likes || 0) + 1;
 
-      if ($('#report-post-id')) {
-        $('#report-post-id').value = id;
+      if (
+        post.userId !==
+        state.currentUser.id
+      ) {
+        addNotification(
+          post.userId,
+          "like",
+          `${state.currentUser.username}さんがあなたの投稿にいいねしました。`
+        );
       }
     }
-  }
 
-  function submitReport(e) {
-    e.preventDefault();
-
-    if (!requireLogin()) return;
-
-    const f =
-      e.currentTarget;
-
-    const isModal =
-      f.id === 'modal-report-form';
-
-    const id =
-      (
-        isModal
-          ? $('#modal-report-post-id')
-          : $('#report-post-id')
-      )?.value;
-
-    const reason =
-      (
-        isModal
-          ? $('#modal-report-reason')
-          : $('#report-reason')
-      )?.value;
-
-    const detail =
-      (
-        isModal
-          ? $('#modal-report-detail')
-          : $('#report-detail')
-      )?.value || '';
-
-    if (!id || !reason) {
-      toast(
-        '通報理由を選択してください',
-        'error'
-      );
-
-      return;
-    }
-
-    if (
-      db.reports.some(
-        r =>
-          r.postId === id &&
-          r.reporterId === currentUser().id &&
-          r.status !== 'closed'
-      )
-    ) {
-      toast(
-        'この投稿はすでに通報しています',
-        'error'
-      );
-
-      return;
-    }
-
-    db.reports.push({
-      id:uid('report'),
-      postId:id,
-      reporterId:currentUser().id,
-      reason,
-      detail,
-      status:'open',
-      createdAt:now()
-    });
-
-    db.notifications.push({
-      id:uid('noti'),
-      userId:'user_admin',
-      type:'report',
-      message:'新しい通報が届きました。',
-      createdAt:now(),
-      read:false
-    });
-
-    save();
-
-    if ($('#report-dialog')?.open) {
-      $('#report-dialog').close();
-    }
-
-    f.reset();
-
-    toast(
-      '通報を送信しました',
-      'success'
-    );
-  }
-
-  function deletePost(id) {
-    if (!requireLogin()) return;
-
-    const p =
-      db.posts.find(
-        x => x.id === id
-      );
-
-    if (!p) return;
-
-    const me =
-      currentUser();
-
-    if (
-      me.id !== p.userId &&
-      !isAdmin()
-    ) {
-      toast(
-        '削除できません',
-        'error'
-      );
-
-      return;
-    }
-
-    if (
-      !confirm(
-        'この投稿を削除しますか？'
-      )
-    ) {
-      return;
-    }
-
-    p.deleted = true;
-
-    save();
-
+    saveState();
     renderPosts();
+    renderNotifications();
+    updateHeaderState();
+  }
+
+  function replyToPost(postId) {
+    const post =
+      state.posts.find(
+        p => p.id === postId
+      );
+
+    if (!post) return;
+
+    if (post.allowReplies === false) {
+      toast(
+        "この投稿は返信できません。",
+        "error"
+      );
+      return;
+    }
+
+    if (!state.currentUser) {
+      toast(
+        "返信するにはログインしてください。",
+        "error"
+      );
+      navigate("#login");
+      return;
+    }
+
+    if (state.currentUser.disableReplies) {
+      toast(
+        "現在、返信が制限されています。",
+        "error"
+      );
+      return;
+    }
+
+    const text =
+      prompt("返信内容を入力してください。");
+
+    if (text === null) return;
+
+    const content =
+      text.trim();
+
+    if (!content) {
+      toast(
+        "返信内容を入力してください。",
+        "error"
+      );
+      return;
+    }
+
+    post.replies =
+      (post.replies || 0) + 1;
+
+    post.replyItems ||= [];
+
+    post.replyItems.push({
+      id: uid("reply"),
+      userId:
+        state.currentUser.id,
+      username:
+        state.currentUser.username,
+      content,
+      createdAt:
+        new Date().toISOString()
+    });
+
+    if (
+      post.userId !==
+      state.currentUser.id
+    ) {
+      addNotification(
+        post.userId,
+        "reply",
+        `${state.currentUser.username}さんがあなたの投稿に返信しました。`
+      );
+    }
+
+    saveState();
+    renderPosts();
+    renderNotifications();
+    updateHeaderState();
 
     toast(
-      '投稿を削除しました',
-      'success'
+      "返信しました。",
+      "success"
     );
   }
 
-  function openShare(id) {
+  function openShare(postId) {
+    const post =
+      state.posts.find(
+        p => p.id === postId
+      );
+
+    if (!post) return;
+
     const url =
-      `${location.origin}${location.pathname}#board?post=${encodeURIComponent(id)}`;
+      `${location.origin}${location.pathname}#post-${encodeURIComponent(post.id)}`;
 
     const input =
-      $('#share-url');
+      $("#share-url");
 
     if (input) {
       input.value = url;
     }
 
-    location.hash = '#share';
+    const dialog =
+      $("#share-dialog");
 
-    if (navigator.clipboard) {
+    if (dialog?.showModal) {
+      dialog.showModal();
+    } else {
+      navigate("#share");
+    }
+  }
+
+  function copyShareUrl() {
+    const input =
+      $("#share-url");
+
+    if (!input) return;
+
+    const url =
+      input.value;
+
+    if (!url) return;
+
+    if (
+      navigator.clipboard &&
+      navigator.clipboard.writeText
+    ) {
       navigator.clipboard
         .writeText(url)
-        .catch(() => {});
+        .then(() => {
+          toast(
+            "共有URLをコピーしました。",
+            "success"
+          );
+        })
+        .catch(() => {
+          fallbackCopy(url);
+        });
+    } else {
+      fallbackCopy(url);
     }
   }
 
-  async function copyShare() {
-    const v =
-      $('#share-url')?.value;
+  function fallbackCopy(text) {
+    const temp =
+      document.createElement("textarea");
 
-    if (!v) return;
+    temp.value = text;
+
+    document.body.appendChild(temp);
+
+    temp.select();
 
     try {
-      await navigator.clipboard.writeText(v);
-
+      document.execCommand("copy");
       toast(
-        'URLをコピーしました',
-        'success'
+        "共有URLをコピーしました。",
+        "success"
       );
-
     } catch {
       toast(
-        'URLを選択してコピーしてください'
+        "コピーできませんでした。",
+        "error"
       );
     }
+
+    temp.remove();
   }
 
-  function renderCategoryList(
-    category,
-    selector
-  ) {
-    const el = $(selector);
-
-    if (!el) return;
-
-    const posts =
-      db.posts
-        .filter(
-          p =>
-            !p.deleted &&
-            p.category === category
-        )
-        .sort(
-          (a,b) =>
-            new Date(b.createdAt) -
-            new Date(a.createdAt)
-        );
-
-    el.innerHTML =
-      posts.map(postCard).join('') ||
-      '<p class="empty-state">投稿はありません。</p>';
-
-    bindPostActions(el);
-  }
-
-  function renderSearchResults(q) {
-    const el =
-      $('#search-results');
-
-    if (!el) return;
-
-    q =
-      (q || '')
-        .trim()
-        .toLowerCase();
-
-    if (!q) {
-      el.innerHTML =
-        '<p class="empty-state">検索キーワードを入力してください。</p>';
-
+  function openReport(postId) {
+    if (!state.currentUser) {
+      toast(
+        "通報するにはログインしてください。",
+        "error"
+      );
+      navigate("#login");
       return;
     }
 
-    const ps =
-      db.posts.filter(
-        p =>
-          !p.deleted &&
-          `${p.title} ${p.content} ${p.category}`
-            .toLowerCase()
-            .includes(q)
+    const idInput =
+      $("#modal-report-post-id");
+
+    if (idInput) {
+      idInput.value = postId;
+    }
+
+    const idInput2 =
+      $("#report-post-id");
+
+    if (idInput2) {
+      idInput2.value = postId;
+    }
+
+    const dialog =
+      $("#report-dialog");
+
+    if (dialog?.showModal) {
+      dialog.showModal();
+    } else {
+      navigate("#report");
+    }
+  }
+
+  function submitReport(
+    postId,
+    reason,
+    detail
+  ) {
+    if (!state.currentUser) {
+      toast(
+        "通報するにはログインしてください。",
+        "error"
+      );
+      return false;
+    }
+
+    const post =
+      state.posts.find(
+        p => p.id === postId
       );
 
-    el.innerHTML =
-      ps.map(postCard).join('') ||
-      '<p class="empty-state">該当する投稿がありません。</p>';
+    if (!post) {
+      toast(
+        "対象の投稿が見つかりません。",
+        "error"
+      );
+      return false;
+    }
 
-    bindPostActions(el);
+    if (!reason) {
+      toast(
+        "通報理由を選択してください。",
+        "error"
+      );
+      return false;
+    }
+
+    const duplicate =
+      state.reports.some(
+        report =>
+          report.postId === postId &&
+          report.userId ===
+            state.currentUser.id &&
+          report.status !== "resolved"
+      );
+
+    if (duplicate) {
+      toast(
+        "この投稿はすでに通報しています。",
+        "error"
+      );
+      return false;
+    }
+
+    state.reports.push({
+      id: uid("report"),
+      postId,
+      userId:
+        state.currentUser.id,
+      username:
+        state.currentUser.username,
+      reason,
+      detail:
+        detail || "",
+      status: "pending",
+      createdAt:
+        new Date().toISOString()
+    });
+
+    saveState();
+
+    toast(
+      "通報を送信しました。",
+      "success"
+    );
+
+    return true;
+  }
+
+  function deletePost(postId) {
+    const post =
+      state.posts.find(
+        p => p.id === postId
+      );
+
+    if (!post) return;
+
+    if (!canDeletePost(post)) {
+      toast(
+        "この投稿を削除する権限がありません。",
+        "error"
+      );
+      return;
+    }
+
+    const confirmed =
+      confirm(
+        "この投稿を削除しますか？"
+      );
+
+    if (!confirmed) return;
+
+    actuallyDeletePost(postId);
+  }
+
+  function actuallyDeletePost(postId) {
+    const post =
+      state.posts.find(
+        p => p.id === postId
+      );
+
+    if (!post) return;
+
+    if (
+      !state.currentUser ||
+      (
+        post.userId !==
+          state.currentUser.id &&
+        state.currentUser.role !== "admin"
+      )
+    ) {
+      toast(
+        "削除する権限がありません。",
+        "error"
+      );
+      return;
+    }
+
+    state.posts =
+      state.posts.filter(
+        p => p.id !== postId
+      );
+
+    saveState();
+
+    renderPosts();
+    renderAdmin();
+    updatePostCount();
+
+    toast(
+      "投稿を削除しました。",
+      "success"
+    );
+  }
+
+  function addNotification(
+    userId,
+    type,
+    message
+  ) {
+    state.notifications.push({
+      id: uid("notification"),
+      userId,
+      type,
+      message,
+      createdAt:
+        new Date().toISOString(),
+      read: false
+    });
   }
 
   function renderNotifications() {
-    const el =
-      $('#notification-list');
+    const list =
+      $("#notification-list");
 
-    if (!el) return;
+    if (!list) return;
 
-    const u =
-      currentUser();
+    const userId =
+      state.currentUser?.id;
 
-    if (!u) {
-      el.innerHTML =
-        '<p class="empty-state">ログインしてください。</p>';
-
+    if (!userId) {
+      list.innerHTML =
+        "<p>ログインすると通知を確認できます。</p>";
       return;
     }
 
-    const ns =
-      db.notifications
+    const items =
+      state.notifications
         .filter(
-          n => n.userId === u.id
+          n => n.userId === userId
         )
         .sort(
-          (a,b) =>
+          (a, b) =>
             new Date(b.createdAt) -
             new Date(a.createdAt)
         );
 
-    el.innerHTML =
-      ns.map(
-        n => `
-          <article
-            class="notification-item ${
-              n.read ? '' : 'unread'
-            }"
-          >
-            <strong>
-              ${esc(n.message)}
-            </strong>
+    if (!items.length) {
+      list.innerHTML =
+        "<p>通知はありません。</p>";
+      return;
+    }
 
-            <time>
-              ${esc(formatDate(n.createdAt))}
-            </time>
-          </article>
-        `
-      ).join('') ||
-      '<p class="empty-state">通知はありません。</p>';
+    list.innerHTML =
+      items
+        .map(
+          item => `
+            <div
+              class="notification-item ${
+                item.read
+                  ? "is-read"
+                  : "is-unread"
+              }"
+            >
+              <p>
+                ${escapeHTML(item.message)}
+              </p>
+
+              <time>
+                ${escapeHTML(
+                  formatDate(
+                    item.createdAt
+                  )
+                )}
+              </time>
+            </div>
+          `
+        )
+        .join("");
   }
 
-  function unreadCount() {
-    const u =
-      currentUser();
+  function markNotificationsRead() {
+    if (!state.currentUser) return;
 
-    return u
-      ? db.notifications.filter(
-          n =>
-            n.userId === u.id &&
-            !n.read
-        ).length
-      : 0;
-  }
+    state.notifications.forEach(
+      notification => {
+        if (
+          notification.userId ===
+          state.currentUser.id
+        ) {
+          notification.read = true;
+        }
+      }
+    );
 
-  function markNotifications() {
-    const u =
-      currentUser();
-
-    if (!u) return;
-
-    db.notifications
-      .filter(
-        n => n.userId === u.id
-      )
-      .forEach(
-        n => n.read = true
-      );
-
-    save();
+    saveState();
 
     renderNotifications();
-
-    updateHeader();
+    updateHeaderState();
 
     toast(
-      '通知を既読にしました'
+      "通知を既読にしました。",
+      "success"
     );
   }
 
-  function renderPrivateBoards() {
-    const el =
-      $('#private-board-list');
+  function searchPosts(query) {
+    const list =
+      $("#search-results");
 
-    if (!el) return;
+    if (!list) return;
 
-    el.innerHTML =
-      db.privateBoards
+    const q =
+      query.trim().toLowerCase();
+
+    if (!q) {
+      list.innerHTML =
+        "<p>検索キーワードを入力してください。</p>";
+      return;
+    }
+
+    const results =
+      state.posts.filter(post => {
+        const text =
+          [
+            post.title,
+            post.content,
+            post.username,
+            categoryName(
+              post.category
+            )
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+
+        return text.includes(q);
+      });
+
+    if (!results.length) {
+      list.innerHTML =
+        "<p>該当する投稿がありません。</p>";
+      return;
+    }
+
+    list.innerHTML =
+      results
         .map(
-          b => `
+          post => `
             <article
-              class="private-board-card"
+              class="search-result"
+              data-post-id="${escapeHTML(post.id)}"
             >
               <h3>
-                ${esc(b.name)}
+                ${escapeHTML(
+                  post.title ||
+                  "無題の投稿"
+                )}
               </h3>
 
               <p>
-                ${esc(b.description || '')}
+                ${escapeHTML(
+                  post.content
+                )}
               </p>
 
-              <span>
-                参加コード:
-                ${esc(b.code)}
-              </span>
+              <small>
+                ${escapeHTML(
+                  post.username
+                )}
+                ・
+                ${escapeHTML(
+                  formatDate(
+                    post.createdAt
+                  )
+                )}
+              </small>
             </article>
           `
         )
-        .join('') ||
-      '<p class="empty-state">非公開掲示板はまだありません。</p>';
+        .join("");
   }
 
-  function createPrivateBoard(e) {
-    e.preventDefault();
-
-    if (!requireLogin()) return;
+  function createPrivateBoard() {
+    if (!state.currentUser) {
+      toast(
+        "限定掲示板を作成するにはログインしてください。",
+        "error"
+      );
+      navigate("#login");
+      return;
+    }
 
     const name =
-      prompt('掲示板名');
+      prompt(
+        "限定掲示板の名前を入力してください。"
+      );
 
-    if (!name) return;
+    if (name === null) return;
 
-    const b = {
-      id:uid('pb'),
-      name,
-      description:'',
-      code:
-        Math.random()
-          .toString(36)
-          .slice(2,8)
-          .toUpperCase(),
-      ownerId:currentUser().id,
-      createdAt:now()
+    const boardName =
+      name.trim();
+
+    if (!boardName) {
+      toast(
+        "掲示板名を入力してください。",
+        "error"
+      );
+      return;
+    }
+
+    const code =
+      Math.random()
+        .toString(36)
+        .slice(2, 8)
+        .toUpperCase();
+
+    const board = {
+      id: uid("private"),
+      name: boardName,
+      code,
+      ownerId:
+        state.currentUser.id,
+      members: [
+        state.currentUser.id
+      ],
+      createdAt:
+        new Date().toISOString()
     };
 
-    db.privateBoards.push(b);
+    state.privateBoards.push(board);
 
-    save();
+    saveState();
+    renderPrivateBoards();
+    renderAdmin();
 
+    alert(
+      `限定掲示板を作成しました。\n参加コード: ${code}`
+    );
+
+    toast(
+      "限定掲示板を作成しました。",
+      "success"
+    );
+  }
+
+  function joinPrivateBoard(code) {
+    if (!state.currentUser) {
+      toast(
+        "限定掲示板に参加するにはログインしてください。",
+        "error"
+      );
+      navigate("#login");
+      return false;
+    }
+
+    const board =
+      state.privateBoards.find(
+        item =>
+          item.code.toUpperCase() ===
+          code.toUpperCase()
+      );
+
+    if (!board) {
+      toast(
+        "参加コードが正しくありません。",
+        "error"
+      );
+      return false;
+    }
+
+    if (
+      !board.members.includes(
+        state.currentUser.id
+      )
+    ) {
+      board.members.push(
+        state.currentUser.id
+      );
+    }
+
+    saveState();
     renderPrivateBoards();
 
     toast(
-      `掲示板を作成しました。コード: ${b.code}`,
-      'success'
+      "限定掲示板に参加しました。",
+      "success"
     );
+
+    return true;
   }
 
-  function joinPrivateBoard(e) {
-    e.preventDefault();
+  function renderPrivateBoards() {
+    const list =
+      $("#private-board-list");
 
-    const code =
-      $('#private-board-code')
-        ?.value
-        .trim()
-        .toUpperCase();
+    if (!list) return;
 
-    const b =
-      db.privateBoards.find(
-        x => x.code === code
-      );
-
-    if (!b) {
-      toast(
-        '掲示板コードが見つかりません',
-        'error'
-      );
-
+    if (!state.currentUser) {
+      list.innerHTML =
+        "<p>ログインすると限定掲示板を利用できます。</p>";
       return;
     }
 
-    toast(
-      `${b.name}に参加しました`,
-      'success'
-    );
-  }
-
-  function login(e) {
-    e.preventDefault();
-
-    const email =
-      $('#login-email')
-        .value
-        .trim()
-        .toLowerCase();
-
-    const pw =
-      $('#login-password')
-        .value;
-
-    if (!email || !pw) return;
-
-    const u =
-      db.users.find(
-        x =>
-          x.email.toLowerCase() === email &&
-          x.password === pw &&
-          x.status !== 'deleted'
+    const boards =
+      state.privateBoards.filter(
+        board =>
+          board.members.includes(
+            state.currentUser.id
+          )
       );
 
-    if (!u) {
-      toast(
-        'メールアドレスまたはパスワードが違います',
-        'error'
-      );
-
+    if (!boards.length) {
+      list.innerHTML =
+        "<p>参加している限定掲示板はありません。</p>";
       return;
     }
 
+    list.innerHTML =
+      boards
+        .map(
+          board => `
+            <article class="private-board-card">
+              <h3>
+                ${escapeHTML(
+                  board.name
+                )}
+              </h3>
+
+              <p>
+                参加者：
+                ${board.members.length}人
+              </p>
+
+              <small>
+                参加コード：
+                ${escapeHTML(
+                  board.code
+                )}
+              </small>
+            </article>
+          `
+        )
+        .join("");
+  }
+
+  function ensureAdmin() {
     if (
-      u.status === 'banned' ||
-      u.status === 'suspended'
+      !state.currentUser ||
+      state.currentUser.role !== "admin"
     ) {
       toast(
-        'このアカウントは現在利用できません',
-        'error'
+        "管理者権限が必要です。",
+        "error"
       );
-
-      return;
+      navigate("#home");
+      return false;
     }
 
-    sessionId = u.id;
-
-    localStorage.setItem(
-      SESSION_KEY,
-      sessionId
-    );
-
-    u.lastLoginAt = now();
-
-    save();
-
-    toast(
-      'ログインしました',
-      'success'
-    );
-
-    location.hash =
-      u.forcePasswordChange
-        ? '#security-settings'
-        : '#home';
-
-    renderAccount();
-    updateHeader();
-  }
-
-  function register(e) {
-    e.preventDefault();
-
-    if (!db.site.registrationEnabled) {
-      toast(
-        '現在、新規登録を停止しています',
-        'error'
-      );
-
-      return;
-    }
-
-    const username =
-      $('#register-username')
-        .value
-        .trim();
-
-    const email =
-      $('#register-email')
-        .value
-        .trim()
-        .toLowerCase();
-
-    const pw =
-      $('#register-password')
-        .value;
-
-    const confirmPw =
-      $('#register-password-confirm')
-        .value;
-
-    if (
-      !username ||
-      !email ||
-      pw.length < 6 ||
-      pw !== confirmPw
-    ) {
-      toast(
-        '入力内容を確認してください（パスワードは6文字以上）',
-        'error'
-      );
-
-      return;
-    }
-
-    if (
-      db.users.some(
-        u =>
-          u.email.toLowerCase() === email
-      )
-    ) {
-      toast(
-        'そのメールアドレスは登録済みです',
-        'error'
-      );
-
-      return;
-    }
-
-    const u = {
-      id:uid('user'),
-      username,
-      email,
-      password:pw,
-      role:'user',
-      status:'active',
-      bio:'',
-      forcePasswordChange:false,
-      disablePosting:false,
-      disableReplies:false,
-      createdAt:now(),
-      lastLoginAt:null,
-      notificationsReadAt:null
-    };
-
-    db.users.push(u);
-
-    save();
-
-    sessionId = u.id;
-
-    localStorage.setItem(
-      SESSION_KEY,
-      sessionId
-    );
-
-    toast(
-      'アカウントを作成しました',
-      'success'
-    );
-
-    location.hash = '#home';
-
-    updateHeader();
-  }
-
-  function logout() {
-    sessionId = null;
-
-    localStorage.removeItem(
-      SESSION_KEY
-    );
-
-    toast(
-      'ログアウトしました',
-      'success'
-    );
-
-    location.hash = '#home';
-
-    updateHeader();
-
-    renderAccount();
-  }
-
-  function updateProfile(e) {
-    e.preventDefault();
-
-    if (!requireLogin()) return;
-
-    const u =
-      currentUser();
-
-    u.username =
-      $('#settings-username')
-        .value
-        .trim() ||
-      u.username;
-
-    u.bio =
-      $('#settings-bio')
-        .value
-        .trim();
-
-    save();
-
-    toast(
-      'プロフィールを更新しました',
-      'success'
-    );
-
-    renderAccount();
-
-    renderProfile(u.id);
-  }
-
-  function changePassword(e) {
-    e.preventDefault();
-
-    if (!requireLogin()) return;
-
-    const u =
-      currentUser();
-
-    const cur =
-      $('#current-password')
-        .value;
-
-    const nw =
-      $('#new-password')
-        .value;
-
-    const cf =
-      $('#new-password-confirm')
-        .value;
-
-    if (
-      u.password !== cur ||
-      nw.length < 6 ||
-      nw !== cf
-    ) {
-      toast(
-        'パスワードを確認してください',
-        'error'
-      );
-
-      return;
-    }
-
-    u.password = nw;
-
-    u.forcePasswordChange = false;
-
-    save();
-
-    e.currentTarget.reset();
-
-    toast(
-      'パスワードを変更しました',
-      'success'
-    );
-  }
-
-  function deleteAccount() {
-    if (!requireLogin()) return;
-
-    const u =
-      currentUser();
-
-    if (
-      !confirm(
-        'アカウントを削除しますか？'
-      )
-    ) {
-      return;
-    }
-
-    u.status = 'deleted';
-
-    u.username =
-      '削除されたユーザー';
-
-    u.email =
-      `deleted_${u.id}@local.invalid`;
-
-    sessionId = null;
-
-    localStorage.removeItem(
-      SESSION_KEY
-    );
-
-    save();
-
-    toast(
-      'アカウントを削除しました'
-    );
-
-    location.hash = '#home';
-
-    updateHeader();
+    return true;
   }
 
   function renderAdmin() {
-    if (!requireAdmin()) return;
+    if (!state.currentUser) return;
 
-    if ($('#admin-user-count')) {
-      $('#admin-user-count').textContent =
-        db.users.filter(
-          u => u.status !== 'deleted'
-        ).length;
+    const isAdmin =
+      state.currentUser.role === "admin";
+
+    const adminPage =
+      $("#admin-page");
+
+    if (adminPage) {
+      adminPage.hidden = !isAdmin;
     }
 
-    if ($('#admin-post-count')) {
-      $('#admin-post-count').textContent =
-        db.posts.filter(
-          p => !p.deleted
-        ).length;
-    }
+    if (!isAdmin) return;
 
-    if ($('#admin-report-count')) {
-      $('#admin-report-count').textContent =
-        db.reports.filter(
-          r => r.status === 'open'
-        ).length;
-    }
+    setText(
+      "admin-user-count",
+      state.users.length
+    );
 
-    if ($('#admin-ban-count')) {
-      $('#admin-ban-count').textContent =
-        db.bans.filter(
-          b =>
-            !b.expiresAt ||
-            new Date(b.expiresAt) >
-              new Date()
-        ).length;
-    }
+    setText(
+      "admin-post-count",
+      state.posts.length
+    );
+
+    setText(
+      "admin-report-count",
+      state.reports.filter(
+        report =>
+          report.status === "pending"
+      ).length
+    );
+
+    setText(
+      "admin-ban-count",
+      state.users.filter(
+        user =>
+          user.status === "banned"
+      ).length
+    );
 
     renderAdminUsers();
     renderAdminPosts();
     renderAdminReports();
-    renderAdminBans();
+    renderIpBans();
     renderAdminBots();
-    renderAdminBoards();
-    renderAdminSettings();
-  }
-
-  function renderAdminUsers(q='') {
-    const el =
-      $('#admin-users-table-body');
-
-    if (!el) return;
-
-    const s =
-      (q || '').toLowerCase();
-
-    const us =
-      db.users.filter(
-        u =>
-          u.status !== 'deleted' &&
-          (
-            !s ||
-            `${u.username} ${u.email} ${u.id}`
-              .toLowerCase()
-              .includes(s)
-          )
-      );
-
-    el.innerHTML =
-      us.map(
-        u => `
-          <tr>
-
-            <td>
-              ${esc(u.username)}
-            </td>
-
-            <td>
-              ${esc(u.id)}
-            </td>
-
-            <td>
-              ${esc(u.email)}
-            </td>
-
-            <td>
-              ${esc(u.role)}
-            </td>
-
-            <td>
-              ${esc(u.status)}
-            </td>
-
-            <td>
-              <button
-                type="button"
-                data-admin-user="${esc(u.id)}"
-              >
-                設定
-              </button>
-            </td>
-
-          </tr>
-        `
-      ).join('') ||
-      `
-        <tr>
-          <td colspan="6">
-            ユーザーが見つかりません。
-          </td>
-        </tr>
-      `;
-
-    $$('[data-admin-user]',el)
-      .forEach(
-        b =>
-          b.onclick = () =>
-            openAdminUser(
-              b.dataset.adminUser
-            )
-      );
-  }
-
-  function openAdminUser(id) {
-    const u =
-      db.users.find(
-        x => x.id === id
-      );
-
-    if (!u) return;
-
-    $('#admin-target-user-id').value =
-      u.id;
-
-    $('#admin-target-username').value =
-      u.username;
-
-    $('#admin-target-status').value =
-      u.status;
-
-    $('#admin-force-password-change').checked =
-      !!u.forcePasswordChange;
-
-    $('#admin-disable-posting').checked =
-      !!u.disablePosting;
-
-    $('#admin-disable-replies').checked =
-      !!u.disableReplies;
-
-    const detail =
-      $('#admin-user-detail');
-
-    if (detail) {
-      detail.hidden = false;
-    }
-  }
-
-  function saveAdminUser(e) {
-    e.preventDefault();
-
-    if (!requireAdmin()) return;
-
-    const id =
-      $('#admin-target-user-id')
-        .value;
-
-    const u =
-      db.users.find(
-        x => x.id === id
-      );
-
-    if (!u) return;
-
-    u.username =
-      $('#admin-target-username')
-        .value
-        .trim() ||
-      u.username;
-
-    u.status =
-      $('#admin-target-status')
-        .value;
-
-    u.forcePasswordChange =
-      $('#admin-force-password-change')
-        .checked;
-
-    u.disablePosting =
-      $('#admin-disable-posting')
-        .checked;
-
-    u.disableReplies =
-      $('#admin-disable-replies')
-        .checked;
-
-    save();
-
-    renderAdmin();
-
-    toast(
-      'ユーザー設定を保存しました',
-      'success'
-    );
+    renderAdminPrivateBoards();
+    loadSettingsForm();
   }
 
   function renderAdminPosts() {
-    const el =
-      $('#admin-post-list');
+    const list =
+      $("#admin-post-list");
 
-    if (!el) return;
+    if (!list) return;
 
-    el.innerHTML =
-      db.posts
-        .filter(
-          p => !p.deleted
+    if (!state.posts.length) {
+      list.innerHTML =
+        "<p>投稿はありません。</p>";
+      return;
+    }
+
+    list.innerHTML =
+      state.posts
+        .slice()
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt) -
+            new Date(a.createdAt)
         )
         .map(
-          p => `
-            <div class="admin-list-item">
+          post => `
+            <article class="admin-post-item">
 
               <div>
                 <strong>
-                  ${esc(p.title)}
+                  ${escapeHTML(
+                    post.title ||
+                    "無題の投稿"
+                  )}
                 </strong>
 
+                <p>
+                  ${escapeHTML(
+                    post.content
+                  )}
+                </p>
+
                 <small>
-                  ${esc(
-                    formatDate(p.createdAt)
+                  ${escapeHTML(
+                    post.username
+                  )}
+                  ・
+                  ${escapeHTML(
+                    formatDate(
+                      post.createdAt
+                    )
                   )}
                 </small>
               </div>
 
               <button
                 type="button"
-                data-admin-delete-post="${esc(p.id)}"
                 class="danger-button"
+                data-admin-delete-post="${escapeHTML(
+                  post.id
+                )}"
               >
                 削除
               </button>
 
-            </div>
+            </article>
           `
         )
-        .join('') ||
-      '<p>投稿はありません。</p>';
-
-    $$(
-      '[data-admin-delete-post]',
-      el
-    ).forEach(
-      b =>
-        b.onclick = () =>
-          deletePost(
-            b.dataset.adminDeletePost
-          )
-    );
+        .join("");
   }
 
   function renderAdminReports() {
-    const el =
-      $('#admin-report-list');
+    const list =
+      $("#admin-report-list");
 
-    if (!el) return;
+    if (!list) return;
 
-    el.innerHTML =
-      db.reports
-        .map(
-          r => {
-
-            const p =
-              db.posts.find(
-                x => x.id === r.postId
-              );
-
-            const u =
-              db.users.find(
-                x => x.id === r.reporterId
-              );
-
-            return `
-              <div
-                class="admin-list-item"
-              >
-
-                <div>
-
-                  <strong>
-                    ${esc(r.reason)}
-                  </strong>
-
-                  <p>
-                    ${esc(
-                      r.detail ||
-                      '詳細なし'
-                    )}
-                  </p>
-
-                  <small>
-                    投稿:
-                    ${esc(
-                      p?.title ||
-                      '削除済み'
-                    )}
-                    /
-                    通報者:
-                    ${esc(
-                      u?.username ||
-                      '-'
-                    )}
-                    /
-                    ${esc(
-                      formatDate(
-                        r.createdAt
-                      )
-                    )}
-                  </small>
-
-                </div>
-
-                <select
-                  data-report-status="${esc(r.id)}"
-                >
-
-                  <option
-                    value="open"
-                    ${
-                      r.status === 'open'
-                        ? 'selected'
-                        : ''
-                    }
-                  >
-                    未対応
-                  </option>
-
-                  <option
-                    value="reviewing"
-                    ${
-                      r.status === 'reviewing'
-                        ? 'selected'
-                        : ''
-                    }
-                  >
-                    確認中
-                  </option>
-
-                  <option
-                    value="closed"
-                    ${
-                      r.status === 'closed'
-                        ? 'selected'
-                        : ''
-                    }
-                  >
-                    対応済み
-                  </option>
-
-                </select>
-
-              </div>
-            `;
-          }
-        )
-        .join('') ||
-      '<p>通報はありません。</p>';
-
-    $$(
-      '[data-report-status]',
-      el
-    ).forEach(
-      s =>
-        s.onchange = () => {
-
-          const r =
-            db.reports.find(
-              x =>
-                x.id ===
-                s.dataset.reportStatus
-            );
-
-          if (r) {
-            r.status = s.value;
-
-            save();
-
-            renderAdmin();
-          }
-        }
-    );
-  }
-
-  function renderAdminBans() {
-    const el =
-      $('#ip-ban-table-body');
-
-    if (!el) return;
-
-    el.innerHTML =
-      db.bans
-        .map(
-          b => `
-            <tr>
-
-              <td>
-                ${esc(b.ip)}
-              </td>
-
-              <td>
-                ${esc(b.reason)}
-              </td>
-
-              <td>
-                ${
-                  b.expiresAt
-                    ? esc(
-                        formatDate(
-                          b.expiresAt
-                        )
-                      )
-                    : '無期限'
-                }
-              </td>
-
-              <td>
-
-                <button
-                  type="button"
-                  data-unban="${esc(b.id)}"
-                >
-                  解除
-                </button>
-
-              </td>
-
-            </tr>
-          `
-        )
-        .join('') ||
-      `
-        <tr>
-          <td colspan="4">
-            BANはありません。
-          </td>
-        </tr>
-      `;
-
-    $$('[data-unban]',el)
-      .forEach(
-        b =>
-          b.onclick = () => {
-
-            db.bans =
-              db.bans.filter(
-                x =>
-                  x.id !==
-                  b.dataset.unban
-              );
-
-            save();
-
-            renderAdmin();
-
-            toast(
-              'IP BANを解除しました',
-              'success'
-            );
-          }
-      );
-  }
-
-  function addBan(e) {
-    e.preventDefault();
-
-    if (!requireAdmin()) return;
-
-    const ip =
-      $('#ban-ip')
-        .value
-        .trim();
-
-    const reason =
-      $('#ban-reason')
-        .value
-        .trim() ||
-      '管理者による制限';
-
-    const duration =
-      $('#ban-duration')
-        .value;
-
-    if (!ip) {
-      toast(
-        'IPアドレスを入力してください',
-        'error'
-      );
-
+    if (!state.reports.length) {
+      list.innerHTML =
+        "<p>通報はありません。</p>";
       return;
     }
 
-    let expiresAt = null;
-
-    if (
-      duration &&
-      duration !== 'permanent'
-    ) {
-      expiresAt =
-        new Date(
-          Date.now() +
-          Number(duration) *
-          3600000
-        ).toISOString();
-    }
-
-    db.bans.push({
-      id:uid('ban'),
-      ip,
-      reason,
-      expiresAt,
-      createdAt:now()
-    });
-
-    save();
-
-    e.currentTarget.reset();
-
-    renderAdmin();
-
-    toast(
-      'IP BANを追加しました',
-      'success'
-    );
-  }
-
-  function renderAdminBots() {
-    const el =
-      $('#admin-bot-list');
-
-    if (!el) return;
-
-    el.innerHTML =
-      db.bots
+    list.innerHTML =
+      state.reports
+        .slice()
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt) -
+            new Date(a.createdAt)
+        )
         .map(
-          b => `
-            <div
-              class="admin-list-item"
-            >
+          report => `
+            <article class="admin-report-item">
 
               <div>
-
                 <strong>
-                  ${esc(b.name)}
+                  ${escapeHTML(
+                    report.reason
+                  )}
                 </strong>
 
                 <p>
-                  ${esc(b.description)}
+                  ${escapeHTML(
+                    report.detail || ""
+                  )}
                 </p>
+
+                <small>
+                  通報者：
+                  ${escapeHTML(
+                    report.username
+                  )}
+                  <br>
+                  投稿日：
+                  ${escapeHTML(
+                    report.postId
+                  )}
+                </small>
+              </div>
+
+              <div class="report-status-actions">
+
+                <button
+                  type="button"
+                  class="secondary-button"
+                  data-report-id="${escapeHTML(
+                    report.id
+                  )}"
+                  data-report-status="reviewing"
+                >
+                  確認中
+                </button>
+
+                <button
+                  type="button"
+                  class="secondary-button"
+                  data-report-id="${escapeHTML(
+                    report.id
+                  )}"
+                  data-report-status="resolved"
+                >
+                  解決済み
+                </button>
+
+                <button
+                  type="button"
+                  class="secondary-button"
+                  data-report-id="${escapeHTML(
+                    report.id
+                  )}"
+                  data-report-status="rejected"
+                >
+                  却下
+                </button>
 
               </div>
 
-              <span>
-                ${
-                  b.status === 'active'
-                    ? '稼働中'
-                    : '停止中'
-                }
-              </span>
-
-            </div>
+            </article>
           `
         )
-        .join('');
+        .join("");
   }
 
-  function createBot(e) {
-    e.preventDefault();
+  function renderAdminBots() {
+    const list =
+      $("#admin-bot-list");
 
-    if (!requireAdmin()) return;
+    if (!list) return;
 
-    const name =
-      $('#bot-name')
-        .value
-        .trim();
+    if (!state.bots.length) {
+      list.innerHTML =
+        "<p>Botはありません。</p>";
+      return;
+    }
 
-    const description =
-      $('#bot-description')
-        .value
-        .trim();
-
-    if (!name) return;
-
-    db.bots.push({
-      id:uid('bot'),
-      name,
-      description,
-      status:'active',
-      createdAt:now()
-    });
-
-    save();
-
-    $('#create-bot-dialog')
-      ?.close();
-
-    e.currentTarget.reset();
-
-    renderAdmin();
-
-    toast(
-      'Botを作成しました',
-      'success'
-    );
-  }
-
-  function renderAdminBoards() {
-    const el =
-      $('#admin-private-board-table-body');
-
-    if (!el) return;
-
-    el.innerHTML =
-      db.privateBoards
+    list.innerHTML =
+      state.bots
         .map(
-          b => `
+          bot => `
+            <article class="admin-bot-item">
+              <strong>
+                ${escapeHTML(
+                  bot.name
+                )}
+              </strong>
+
+              <p>
+                ${escapeHTML(
+                  bot.description || ""
+                )}
+              </p>
+
+              <small>
+                ${escapeHTML(
+                  formatDate(
+                    bot.createdAt
+                  )
+                )}
+              </small>
+            </article>
+          `
+        )
+        .join("");
+  }
+
+  function renderAdminPrivateBoards() {
+    const list =
+      $("#admin-private-board-list");
+
+    if (!list) return;
+
+    if (!state.privateBoards.length) {
+      list.innerHTML =
+        "<p>限定掲示板はありません。</p>";
+      return;
+    }
+
+    list.innerHTML =
+      state.privateBoards
+        .map(
+          board => `
+            <article class="admin-private-board-item">
+              <strong>
+                ${escapeHTML(
+                  board.name
+                )}
+              </strong>
+
+              <p>
+                所有者：
+                ${escapeHTML(
+                  board.ownerId
+                )}
+              </p>
+
+              <p>
+                参加者：
+                ${board.members.length}人
+              </p>
+
+              <small>
+                コード：
+                ${escapeHTML(
+                  board.code
+                )}
+              </small>
+            </article>
+          `
+        )
+        .join("");
+  }
+
+  function renderAdminUsers(
+    query = ""
+  ) {
+    const body =
+      $("#admin-users-table-body");
+
+    if (!body) return;
+
+    const q =
+      query.trim().toLowerCase();
+
+    const users =
+      state.users.filter(user =>
+        !q ||
+        String(user.username)
+          .toLowerCase()
+          .includes(q) ||
+        String(user.email)
+          .toLowerCase()
+          .includes(q) ||
+        String(user.id)
+          .toLowerCase()
+          .includes(q)
+      );
+
+    body.innerHTML =
+      users
+        .map(
+          user => `
             <tr>
 
               <td>
-                ${esc(b.name)}
-              </td>
-
-              <td>
-                ${esc(b.code)}
-              </td>
-
-              <td>
-                ${esc(
-                  formatDate(
-                    b.createdAt
-                  )
+                ${escapeHTML(
+                  user.username
                 )}
+              </td>
+
+              <td>
+                ${escapeHTML(
+                  user.email
+                )}
+              </td>
+
+              <td>
+                ${escapeHTML(
+                  user.role || "user"
+                )}
+              </td>
+
+              <td>
+                ${escapeHTML(
+                  user.status || "active"
+                )}
+              </td>
+
+              <td>
+                <button
+                  type="button"
+                  class="secondary-button"
+                  data-admin-user="${escapeHTML(
+                    user.id
+                  )}"
+                >
+                  管理
+                </button>
               </td>
 
             </tr>
           `
         )
-        .join('') ||
-      `
-        <tr>
-          <td colspan="3">
-            掲示板はありません。
-          </td>
-        </tr>
-      `;
+        .join("");
   }
 
-  function renderAdminSettings() {
-    if (!isAdmin()) return;
+  function renderIpBans() {
+    const body =
+      $("#ip-ban-table-body");
 
-    if ($('#site-name')) {
-      $('#site-name').value =
-        db.site.name;
+    if (!body) return;
+
+    const bans =
+      state.ipBans || [];
+
+    if (!bans.length) {
+      body.innerHTML =
+        `<tr><td colspan="4">IP BANはありません。</td></tr>`;
+      return;
     }
 
-    if ($('#site-description')) {
-      $('#site-description').value =
-        db.site.description;
+    body.innerHTML =
+      bans
+        .map(
+          ban => `
+            <tr>
+
+              <td>
+                ${escapeHTML(
+                  ban.ip
+                )}
+              </td>
+
+              <td>
+                ${escapeHTML(
+                  ban.reason || ""
+                )}
+              </td>
+
+              <td>
+                ${escapeHTML(
+                  ban.duration || ""
+                )}
+              </td>
+
+              <td>
+                <button
+                  type="button"
+                  class="secondary-button"
+                  data-remove-ip-ban="${escapeHTML(
+                    ban.id
+                  )}"
+                >
+                  解除
+                </button>
+              </td>
+
+            </tr>
+          `
+        )
+        .join("");
+  }
+
+  function loadSettingsForm() {
+    if (
+      !state.currentUser ||
+      state.currentUser.role !== "admin"
+    ) {
+      return;
     }
 
-    if ($('#site-registration-enabled')) {
-      $('#site-registration-enabled').checked =
-        db.site.registrationEnabled;
+    const siteName =
+      $("#site-name");
+
+    const siteDescription =
+      $("#site-description");
+
+    const registration =
+      $("#site-registration-enabled");
+
+    const posting =
+      $("#site-posting-enabled");
+
+    const maintenance =
+      $("#site-maintenance-mode");
+
+    if (siteName) {
+      siteName.value =
+        state.settings.siteName || "";
     }
 
-    if ($('#site-posting-enabled')) {
-      $('#site-posting-enabled').checked =
-        db.site.postingEnabled;
+    if (siteDescription) {
+      siteDescription.value =
+        state.settings.siteDescription || "";
     }
 
-    if ($('#site-maintenance-mode')) {
-      $('#site-maintenance-mode').checked =
-        db.site.maintenanceMode;
+    if (registration) {
+      registration.checked =
+        state.settings.registrationEnabled;
+    }
+
+    if (posting) {
+      posting.checked =
+        state.settings.postingEnabled;
+    }
+
+    if (maintenance) {
+      maintenance.checked =
+        state.settings.maintenanceMode;
     }
   }
 
-  function saveSiteSettings(e) {
-    e.preventDefault();
-
-    if (!requireAdmin()) return;
-
-    db.site.name =
-      $('#site-name')
-        .value
-        .trim() ||
-      'KAKIKOMI';
-
-    db.site.description =
-      $('#site-description')
-        .value
-        .trim();
-
-    db.site.registrationEnabled =
-      $('#site-registration-enabled')
-        .checked;
-
-    db.site.postingEnabled =
-      $('#site-posting-enabled')
-        .checked;
-
-    db.site.maintenanceMode =
-      $('#site-maintenance-mode')
-        .checked;
-
-    save();
-
-    applySiteSettings();
-
-    toast(
-      'サイト設定を保存しました',
-      'success'
-    );
-  }
-
-  function applySiteSettings() {
+  function updateSiteTexts() {
     document.title =
-      db.site.name;
+      state.settings.siteName ||
+      "KAKIKOMI";
 
-    if ($('#site-logo')) {
-      $('#site-logo').textContent =
-        db.site.name;
-    }
+    setText(
+      "site-logo",
+      state.settings.siteName ||
+      "KAKIKOMI"
+    );
 
-    const desc =
+    const description =
       document.querySelector(
         'meta[name="description"]'
       );
 
-    if (desc) {
-      desc.content =
-        `${db.site.name} - ${db.site.description}`;
-    }
-
-    const footer =
-      document.querySelector(
-        '.footer-brand p'
-      );
-
-    if (footer) {
-      footer.textContent =
-        db.site.description;
-    }
-
-    if (
-      db.site.maintenanceMode &&
-      !isAdmin()
-    ) {
-      document.body.classList.add(
-        'maintenance-mode'
-      );
-    } else {
-      document.body.classList.remove(
-        'maintenance-mode'
-      );
+    if (description) {
+      description.content =
+        `${state.settings.siteName} - ${state.settings.siteDescription}`;
     }
   }
 
-  function resetDemo() {
-    if (
-      !confirm(
-        'ローカル版のデータを初期状態に戻します。よろしいですか？'
-      )
-    ) {
-      return;
-    }
+  function updateCharacterCount() {
+    const textarea =
+      $("#post-content");
 
-    localStorage.removeItem(KEY);
-    localStorage.removeItem(SESSION_KEY);
+    const counter =
+      $("#post-character-count");
 
-    location.reload();
+    if (!textarea || !counter) return;
+
+    counter.textContent =
+      String(textarea.value.length);
   }
 
-  function fillSettings() {
-    const u =
-      currentUser();
+  function setupImagePreview() {
+    const input =
+      $("#post-image");
 
-    if (!u) return;
+    const preview =
+      $("#image-preview");
 
-    if ($('#settings-username')) {
-      $('#settings-username').value =
-        u.username;
-    }
+    if (!input || !preview) return;
 
-    if ($('#settings-bio')) {
-      $('#settings-bio').value =
-        u.bio || '';
-    }
-  }
+    input.addEventListener(
+      "change",
+      () => {
+        const file =
+          input.files?.[0];
 
-  function wire() {
-    ensureRuntimeUI();
+        if (!file) {
+          preview.hidden = true;
+          preview.removeAttribute("src");
+          delete preview.dataset.preview;
+          return;
+        }
 
-    $('#login-form')
-      ?.addEventListener(
-        'submit',
-        login
-      );
-
-    $('#register-form')
-      ?.addEventListener(
-        'submit',
-        register
-      );
-
-    $('#post-form')
-      ?.addEventListener(
-        'submit',
-        createPost
-      );
-
-    $('#modal-report-form')
-      ?.addEventListener(
-        'submit',
-        submitReport
-      );
-
-    $('#report-form')
-      ?.addEventListener(
-        'submit',
-        submitReport
-      );
-
-    $('#profile-settings-form')
-      ?.addEventListener(
-        'submit',
-        updateProfile
-      );
-
-    $('#change-password-form')
-      ?.addEventListener(
-        'submit',
-        changePassword
-      );
-
-    $('#logout-button')
-      ?.addEventListener(
-        'click',
-        logout
-      );
-
-    $('#delete-account-button')
-      ?.addEventListener(
-        'click',
-        deleteAccount
-      );
-
-    $('#mark-notifications-read')
-      ?.addEventListener(
-        'click',
-        markNotifications
-      );
-
-    $('#copy-share-url')
-      ?.addEventListener(
-        'click',
-        copyShare
-      );
-
-    $('#create-private-board-button')
-      ?.addEventListener(
-        'click',
-        createPrivateBoard
-      );
-
-    $('#join-private-board-form')
-      ?.addEventListener(
-        'submit',
-        joinPrivateBoard
-      );
-
-    $('#admin-user-search-form')
-      ?.addEventListener(
-        'submit',
-        e => {
-
-          e.preventDefault();
-
-          renderAdminUsers(
-            $('#admin-user-search')
-              .value
+        if (
+          !file.type.startsWith(
+            "image/"
+          )
+        ) {
+          toast(
+            "画像ファイルを選択してください。",
+            "error"
           );
+
+          input.value = "";
+          preview.hidden = true;
+          return;
         }
-      );
 
-    $('#admin-user-settings-form')
-      ?.addEventListener(
-        'submit',
-        saveAdminUser
-      );
-
-    $('#ip-ban-form')
-      ?.addEventListener(
-        'submit',
-        addBan
-      );
-
-    $('#admin-site-settings-form')
-      ?.addEventListener(
-        'submit',
-        saveSiteSettings
-      );
-
-    $('#create-bot-form')
-      ?.addEventListener(
-        'submit',
-        createBot
-      );
-
-    $('#create-bot-button')
-      ?.addEventListener(
-        'click',
-        () =>
-          $('#create-bot-dialog')
-            ?.showModal()
-      );
-
-    $$('[data-close-modal]')
-      .forEach(
-        b =>
-          b.addEventListener(
-            'click',
-            () =>
-              document
-                .getElementById(
-                  b.dataset.closeModal
-                )
-                ?.close()
-          )
-      );
-
-    $$('[data-share="copy"]')
-      .forEach(
-        b =>
-          b.addEventListener(
-            'click',
-            copyShare
-          )
-      );
-
-    $$('[data-share="native"]')
-      .forEach(
-        b =>
-          b.addEventListener(
-            'click',
-            async () => {
-
-              const v =
-                $('#share-url')
-                  ?.value;
-
-              if (
-                navigator.share &&
-                v
-              ) {
-                try {
-                  await navigator.share({
-                    title:'KAKIKOMI',
-                    url:v
-                  });
-                } catch {}
-              } else {
-                copyShare();
-              }
-            }
-          )
-      );
-
-    $('#search-form')
-      ?.addEventListener(
-        'submit',
-        e => {
-
-          e.preventDefault();
-
-          renderSearchResults(
-            $('#search-input').value
+        if (
+          file.size >
+          3 * 1024 * 1024
+        ) {
+          toast(
+            "画像は3MB以下にしてください。",
+            "error"
           );
+
+          input.value = "";
+          preview.hidden = true;
+          return;
         }
-      );
 
-    $('#board-category-filter')
-      ?.addEventListener(
-        'change',
-        renderPosts
-      );
+        const reader =
+          new FileReader();
 
-    $('#post-content')
-      ?.addEventListener(
-        'input',
-        e => {
+        reader.onload = event => {
+          const result =
+            event.target.result;
 
-          const n =
-            $('#post-character-count');
+          preview.src =
+            result;
 
-          if (n) {
-            n.textContent =
-              `${e.target.value.length} / 2000`;
-          }
-        }
-      );
+          preview.dataset.preview =
+            result;
 
-    window.addEventListener(
-      'hashchange',
-      route
+          preview.hidden = false;
+        };
+
+        reader.readAsDataURL(file);
+      }
+    );
+  }
+
+  function bindForms() {
+    $("#login-form")?.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
+
+        login(
+          $("#login-email")?.value.trim() || "",
+          $("#login-password")?.value || "",
+          $("#remember-login")?.checked || false
+        );
+      }
     );
 
-    window.addEventListener(
-      'storage',
-      () => {
+    $("#register-form")?.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
 
-        const fresh = load();
+        const agreed =
+          $("#agree-rules")?.checked;
 
-        if (fresh) {
-          db = fresh;
-          route();
+        if (!agreed) {
+          toast(
+            "利用ルールに同意してください。",
+            "error"
+          );
+          return;
+        }
+
+        register(
+          $("#register-username")?.value.trim() || "",
+          $("#register-email")?.value.trim() || "",
+          $("#register-password")?.value || "",
+          $("#register-password-confirm")?.value || ""
+        );
+      }
+    );
+
+    $("#post-form")?.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
+        createPost();
+      }
+    );
+
+    $("#profile-settings-form")?.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
+
+        if (!state.currentUser) {
+          toast(
+            "ログインしてください。",
+            "error"
+          );
+          return;
+        }
+
+        const username =
+          $("#settings-username")?.value.trim();
+
+        const bio =
+          $("#settings-bio")?.value.trim();
+
+        if (!username) {
+          toast(
+            "ユーザー名を入力してください。",
+            "error"
+          );
+          return;
+        }
+
+        const duplicate =
+          state.users.some(
+            user =>
+              user.id !==
+                state.currentUser.id &&
+              user.username.toLowerCase() ===
+                username.toLowerCase()
+          );
+
+        if (duplicate) {
+          toast(
+            "そのユーザー名はすでに使われています。",
+            "error"
+          );
+          return;
+        }
+
+        const user =
+          state.users.find(
+            u =>
+              u.id ===
+              state.currentUser.id
+          );
+
+        if (!user) return;
+
+        user.username =
+          username;
+
+        user.bio =
+          bio || "";
+
+        state.currentUser = {
+          ...user
+        };
+
+        state.posts.forEach(
+          post => {
+            if (
+              post.userId ===
+              user.id
+            ) {
+              post.username =
+                user.username;
+            }
+          }
+        );
+
+        saveState();
+
+        renderAccount();
+        renderPosts();
+        updateHeaderState();
+
+        toast(
+          "プロフィールを更新しました。",
+          "success"
+        );
+      }
+    );
+
+    $("#change-password-form")?.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
+
+        if (!state.currentUser) {
+          toast(
+            "ログインしてください。",
+            "error"
+          );
+          return;
+        }
+
+        const current =
+          $("#current-password")?.value || "";
+
+        const next =
+          $("#new-password")?.value || "";
+
+        const confirmPassword =
+          $("#new-password-confirm")?.value || "";
+
+        const user =
+          state.users.find(
+            u =>
+              u.id ===
+              state.currentUser.id
+          );
+
+        if (!user) return;
+
+        if (
+          user.password !==
+          current
+        ) {
+          toast(
+            "現在のパスワードが違います。",
+            "error"
+          );
+          return;
+        }
+
+        if (
+          next.length < 6
+        ) {
+          toast(
+            "新しいパスワードは6文字以上にしてください。",
+            "error"
+          );
+          return;
+        }
+
+        if (
+          next !==
+          confirmPassword
+        ) {
+          toast(
+            "新しいパスワードが一致しません。",
+            "error"
+          );
+          return;
+        }
+
+        user.password =
+          next;
+
+        user.forcePasswordChange =
+          false;
+
+        state.currentUser = {
+          ...user
+        };
+
+        saveState();
+
+        renderAccount();
+
+        event.target.reset();
+
+        toast(
+          "パスワードを変更しました。",
+          "success"
+        );
+      }
+    );
+
+    $("#report-form")?.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
+
+        const success =
+          submitReport(
+            $("#report-post-id")?.value || "",
+            $("#report-reason")?.value || "",
+            $("#report-detail")?.value.trim() || ""
+          );
+
+        if (success) {
+          event.target.reset();
+          $("#report-dialog")?.close();
+          renderAdmin();
         }
       }
     );
 
-    $$(
-      'a[href="#admin-page"],a[href^="#admin-"]'
-    ).forEach(
-      a =>
-        a.addEventListener(
-          'click',
-          e => {
+    $("#modal-report-form")?.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
 
-            if (!isAdmin()) {
+        const success =
+          submitReport(
+            $("#modal-report-post-id")?.value || "",
+            $("#modal-report-reason")?.value || "",
+            $("#modal-report-detail")?.value.trim() || ""
+          );
 
-              e.preventDefault();
+        if (success) {
+          event.target.reset();
+          $("#report-dialog")?.close();
+          renderAdmin();
+        }
+      }
+    );
 
-              toast(
-                '管理者のみ利用できます',
-                'error'
-              );
+    $("#join-private-board-form")?.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
 
-              location.hash = '#home';
-            }
-          }
-        )
+        const code =
+          $("#private-board-code")?.value.trim() || "";
+
+        if (
+          joinPrivateBoard(code)
+        ) {
+          event.target.reset();
+        }
+      }
+    );
+
+    $("#admin-user-search-form")?.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
+
+        renderAdminUsers(
+          $("#admin-user-search")?.value || ""
+        );
+      }
+    );
+
+    $("#admin-user-settings-form")?.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
+
+        if (!ensureAdmin()) return;
+
+        const id =
+          $("#admin-target-user-id")?.value;
+
+        const user =
+          state.users.find(
+            u => u.id === id
+          );
+
+        if (!user) {
+          toast(
+            "ユーザーが見つかりません。",
+            "error"
+          );
+          return;
+        }
+
+        user.status =
+          $("#admin-target-status")?.value ||
+          "active";
+
+        user.forcePasswordChange =
+          $("#admin-force-password-change")?.checked ||
+          false;
+
+        user.disablePosting =
+          $("#admin-disable-posting")?.checked ||
+          false;
+
+        user.disableReplies =
+          $("#admin-disable-replies")?.checked ||
+          false;
+
+        if (
+          $("#admin-force-logout")?.checked &&
+          state.currentUser?.id === user.id
+        ) {
+          state.currentUser = null;
+        }
+
+        saveState();
+
+        renderAdmin();
+        renderAccount();
+        updateHeaderState();
+
+        toast(
+          "ユーザー設定を保存しました。",
+          "success"
+        );
+      }
+    );
+
+    $("#ip-ban-form")?.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
+
+        if (!ensureAdmin()) return;
+
+        const ip =
+          $("#ban-ip")?.value.trim();
+
+        const reason =
+          $("#ban-reason")?.value.trim();
+
+        const duration =
+          $("#ban-duration")?.value.trim();
+
+        if (!ip) {
+          toast(
+            "IPアドレスを入力してください。",
+            "error"
+          );
+          return;
+        }
+
+        state.ipBans ||= [];
+
+        state.ipBans.push({
+          id: uid("ipban"),
+          ip,
+          reason,
+          duration,
+          createdAt:
+            new Date().toISOString()
+        });
+
+        saveState();
+
+        renderIpBans();
+
+        event.target.reset();
+
+        toast(
+          "IP BANを登録しました。",
+          "success"
+        );
+      }
+    );
+
+    $("#admin-site-settings-form")?.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
+
+        if (!ensureAdmin()) return;
+
+        state.settings.siteName =
+          $("#site-name")?.value.trim() ||
+          "KAKIKOMI";
+
+        state.settings.siteDescription =
+          $("#site-description")?.value.trim() ||
+          "";
+
+        state.settings.registrationEnabled =
+          $("#site-registration-enabled")?.checked ??
+          true;
+
+        state.settings.postingEnabled =
+          $("#site-posting-enabled")?.checked ??
+          true;
+
+        state.settings.maintenanceMode =
+          $("#site-maintenance-mode")?.checked ??
+          false;
+
+        saveState();
+
+        updateSiteTexts();
+
+        toast(
+          "サイト設定を保存しました。",
+          "success"
+        );
+      }
+    );
+
+    $("#create-bot-form")?.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
+
+        if (!ensureAdmin()) return;
+
+        const name =
+          $("#bot-name")?.value.trim();
+
+        const description =
+          $("#bot-description")?.value.trim();
+
+        if (!name) {
+          toast(
+            "Bot名を入力してください。",
+            "error"
+          );
+          return;
+        }
+
+        state.bots.push({
+          id: uid("bot"),
+          name,
+          description,
+          createdAt:
+            new Date().toISOString()
+        });
+
+        saveState();
+
+        renderAdmin();
+
+        event.target.reset();
+
+        $("#create-bot-dialog")?.close();
+
+        toast(
+          "Botを作成しました。",
+          "success"
+        );
+      }
+    );
+
+    $("#delete-account-form")?.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
+
+        if (!state.currentUser) return;
+
+        const id =
+          state.currentUser.id;
+
+        state.users =
+          state.users.filter(
+            user => user.id !== id
+          );
+
+        state.posts =
+          state.posts.filter(
+            post =>
+              post.userId !== id
+          );
+
+        state.notifications =
+          state.notifications.filter(
+            notification =>
+              notification.userId !== id
+          );
+
+        state.currentUser =
+          null;
+
+        saveState();
+
+        $("#delete-account-dialog")?.close();
+
+        renderAccount();
+        renderPosts();
+        updateHeaderState();
+
+        toast(
+          "アカウントを削除しました。"
+        );
+
+        navigate("#home");
+      }
+    );
+
+    $("#search-form")?.addEventListener(
+      "submit",
+      event => {
+        event.preventDefault();
+
+        searchPosts(
+          $("#search-input")?.value || ""
+        );
+      }
+    );
+
+    $("#post-content")?.addEventListener(
+      "input",
+      updateCharacterCount
+    );
+
+    $("#private-board-code")?.addEventListener(
+      "input",
+      event => {
+        event.target.value =
+          event.target.value
+            .toUpperCase()
+            .replace(/[^A-Z0-9]/g, "")
+            .slice(0, 20);
+      }
     );
   }
 
-  document.addEventListener(
-    'DOMContentLoaded',
-    () => {
+  function bindClicks() {
+    document.addEventListener(
+      "click",
+      event => {
+        const closeButton =
+          event.target.closest(
+            "[data-close-modal]"
+          );
 
-      wire();
+        if (closeButton) {
+          const id =
+            closeButton.dataset.closeModal;
 
-      applySiteSettings();
+          const dialog =
+            document.getElementById(id);
 
-      renderAccount();
+          if (dialog?.open) {
+            dialog.close();
+          } else {
+            dialog?.removeAttribute(
+              "open"
+            );
+          }
 
-      fillSettings();
+          return;
+        }
 
-      updateHeader();
+        const actionButton =
+          event.target.closest(
+            "[data-action]"
+          );
 
-      route();
+        if (actionButton) {
+          const action =
+            actionButton.dataset.action;
 
-      console.info(
-        '[KAKIKOMI local] admin:',
-        ADMIN_EMAIL,
-        'password:',
-        ADMIN_PASSWORD
-      );
+          const postId =
+            actionButton.dataset.postId;
+
+          if (action === "like") {
+            toggleLike(postId);
+          }
+
+          if (action === "reply") {
+            replyToPost(postId);
+          }
+
+          if (action === "share") {
+            openShare(postId);
+          }
+
+          if (action === "report") {
+            openReport(postId);
+          }
+
+          if (action === "delete") {
+            deletePost(postId);
+          }
+
+          return;
+        }
+
+        const adminUser =
+          event.target.closest(
+            "[data-admin-user]"
+          );
+
+        if (adminUser) {
+          if (!ensureAdmin()) return;
+
+          const user =
+            state.users.find(
+              u =>
+                u.id ===
+                adminUser.dataset.adminUser
+            );
+
+          if (!user) return;
+
+          $("#admin-target-user-id").value =
+            user.id;
+
+          $("#admin-target-username").value =
+            user.username;
+
+          $("#admin-target-status").value =
+            user.status || "active";
+
+          $("#admin-force-password-change").checked =
+            !!user.forcePasswordChange;
+
+          $("#admin-disable-posting").checked =
+            !!user.disablePosting;
+
+          $("#admin-disable-replies").checked =
+            !!user.disableReplies;
+
+          $("#admin-force-logout").checked =
+            false;
+
+          navigate(
+            "#admin-user-detail"
+          );
+
+          return;
+        }
+
+        const deleteAdminPost =
+          event.target.closest(
+            "[data-admin-delete-post]"
+          );
+
+        if (deleteAdminPost) {
+          if (!ensureAdmin()) return;
+
+          actuallyDeletePost(
+            deleteAdminPost.dataset
+              .adminDeletePost
+          );
+
+          return;
+        }
+
+        const reportStatus =
+          event.target.closest(
+            "[data-report-status]"
+          );
+
+        if (reportStatus) {
+          if (!ensureAdmin()) return;
+
+          const report =
+            state.reports.find(
+              r =>
+                r.id ===
+                reportStatus.dataset
+                  .reportId
+            );
+
+          if (report) {
+            report.status =
+              reportStatus.dataset
+                .reportStatus;
+
+            saveState();
+
+            renderAdmin();
+
+            toast(
+              "通報の状態を更新しました。",
+              "success"
+            );
+          }
+
+          return;
+        }
+
+        const removeBan =
+          event.target.closest(
+            "[data-remove-ip-ban]"
+          );
+
+        if (removeBan) {
+          if (!ensureAdmin()) return;
+
+          state.ipBans =
+            (state.ipBans || []).filter(
+              ban =>
+                ban.id !==
+                removeBan.dataset
+                  .removeIpBan
+            );
+
+          saveState();
+
+          renderIpBans();
+
+          toast(
+            "IP BANを解除しました。",
+            "success"
+          );
+
+          return;
+        }
+
+        if (
+          event.target.closest(
+            "#logout-button"
+          )
+        ) {
+          logout();
+          return;
+        }
+
+        if (
+          event.target.closest(
+            "#notification-button"
+          )
+        ) {
+          navigate(
+            "#notifications"
+          );
+          return;
+        }
+
+        if (
+          event.target.closest(
+            "#mark-notifications-read"
+          )
+        ) {
+          markNotificationsRead();
+          return;
+        }
+
+        if (
+          event.target.closest(
+            "#copy-share-url"
+          )
+        ) {
+          copyShareUrl();
+          return;
+        }
+
+        if (
+          event.target.closest(
+            "#create-private-board-button"
+          )
+        ) {
+          createPrivateBoard();
+          return;
+        }
+
+        if (
+          event.target.closest(
+            "#create-bot-button"
+          )
+        ) {
+          if (!ensureAdmin()) return;
+
+          const dialog =
+            $("#create-bot-dialog");
+
+          if (dialog?.showModal) {
+            dialog.showModal();
+          } else if (dialog) {
+            dialog.setAttribute(
+              "open",
+              ""
+            );
+          }
+
+          return;
+        }
+
+        const category =
+          event.target.closest(
+            "[data-category]"
+          );
+
+        if (category) {
+          state.currentCategory =
+            category.dataset.category;
+
+          renderPosts();
+
+          return;
+        }
+
+        const follow =
+          event.target.closest(
+            "#follow-button"
+          );
+
+        if (follow) {
+          if (!state.currentUser) {
+            toast(
+              "ログインしてください。",
+              "error"
+            );
+
+            navigate("#login");
+
+            return;
+          }
+
+          follow.classList.toggle(
+            "active"
+          );
+
+          const active =
+            follow.classList.contains(
+              "active"
+            );
+
+          toast(
+            active
+              ? "フォローしました。"
+              : "フォローを解除しました。"
+          );
+
+          return;
+        }
+
+        const result =
+          event.target.closest(
+            ".search-result"
+          );
+
+        if (result) {
+          const postId =
+            result.dataset.postId;
+
+          const post =
+            state.posts.find(
+              p => p.id === postId
+            );
+
+          if (post) {
+            state.currentCategory =
+              "all";
+
+            renderPosts();
+
+            navigate("#board");
+
+            setTimeout(() => {
+              const target =
+                document.querySelector(
+                  `[data-post-id="${CSS.escape(
+                    postId
+                  )}"]`
+                );
+
+              if (target) {
+                target.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center"
+                });
+              }
+            }, 100);
+          }
+        }
+      }
+    );
+  }
+
+  function bindCategoryFilter() {
+    const select =
+      $("#board-category");
+
+    if (!select) return;
+
+    select.addEventListener(
+      "change",
+      () => {
+        state.currentCategory =
+          select.value || "all";
+
+        renderPosts();
+      }
+    );
+
+    state.currentCategory =
+      select.value || "all";
+  }
+
+  function autoLogin() {
+    if (
+      localStorage.getItem(
+        "kakikomi_remember"
+      ) !== "1"
+    ) {
+      return;
     }
-  );
 
+    if (!state.currentUser) return;
+
+    const user =
+      state.users.find(
+        u =>
+          u.id ===
+          state.currentUser.id
+      );
+
+    if (
+      !user ||
+      user.status === "banned"
+    ) {
+      state.currentUser =
+        null;
+
+      saveState();
+
+      return;
+    }
+
+    state.currentUser = {
+      ...user
+    };
+  }
+
+  function bindHashNavigation() {
+    window.addEventListener(
+      "hashchange",
+      renderRoute
+    );
+
+    document.addEventListener(
+      "click",
+      event => {
+        const link =
+          event.target.closest(
+            'a[href^="#"]'
+          );
+
+        if (!link) return;
+
+        const href =
+          link.getAttribute("href");
+
+        if (
+          !href ||
+          href === "#"
+        ) {
+          return;
+        }
+
+        const id =
+          href.slice(1);
+
+        if (
+          document.getElementById(id)
+        ) {
+          setTimeout(
+            renderRoute,
+            0
+          );
+        }
+      }
+    );
+  }
+
+  function exposeDebugAPI() {
+    window.KAKIKOMI = {
+      state,
+
+      save: saveState,
+
+      reset() {
+        localStorage.removeItem(
+          STORAGE_KEY
+        );
+
+        localStorage.removeItem(
+          "kakikomi_remember"
+        );
+
+        location.reload();
+      },
+
+      login,
+      logout,
+      register,
+      createPost,
+      deletePost,
+      renderPosts,
+      renderAccount,
+      renderAdmin,
+
+      clearData() {
+        localStorage.removeItem(
+          STORAGE_KEY
+        );
+
+        state.currentUser = null;
+        state.posts = [];
+        state.reports = [];
+        state.notifications = [];
+        state.users = [];
+        state.privateBoards = [];
+        state.bots = [];
+        state.ipBans = [];
+
+        seedData();
+
+        renderAccount();
+        renderPosts();
+        renderAdmin();
+      }
+    };
+  }
+
+  function init() {
+    showLoading(true);
+
+    loadState();
+    seedData();
+    autoLogin();
+
+    bindForms();
+    bindClicks();
+    bindCategoryFilter();
+    bindHashNavigation();
+    setupImagePreview();
+
+    exposeDebugAPI();
+
+    updateSiteTexts();
+    renderAccount();
+    renderPosts();
+    renderNotifications();
+    renderPrivateBoards();
+    renderAdmin();
+    renderAdminUsers();
+    renderAdminPosts();
+    renderAdminReports();
+    renderAdminBots();
+    renderAdminPrivateBoards();
+    renderIpBans();
+    loadSettingsForm();
+    updateCharacterCount();
+    updateHeaderState();
+    renderRoute();
+
+    showLoading(false);
+  }
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      init,
+      { once: true }
+    );
+  } else {
+    init();
+  }
 })();
+```
