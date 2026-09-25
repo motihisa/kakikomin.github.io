@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>KAKIKOMIN</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- ヘッダー -->
+  <header>
+    <h1>KAKIKOMIN</h1>
+
+    <nav>
+      <a href="#home">ホーム</a>
+      <a href="#board">掲示板</a>
+      <a href="#post">投稿する</a>
+    </nav>
+  </header>
+
+
+  <main>
+
+    <!-- ホーム -->
+    <section id="home">
+      <h2>KAKIKOMINへようこそ</h2>
+
+      <p>
+        みんなで自由に書き込める掲示板です。
+      </p>
+    </section>
+
+
+    <!-- 掲示板 -->
+    <section id="board">
+
+      <h2>掲示板</h2>
+
+      <!-- カテゴリー -->
+      <div id="categories">
+
+        <button type="button" data-category="すべて">
+          すべて
+        </button>
+
+        <button type="button" data-category="一言">
+          一言
+        </button>
+
+        <button type="button" data-category="質問">
+          質問
+        </button>
+
+        <button type="button" data-category="相談">
+          相談
+        </button>
+
+        <button type="button" data-category="願い事">
+          願い事
+        </button>
+
+        <button type="button" data-category="ネタ">
+          ネタ
+        </button>
+
+        <button type="button" data-category="その他">
+          その他
+        </button>
+
+      </div>
+
+
+      <!-- 新しい投稿 -->
+      <div id="post-list">
+
+        <article class="post">
+
+          <div class="post-header">
+            <span class="post-category">質問</span>
+            <span class="post-date">2026/09/25</span>
+          </div>
+
+          <p class="post-content">
+            ここに投稿内容が表示されます。
+          </p>
+
+          <div class="post-actions">
+            <button type="button">👍 0</button>
+            <button type="button">返信</button>
+          </div>
+
+        </article>
+
+      </div>
+
+    </section>
+
+
+    <!-- 投稿 -->
+    <section id="post">
+
+      <h2>新しく投稿する</h2>
+
+      <form id="post-form">
+
+        <!-- カテゴリー -->
+        <label for="category">
+          カテゴリー
+        </label>
+
+        <select id="category" required>
+          <option value="">選択してください</option>
+          <option value="一言">一言</option>
+          <option value="質問">質問</option>
+          <option value="相談">相談</option>
+          <option value="願い事">願い事</option>
+          <option value="ネタ">ネタ</option>
+          <option value="その他">その他</option>
+        </select>
+
+
+        <!-- 投稿内容 -->
+        <label for="content">
+          内容
+        </label>
+
+        <textarea
+          id="content"
+          maxlength="1000"
+          placeholder="ここに書き込んでください..."
+          required
+        ></textarea>
+
+
+        <!-- 画像 -->
+        <label for="image">
+          画像を追加
+        </label>
+
+        <input
+          type="file"
+          id="image"
+          accept="image/*"
+        >
+
+
+        <!-- 画像プレビュー -->
+        <div id="image-preview"></div>
+
+
+        <!-- 投稿ボタン -->
+        <button type="submit">
+          投稿する
+        </button>
+
+      </form>
+
+    </section>
+
+  </main>
+
+
+  <!-- フッター -->
+  <footer>
+    <p>© KAKIKOMIN</p>
+  </footer>
+
+
+  <script src="script.js"></script>
+
+</body>
+</html>
