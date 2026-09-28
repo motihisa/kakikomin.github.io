@@ -17,7 +17,7 @@
 
   <title>KAKIKOMI</title>
 
-  <link rel="stylesheet" href="style.css?v=20260927">
+  <link rel="stylesheet" href="style.css?v=20260928-1">
 </head>
 
 <body>
@@ -516,6 +516,7 @@
           <!-- 投稿サンプル -->
 
           <article
+            id="sample-post-1"
             class="post-card"
             data-post-id="sample-post-1"
             data-category="質問"
@@ -566,7 +567,7 @@
             </div>
 
 
-            <div class="post-card-footer" aria-label="投稿アクション">
+            <div class="post-card-footer">
 
               <button
                 type="button"
@@ -3204,320 +3205,97 @@
        MODALS
   ========================================================== -->
 
-
-  <!-- 通報モーダル -->
-
-  <dialog
-    id="report-dialog"
-    class="modal"
-  >
-
-    <form
-      method="dialog"
-      id="modal-report-form"
-    >
-
+  <div id="report-dialog" class="modal" hidden aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="report-dialog"></div>
+    <form id="modal-report-form" class="modal-panel">
       <header class="modal-header">
-
-        <h2>
-          投稿を通報
-        </h2>
-
-        <button
-          type="button"
-          class="modal-close"
-          data-close-modal="report-dialog"
-          aria-label="閉じる"
-        >
-          ×
-        </button>
-
+        <h2>投稿を通報</h2>
+        <button type="button" class="modal-close" data-close-modal="report-dialog" aria-label="閉じる">×</button>
       </header>
-
-
       <div class="modal-body">
-
-        <input
-          type="hidden"
-          id="modal-report-post-id"
-        >
-
-        <label for="modal-report-reason">
-          通報理由
-        </label>
-
-        <select id="modal-report-reason">
-
-          <option value="">
-            選択してください
-          </option>
-
-          <option value="spam">
-            スパム
-          </option>
-
-          <option value="harassment">
-            嫌がらせ
-          </option>
-
-          <option value="inappropriate">
-            不適切な内容
-          </option>
-
-          <option value="other">
-            その他
-          </option>
-
-        </select>
-
-        <label for="modal-report-detail">
-          詳細
-        </label>
-
-        <textarea
-          id="modal-report-detail"
-          maxlength="2000"
-        ></textarea>
-
-      </div>
-
-
-      <footer class="modal-footer">
-
-        <button
-          type="button"
-          class="secondary-button"
-          data-close-modal="report-dialog"
-        >
-          キャンセル
-        </button>
-
-        <button
-          type="submit"
-          class="danger-button"
-        >
-          通報する
-        </button>
-
-      </footer>
-
-    </form>
-
-  </dialog>
-
-
-
-  <!-- 投稿削除確認 -->
-
-  <dialog
-    id="delete-post-dialog"
-    class="modal"
-  >
-
-    <form
-      method="dialog"
-      id="delete-post-form"
-    >
-
-      <header class="modal-header">
-
-        <h2>
-          投稿を削除
-        </h2>
-
-        <button
-          type="button"
-          class="modal-close"
-          data-close-modal="delete-post-dialog"
-        >
-          ×
-        </button>
-
-      </header>
-
-
-      <div class="modal-body">
-
-        <p>
-          この投稿を削除しますか？
-        </p>
-
-        <p>
-          削除した投稿は元に戻せません。
-        </p>
-
-        <input
-          type="hidden"
-          id="delete-post-id"
-        >
-
-      </div>
-
-
-      <footer class="modal-footer">
-
-        <button
-          type="button"
-          class="secondary-button"
-          data-close-modal="delete-post-dialog"
-        >
-          キャンセル
-        </button>
-
-        <button
-          type="submit"
-          class="danger-button"
-        >
-          削除する
-        </button>
-
-      </footer>
-
-    </form>
-
-  </dialog>
-
-
-
-  <!-- アカウント削除確認 -->
-
-  <dialog
-    id="delete-account-dialog"
-    class="modal"
-  >
-
-    <form
-      method="dialog"
-      id="delete-account-form"
-    >
-
-      <header class="modal-header">
-
-        <h2>
-          アカウントを削除
-        </h2>
-
-      </header>
-
-
-      <div class="modal-body">
-
-        <p>
-          アカウントを削除しますか？
-        </p>
-
-        <p>
-          この操作については、実際のSupabase側でも
-          適切な権限確認を行います。
-        </p>
-
-      </div>
-
-
-      <footer class="modal-footer">
-
-        <button
-          type="button"
-          class="secondary-button"
-          data-close-modal="delete-account-dialog"
-        >
-          キャンセル
-        </button>
-
-        <button
-          type="submit"
-          class="danger-button"
-        >
-          削除する
-        </button>
-
-      </footer>
-
-    </form>
-
-  </dialog>
-
-
-
-  <!-- Bot作成 -->
-
-  <dialog
-    id="create-bot-dialog"
-    class="modal"
-  >
-
-    <form
-      method="dialog"
-      id="create-bot-form"
-    >
-
-      <header class="modal-header">
-
-        <h2>
-          Botを作成
-        </h2>
-
-      </header>
-
-
-      <div class="modal-body">
-
+        <input type="hidden" id="modal-report-post-id">
         <div class="form-group">
-
-          <label for="bot-name">
-            Bot名
-          </label>
-
-          <input
-            type="text"
-            id="bot-name"
-            maxlength="50"
-            required
-          >
-
+          <label for="modal-report-reason">通報理由</label>
+          <select id="modal-report-reason" required>
+            <option value="">選択してください</option>
+            <option value="spam">スパム</option>
+            <option value="harassment">嫌がらせ</option>
+            <option value="inappropriate">不適切な内容</option>
+            <option value="other">その他</option>
+          </select>
         </div>
-
-
         <div class="form-group">
-
-          <label for="bot-description">
-            説明
-          </label>
-
-          <textarea
-            id="bot-description"
-            maxlength="500"
-          ></textarea>
-
+          <label for="modal-report-detail">詳細</label>
+          <textarea id="modal-report-detail" maxlength="2000"></textarea>
         </div>
-
       </div>
-
-
       <footer class="modal-footer">
-
-        <button
-          type="button"
-          class="secondary-button"
-          data-close-modal="create-bot-dialog"
-        >
-          キャンセル
-        </button>
-
-        <button
-          type="submit"
-          class="primary-button"
-        >
-          作成
-        </button>
-
+        <button type="button" class="secondary-button" data-close-modal="report-dialog">キャンセル</button>
+        <button type="submit" class="danger-button">通報する</button>
       </footer>
-
     </form>
+  </div>
 
-  </dialog>
+  <div id="delete-post-dialog" class="modal" hidden aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="delete-post-dialog"></div>
+    <form id="delete-post-form" class="modal-panel">
+      <header class="modal-header">
+        <h2>投稿を削除</h2>
+        <button type="button" class="modal-close" data-close-modal="delete-post-dialog" aria-label="閉じる">×</button>
+      </header>
+      <div class="modal-body">
+        <p>この投稿を削除しますか？</p>
+        <p>削除した投稿は元に戻せません。</p>
+        <input type="hidden" id="delete-post-id">
+      </div>
+      <footer class="modal-footer">
+        <button type="button" class="secondary-button" data-close-modal="delete-post-dialog">キャンセル</button>
+        <button type="submit" class="danger-button">削除する</button>
+      </footer>
+    </form>
+  </div>
 
+  <div id="delete-account-dialog" class="modal" hidden aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="delete-account-dialog"></div>
+    <form id="delete-account-form" class="modal-panel">
+      <header class="modal-header">
+        <h2>アカウントを削除</h2>
+        <button type="button" class="modal-close" data-close-modal="delete-account-dialog" aria-label="閉じる">×</button>
+      </header>
+      <div class="modal-body">
+        <p>アカウントを削除しますか？</p>
+        <p>この操作については、実際のSupabase側でも適切な権限確認を行います。</p>
+      </div>
+      <footer class="modal-footer">
+        <button type="button" class="secondary-button" data-close-modal="delete-account-dialog">キャンセル</button>
+        <button type="submit" class="danger-button">削除する</button>
+      </footer>
+    </form>
+  </div>
 
+  <div id="create-bot-dialog" class="modal" hidden aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="create-bot-dialog"></div>
+    <form id="create-bot-form" class="modal-panel">
+      <header class="modal-header">
+        <h2>Botを作成</h2>
+        <button type="button" class="modal-close" data-close-modal="create-bot-dialog" aria-label="閉じる">×</button>
+      </header>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="bot-name">Bot名</label>
+          <input type="text" id="bot-name" maxlength="50" required>
+        </div>
+        <div class="form-group">
+          <label for="bot-description">説明</label>
+          <textarea id="bot-description" maxlength="500"></textarea>
+        </div>
+      </div>
+      <footer class="modal-footer">
+        <button type="button" class="secondary-button" data-close-modal="create-bot-dialog">キャンセル</button>
+        <button type="submit" class="primary-button">作成</button>
+      </footer>
+    </form>
+  </div>
 
   <!-- =========================================================
        TOAST / MESSAGE
@@ -3556,10 +3334,7 @@
   <!-- =========================================================
        JAVASCRIPT
   ========================================================== -->
-
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="script.js"></script>
-
+  <script src="script.js?v=20260928-1"></script>
 </body>
 </html>
