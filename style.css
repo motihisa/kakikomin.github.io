@@ -277,84 +277,92 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
 .rules-content { padding: 22px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
 
 /* ===== modal ===== */
-/* Native <dialog> must be hidden until it has the [open] state. */
-.modal:not([open]) {
-  display: none;
-}
-
-.modal[open] {
+/* Native <dialog> must not be forced visible when closed. */
+dialog.modal {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  z-index: 1000;
-  display: block;
+  inset: 0;
   width: min(620px, calc(100vw - 32px));
-  max-width: calc(100vw - 32px);
+  max-width: 620px;
   max-height: calc(100vh - 32px);
-  margin: 0;
+  margin: auto;
   padding: 0;
-  transform: translate(-50%, -50%);
-  border: 0;
-  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
   color: var(--text);
-  overflow: visible;
+  box-shadow: 0 24px 70px rgba(15,23,42,.22);
+  overflow: hidden;
 }
 
-.modal::backdrop {
-  background: rgba(15, 23, 42, .48);
+dialog.modal:not([open]) {
+  display: none !important;
 }
 
-.modal > form {
+dialog.modal[open] {
+  display: block;
+}
+
+dialog.modal::backdrop {
+  background: rgba(15,23,42,.48);
+}
+
+dialog.modal > form {
   width: 100%;
   max-height: calc(100vh - 32px);
   margin: 0;
-  padding: 0;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
 }
 
 .modal-header,
 .modal-footer {
+  flex: 0 0 auto;
   padding: 16px 20px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 
-.modal-body {
-  padding: 20px;
-  max-height: calc(100vh - 190px);
-  overflow-y: auto;
-}
-
 .modal-header {
+  justify-content: space-between;
   border-bottom: 1px solid var(--border);
 }
 
+.modal-header h2 {
+  margin: 0;
+}
+
+.modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 20px;
+  overflow-y: auto;
+}
+
 .modal-footer {
-  border-top: 1px solid var(--border);
   justify-content: flex-end;
+  border-top: 1px solid var(--border);
 }
 
 .modal-close {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
   border: 0;
+  border-radius: var(--radius-sm);
   background: transparent;
   font-size: 1.3rem;
+  line-height: 1;
   color: var(--text-secondary);
-  cursor: pointer;
 }
 
-/* Individual dialog widths */
-#create-bot-dialog[open] {
-  width: min(430px, calc(100vw - 32px));
-}
-
-#report-dialog[open] {
-  width: min(560px, calc(100vw - 32px));
+.modal-close:hover {
+  background: var(--surface-soft);
+  color: var(--text);
 }
 
 /* ===== admin ===== */
