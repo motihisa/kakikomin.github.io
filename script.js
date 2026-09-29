@@ -1,5 +1,6 @@
 /* =========================================================
    KAKIKOMI - script.js
+   Supabase + Hash Router
    ========================================================= */
 
 (() => {
@@ -15,11 +16,24 @@
   const SUPABASE_KEY =
     "sb_publishable_Mk4N_TF_cynZ53R7nmUyjQ_JeXsZ_Cs";
 
-  const supabase = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-  );
+  const ADMIN_EMAIL =
+    "ywcnbkceqon@admin-account";
 
+  const supabase =
+    window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+  /* =========================================================
+     DOM
+     ========================================================= */
+
+  const $ = (selector, root = document) =>
+    root.querySelector(selector);
+
+  const $$ = (selector, root = document) =>
+    [...root.querySelectorAll(selector)];
 
   /* =========================================================
      STATE
@@ -28,47 +42,27 @@
   const state = {
     user: null,
     profile: null,
-
     posts: [],
-    users: [],
     reports: [],
-
-    currentCategory: "",
+    users: [],
+    likes: [],
+    currentCategory: "all",
     currentSort: "new",
-
-    selectedReportPostId: null
+    currentReportPostId: null
   };
 
-
   /* =========================================================
-     DOM HELPERS
+     COMMON
      ========================================================= */
 
-  const $ = selector =>
-    document.querySelector(selector);
-
-  const $$ = selector =>
-    [...document.querySelectorAll(selector)];
-
-
-  function setText(id, value) {
-    const element = document.getElementById(id);
-
-    if (element) {
-      element.textContent = value ?? "";
-    }
+  function escapeHTML(value = "") {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
   }
-
-
-  function escapeHTML(value) {
-    return String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
 
   function formatDate(value) {
     if (!value) return "";
@@ -81,19 +75,27 @@
 
     return date.toLocaleString("ja-JP", {
       year: "numeric",
-      month: "numeric",
-      day: "numeric",
+      month: "2-digit",
+      day: "2-digit",
       hour: "2-digit",
       minute: "2-digit"
     });
   }
 
+  function setText(id, value) {
+    const element =
+      document.getElementById(id);
 
-  /* =========================================================
-     TOAST
-     ========================================================= */
+    if (element) {
+      element.textContent =
+        value ?? "";
+    }
+  }
 
-  function toast(message, type = "info") {
+  function toast(
+    message,
+    type = "info"
+  ) {
     const container =
       $("#toast-container");
 
@@ -117,11 +119,6 @@
     }, 3500);
   }
 
-
-  /* =========================================================
-     LOADING
-     ========================================================= */
-
   function setLoading(value) {
     const loading =
       $("#global-loading");
@@ -136,41 +133,8 @@
     );
   }
 
-
   /* =========================================================
-     MODAL
-     ========================================================= */
-
-  function openModal(id) {
-    const modal =
-      document.getElementById(id);
-
-    if (!modal) return;
-
-    modal.hidden = false;
-    modal.setAttribute(
-      "aria-hidden",
-      "false"
-    );
-  }
-
-
-  function closeModal(id) {
-    const modal =
-      document.getElementById(id);
-
-    if (!modal) return;
-
-    modal.hidden = true;
-    modal.setAttribute(
-      "aria-hidden",
-      "true"
-    );
-  }
-
-
-  /* =========================================================
-     ROUTER
+     ROUTES
      ========================================================= */
 
   const ROUTES = {
@@ -179,247 +143,274 @@
 
     "login": "login",
 
-    "Create_account": "Create_account",
-    "register": "Create_account",
+    "Create_account":
+      "Create_account",
 
-    "forgot-password": "forgot-password",
+    "register":
+      "Create_account",
 
-    "account": "account",
-    "profile": "profile",
+    "forgot-password":
+      "forgot-password",
 
-    "board": "board",
-    "create-post": "create-post",
+    "account":
+      "account",
 
-    "questions": "questions",
-    "consultations": "consultations",
+    "profile":
+      "profile",
 
-    "search": "search",
+    "board":
+      "board",
 
-    "my-posts": "my-posts",
-    "bookmarks": "bookmarks",
-    "notifications": "notifications",
+    "create-post":
+      "create-post",
 
-    "report": "report",
-    "share": "share",
+    "questions":
+      "questions",
 
-    "private-boards": "private-boards",
+    "consultations":
+      "consultations",
 
-    "account-settings": "account-settings",
-    "security-settings": "security-settings",
+    "search":
+      "search",
 
-    "bot": "bot",
+    "my-posts":
+      "my-posts",
 
-    "rules": "rules",
-    "privacy": "privacy",
-    "contact": "contact",
+    "bookmarks":
+      "bookmarks",
 
-    /* ★ここが重要 */
-    "admin": "admin",
+    "notifications":
+      "notifications",
 
-    "admin-users": "admin-users",
-    "admin-user-detail": "admin-user-detail",
-    "admin-posts": "admin-posts",
-    "admin-reports": "admin-reports",
-    "admin-ip-ban": "admin-ip-ban",
-    "admin-bots": "admin-bots",
-    "admin-private-boards": "admin-private-boards",
-    "admin-site-settings": "admin-site-settings",
+    "report":
+      "report",
 
-    "error-page": "error-page"
+    "share":
+      "share",
+
+    "private-boards":
+      "private-boards",
+
+    "account-settings":
+      "account-settings",
+
+    "security-settings":
+      "security-settings",
+
+    "bot":
+      "bot",
+
+    "rules":
+      "rules",
+
+    "privacy":
+      "privacy",
+
+    "contact":
+      "contact",
+
+    /* ADMIN */
+    "admin":
+      "admin",
+
+    "admin-users":
+      "admin-users",
+
+    "admin-user-detail":
+      "admin-user-detail",
+
+    "admin-posts":
+      "admin-posts",
+
+    "admin-reports":
+      "admin-reports",
+
+    "admin-ip-ban":
+      "admin-ip-ban",
+
+    "admin-bots":
+      "admin-bots",
+
+    "admin-private-boards":
+      "admin-private-boards",
+
+    "admin-site-settings":
+      "admin-site-settings",
+
+    "error-page":
+      "error-page"
   };
-
 
   function getRoute() {
     const hash =
-      location.hash.replace(/^#/, "");
-
-    /*
-      ROUTESに登録されていなくても、
-      HTMLに同じidのページがあれば表示できるようにする。
-    */
+      location.hash.replace(
+        /^#/,
+        ""
+      );
 
     if (ROUTES[hash]) {
       return ROUTES[hash];
     }
 
-    if (hash &&
-        document.getElementById(hash)) {
+    /*
+      HTMLに直接存在するIDなら
+      そのままルートとして使用する
+    */
+    if (
+      hash &&
+      document.getElementById(hash)
+    ) {
       return hash;
     }
 
     return null;
   }
 
-
   function navigate(route) {
     if (!route.startsWith("#")) {
       route = `#${route}`;
     }
 
-    if (location.hash === route) {
+    if (
+      location.hash === route
+    ) {
       renderRoute();
     } else {
       location.hash = route;
     }
   }
 
-
-  async function renderRoute() {
-    const route = getRoute();
-
-    const sections =
-      $$(".page-section");
-
-    sections.forEach(section => {
-      section.hidden = true;
-      section.classList.remove("active");
-    });
-
-
-    if (!route) {
-      const error =
-        $("#error-page");
-
-      if (error) {
-        error.hidden = false;
-        error.classList.add("active");
-      }
-
-      return;
-    }
-
-
-    const target =
-      document.getElementById(route);
-
-
-    if (!target) {
-      const error =
-        $("#error-page");
-
-      if (error) {
-        error.hidden = false;
-        error.classList.add("active");
-      }
-
-      return;
-    }
-
-
-    /*
-      管理者ページはすべて管理者チェック。
-    */
-
-    if (route.startsWith("admin")) {
-      if (!ensureAdmin()) {
-        return;
-      }
-    }
-
-
-    target.hidden = false;
-    target.classList.add("active");
-
-
-    /* ページごとの処理 */
-
-    if (route === "home") {
-      loadPosts();
-    }
-
-
-    if (route === "board") {
-      loadPosts();
-    }
-
-
-    if (route === "profile") {
-      loadProfile();
-    }
-
-
-    if (route === "account") {
-      renderAccount();
-    }
-
-
-    if (route === "my-posts") {
-      loadMyPosts();
-    }
-
-
-    if (route === "bookmarks") {
-      loadBookmarks();
-    }
-
-
-    if (route === "report") {
-      loadReportPage();
-    }
-
-
-    /*
-      ★ admin になった
-      admin-page ではない
-    */
-
-    if (
-      route === "admin" ||
-      route.startsWith("admin-")
-    ) {
-      loadAdminData();
-    }
-
-
-    window.scrollTo({
-      top: 0,
-      behavior: "instant"
-    });
-  }
-
-
   /* =========================================================
      AUTH
      ========================================================= */
 
-  async function loadCurrentUser() {
-    const {
-      data,
-      error
-    } = await supabase.auth.getUser();
+  function isAdmin() {
+    if (!state.user) {
+      return false;
+    }
 
-    if (error) {
+    /*
+      基本はprofiles.roleを使用。
+      さらに指定された管理者メールも
+      管理者として認識する。
+    */
+
+    if (
+      state.profile?.role ===
+      "admin"
+    ) {
+      return true;
+    }
+
+    if (
+      state.user.email ===
+      ADMIN_EMAIL
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function ensureLogin() {
+    if (state.user) {
+      return true;
+    }
+
+    toast(
+      "ログインしてください。",
+      "error"
+    );
+
+    navigate("#login");
+
+    return false;
+  }
+
+  function ensureAdmin() {
+    if (!state.user) {
+      toast(
+        "管理者ページを開くにはログインしてください。",
+        "error"
+      );
+
+      navigate("#login");
+
+      return false;
+    }
+
+    if (!isAdmin()) {
+      toast(
+        "管理者権限が必要です。",
+        "error"
+      );
+
+      navigate("#home");
+
+      return false;
+    }
+
+    return true;
+  }
+
+  async function loadCurrentUser() {
+    try {
+      const {
+        data,
+        error
+      } =
+        await supabase.auth.getUser();
+
+      if (error) {
+        console.error(
+          "getUser:",
+          error
+        );
+
+        state.user = null;
+        state.profile = null;
+
+        updateAuthUI();
+
+        return;
+      }
+
+      state.user =
+        data?.user || null;
+
+      if (!state.user) {
+        state.profile = null;
+        updateAuthUI();
+        return;
+      }
+
+      await loadProfile();
+
+      updateAuthUI();
+
+    } catch (error) {
       console.error(error);
 
       state.user = null;
       state.profile = null;
 
       updateAuthUI();
-
-      return;
     }
-
-
-    state.user =
-      data.user || null;
-
-
-    if (!state.user) {
-      state.profile = null;
-
-      updateAuthUI();
-
-      return;
-    }
-
-
-    await loadProfile();
-
-    updateAuthUI();
   }
 
+  async function login(
+    email,
+    password
+  ) {
+    if (!email || !password) {
+      toast(
+        "メールアドレスとパスワードを入力してください。",
+        "error"
+      );
 
-  async function login(email, password) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -433,29 +424,35 @@
             password
           });
 
-
       if (error) {
         throw error;
       }
 
-
       state.user =
-        data.user;
+        data?.user || null;
 
+      if (!state.user) {
+        throw new Error(
+          "ログイン情報を取得できませんでした。"
+        );
+      }
 
       await loadProfile();
 
+      updateAuthUI();
 
       toast(
         "ログインしました。",
         "success"
       );
 
-
       navigate("#home");
 
     } catch (error) {
-      console.error(error);
+      console.error(
+        "login:",
+        error
+      );
 
       toast(
         error.message ||
@@ -468,12 +465,24 @@
     }
   }
 
-
   async function register(
     username,
     email,
     password
   ) {
+    if (
+      !username ||
+      !email ||
+      !password
+    ) {
+      toast(
+        "必要な項目を入力してください。",
+        "error"
+      );
+
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -481,27 +490,25 @@
         data,
         error
       } =
-        await supabase.auth.signUp({
-          email,
-          password
-        });
-
+        await supabase.auth
+          .signUp({
+            email,
+            password
+          });
 
       if (error) {
         throw error;
       }
 
-
-      if (!data.user) {
+      if (!data?.user) {
         throw new Error(
           "アカウントを作成できませんでした。"
         );
       }
 
-
       /*
-        Supabase AuthのUUIDを
-        profiles.idにも使う。
+        Supabase AuthのUUIDと
+        profiles.idを同じにする
       */
 
       const {
@@ -521,9 +528,11 @@
             }
           );
 
-
       if (profileError) {
-        console.error(profileError);
+        console.error(
+          "profile:",
+          profileError
+        );
 
         toast(
           "アカウントは作成されましたが、プロフィール作成に失敗しました。",
@@ -533,24 +542,25 @@
         return;
       }
 
-
       state.user =
         data.user;
 
-
       await loadProfile();
 
+      updateAuthUI();
 
       toast(
         "アカウントを作成しました。",
         "success"
       );
 
-
       navigate("#home");
 
     } catch (error) {
-      console.error(error);
+      console.error(
+        "register:",
+        error
+      );
 
       toast(
         error.message ||
@@ -563,89 +573,78 @@
     }
   }
 
+  /* =========================================================
+     LOGOUT
+     ========================================================= */
 
   async function logout() {
     setLoading(true);
 
     try {
+      /*
+        Supabaseからログアウト
+      */
       const {
         error
       } =
         await supabase.auth.signOut();
 
-
       if (error) {
         throw error;
       }
 
-
+      /*
+        ローカル状態も必ず消す
+      */
       state.user = null;
       state.profile = null;
+      state.posts = [];
+      state.reports = [];
+      state.users = [];
+      state.likes = [];
+      state.currentReportPostId =
+        null;
 
+      updateAuthUI();
 
       toast(
         "ログアウトしました。",
         "success"
       );
 
-
-      navigate("#home");
+      /*
+        ログイン画面へ
+      */
+      navigate("#login");
 
     } catch (error) {
-      console.error(error);
-
-      toast(
-        "ログアウトに失敗しました。",
-        "error"
+      console.error(
+        "logout:",
+        error
       );
 
-    } finally {
-      setLoading(false);
-    }
-  }
+      /*
+        Supabase側でセッションが
+        既に消えている場合でも
+        ローカル状態を消す
+      */
 
+      state.user = null;
+      state.profile = null;
 
-  async function resetPassword(email) {
-    setLoading(true);
-
-    try {
-      const {
-        error
-      } =
-        await supabase.auth
-          .resetPasswordForEmail(
-            email,
-            {
-              redirectTo:
-                `${location.origin}${location.pathname}#security-settings`
-            }
-          );
-
-
-      if (error) {
-        throw error;
-      }
-
+      updateAuthUI();
 
       toast(
-        "パスワード再設定メールを送信しました。",
+        "ログアウト処理を完了しました。",
         "success"
       );
 
-    } catch (error) {
-      console.error(error);
-
-      toast(
-        error.message ||
-          "メールを送信できませんでした。",
-        "error"
-      );
+      navigate("#login");
 
     } finally {
       setLoading(false);
     }
   }
-
 
   /* =========================================================
      PROFILE
@@ -657,120 +656,162 @@
       return null;
     }
 
+    try {
+      const {
+        data,
+        error
+      } =
+        await supabase
+          .from("profiles")
+          .select("*")
+          .eq(
+            "id",
+            state.user.id
+          )
+          .maybeSingle();
 
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", state.user.id)
-        .maybeSingle();
+      if (error) {
+        console.error(
+          "profile:",
+          error
+        );
 
+        state.profile = null;
 
-    if (error) {
+        return null;
+      }
+
+      /*
+        指定管理者メールなら
+        profileがまだrole=adminでなくても
+        管理者として扱う
+      */
+
+      if (
+        data &&
+        state.user.email ===
+          ADMIN_EMAIL &&
+        data.role !== "admin"
+      ) {
+        data.role = "admin";
+      }
+
+      state.profile = data;
+
+      renderProfile();
+      renderAccount();
+
+      return data;
+
+    } catch (error) {
       console.error(error);
+
       state.profile = null;
+
       return null;
     }
-
-
-    state.profile = data || null;
-
-    updateProfileUI();
-
-    return state.profile;
   }
 
-
-  function updateProfileUI() {
+  function renderProfile() {
     const profile =
       state.profile;
 
+    if (!profile) {
+      return;
+    }
 
-    if (!profile) return;
+    const header =
+      $("#profile-header");
 
+    if (header) {
+      const avatar =
+        header.querySelector(
+          ".large-avatar"
+        );
 
-    setText(
-      "account-username",
-      profile.username ||
-        "ユーザー"
-    );
+      if (avatar) {
+        avatar.textContent =
+          profile.username
+            ?.charAt(0) ||
+          "?";
+      }
 
+      const name =
+        header.querySelector(
+          "h1, h2"
+        );
+
+      if (name) {
+        name.textContent =
+          profile.username ||
+          "ユーザー";
+      }
+    }
 
     setText(
       "profile-username",
-      profile.username ||
-        "ユーザー"
+      profile.username || ""
     );
-
 
     setText(
       "profile-bio",
       profile.bio || ""
     );
-
-
-    const avatarText =
-      (
-        profile.username ||
-        "?"
-      ).charAt(0).toUpperCase();
-
-
-    $$(".large-avatar")
-      .forEach(element => {
-        element.textContent =
-          avatarText;
-      });
-
-
-    const usernameInput =
-      $("#profile-username-input");
-
-    if (
-      usernameInput &&
-      document.activeElement !== usernameInput
-    ) {
-      usernameInput.value =
-        profile.username || "";
-    }
-
-
-    const bioInput =
-      $("#profile-bio-input");
-
-    if (
-      bioInput &&
-      document.activeElement !== bioInput
-    ) {
-      bioInput.value =
-        profile.bio || "";
-    }
   }
 
+  function renderAccount() {
+    const guest =
+      $("#guest-account");
 
-  async function saveProfile() {
+    const loggedIn =
+      $("#logged-in-account");
+
     if (!state.user) {
-      toast(
-        "ログインしてください。",
-        "error"
-      );
+      if (guest) {
+        guest.hidden = false;
+      }
+
+      if (loggedIn) {
+        loggedIn.hidden = true;
+      }
 
       return;
     }
 
+    if (guest) {
+      guest.hidden = true;
+    }
+
+    if (loggedIn) {
+      loggedIn.hidden = false;
+    }
+
+    setText(
+      "account-username",
+      state.profile?.username ||
+        "ユーザー"
+    );
+
+    setText(
+      "account-user-id",
+      `ID: ${state.user.id}`
+    );
+  }
+
+  async function updateProfile() {
+    if (!ensureLogin()) {
+      return;
+    }
 
     const username =
       $("#profile-username-input")
-        ?.value.trim();
-
+        ?.value
+        .trim();
 
     const bio =
       $("#profile-bio-input")
-        ?.value.trim() || "";
-
+        ?.value
+        .trim();
 
     if (!username) {
       toast(
@@ -781,43 +822,24 @@
       return;
     }
 
+    const {
+      error
+    } =
+      await supabase
+        .from("profiles")
+        .update({
+          username,
+          bio,
+          updated_at:
+            new Date()
+              .toISOString()
+        })
+        .eq(
+          "id",
+          state.user.id
+        );
 
-    setLoading(true);
-
-    try {
-      const {
-        data,
-        error
-      } =
-        await supabase
-          .from("profiles")
-          .update({
-            username,
-            bio,
-            updated_at:
-              new Date().toISOString()
-          })
-          .eq("id", state.user.id)
-          .select()
-          .single();
-
-
-      if (error) {
-        throw error;
-      }
-
-
-      state.profile = data;
-
-      updateProfileUI();
-
-
-      toast(
-        "プロフィールを更新しました。",
-        "success"
-      );
-
-    } catch (error) {
+    if (error) {
       console.error(error);
 
       toast(
@@ -825,74 +847,43 @@
         "error"
       );
 
-    } finally {
-      setLoading(false);
-    }
-  }
-
-
-  /* =========================================================
-     ACCOUNT UI
-     ========================================================= */
-
-  function renderAccount() {
-    const guest =
-      $("#guest-account");
-
-    const loggedIn =
-      $("#logged-in-account");
-
-
-    if (!guest || !loggedIn) {
       return;
     }
 
+    await loadProfile();
 
-    if (state.user) {
-      guest.hidden = true;
-      loggedIn.hidden = false;
-
-      updateProfileUI();
-
-    } else {
-      guest.hidden = false;
-      loggedIn.hidden = true;
-    }
+    toast(
+      "プロフィールを更新しました。",
+      "success"
+    );
   }
-
-
-  function updateAuthUI() {
-    const loggedIn =
-      Boolean(state.user);
-
-
-    $$("[data-auth=\"logged-in\"]")
-      .forEach(element => {
-        element.hidden =
-          !loggedIn;
-      });
-
-
-    $$("[data-auth=\"guest\"]")
-      .forEach(element => {
-        element.hidden =
-          loggedIn;
-      });
-
-
-    renderAccount();
-  }
-
 
   /* =========================================================
      POSTS
      ========================================================= */
 
   async function loadPosts() {
+    const list =
+      $("#post-list");
+
+    if (!list) {
+      return;
+    }
+
+    list.innerHTML =
+      "<p>読み込み中...</p>";
+
     let query =
       supabase
         .from("posts")
-        .select("*")
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            username,
+            avatar_url
+          )
+        `)
         .order(
           "created_at",
           {
@@ -900,8 +891,10 @@
           }
         );
 
-
-    if (state.currentCategory) {
+    if (
+      state.currentCategory !==
+      "all"
+    ) {
       query =
         query.eq(
           "category",
@@ -909,235 +902,267 @@
         );
     }
 
-
     const {
       data,
       error
     } = await query;
 
-
     if (error) {
       console.error(error);
 
-      toast(
-        "投稿を読み込めませんでした。",
-        "error"
-      );
+      list.innerHTML =
+        "<p>投稿を読み込めませんでした。</p>";
 
       return;
     }
-
 
     state.posts =
       data || [];
 
+    /*
+      いいね数を取得
+    */
 
-    await attachLikeCounts();
+    for (
+      const post of state.posts
+    ) {
+      const {
+        count
+      } =
+        await supabase
+          .from("likes")
+          .select(
+            "id",
+            {
+              count: "exact",
+              head: true
+            }
+          )
+          .eq(
+            "post_id",
+            post.id
+          );
+
+      post.like_count =
+        count || 0;
+    }
 
     renderPosts();
   }
-
-
-  async function attachLikeCounts() {
-    if (!state.posts.length) {
-      return;
-    }
-
-
-    const postIds =
-      state.posts.map(
-        post => post.id
-      );
-
-
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("likes")
-        .select("post_id")
-        .in("post_id", postIds);
-
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-
-    const counts = {};
-
-
-    (data || []).forEach(row => {
-      counts[row.post_id] =
-        (counts[row.post_id] || 0) + 1;
-    });
-
-
-    state.posts =
-      state.posts.map(post => ({
-        ...post,
-        like_count:
-          counts[post.id] || 0
-      }));
-  }
-
 
   function renderPosts() {
     const list =
       $("#post-list");
 
-    if (!list) return;
-
-
-    let posts =
-      [...state.posts];
-
-
-    if (state.currentSort === "old") {
-      posts.reverse();
+    if (!list) {
+      return;
     }
 
-
-    list.innerHTML =
-      posts.map(post => {
-        const isMine =
-          state.user &&
-          post.user_id === state.user.id;
-
-
-        return `
-          <article class="post-card">
-
-            <div class="post-card-header">
-              <div>
-                <span class="post-category">
-                  ${escapeHTML(post.category)}
-                </span>
-
-                <h2>
-                  ${escapeHTML(post.title)}
-                </h2>
-              </div>
-
-              <time>
-                ${escapeHTML(
-                  formatDate(post.created_at)
-                )}
-              </time>
-            </div>
-
-            <div class="post-card-body">
-              <p>
-                ${escapeHTML(post.content)}
-              </p>
-            </div>
-
-            <div class="post-card-actions">
-
-              <button
-                type="button"
-                data-like-post="${escapeHTML(post.id)}"
-              >
-                ♡ ${post.like_count || 0}
-              </button>
-
-              ${
-                post.allow_replies !== false
-                  ? `
-                    <button
-                      type="button"
-                      data-reply-post="${escapeHTML(post.id)}"
-                    >
-                      返信
-                    </button>
-                  `
-                  : ""
-              }
-
-              ${
-                post.allow_share !== false
-                  ? `
-                    <button
-                      type="button"
-                      data-share-post="${escapeHTML(post.id)}"
-                    >
-                      共有
-                    </button>
-                  `
-                  : ""
-              }
-
-              <button
-                type="button"
-                data-report-post="${escapeHTML(post.id)}"
-              >
-                通報
-              </button>
-
-              ${
-                isMine
-                  ? `
-                    <button
-                      type="button"
-                      data-delete-post="${escapeHTML(post.id)}"
-                      class="danger-button"
-                    >
-                      削除
-                    </button>
-                  `
-                  : ""
-              }
-
-            </div>
-
-          </article>
-        `;
-      }).join("");
-
-
-    const empty =
-      $("#no-posts");
-
-
-    if (empty) {
-      empty.hidden =
-        posts.length !== 0;
-    }
-  }
-
-
-  async function createPost(form) {
-    if (!state.user) {
-      toast(
-        "投稿するにはログインしてください。",
-        "error"
-      );
-
-      navigate("#login");
+    if (!state.posts.length) {
+      list.innerHTML =
+        "<p id=\"no-posts\">投稿はありません。</p>";
 
       return;
     }
 
+    let posts =
+      [...state.posts];
+
+    if (
+      state.currentSort ===
+      "popular"
+    ) {
+      posts.sort(
+        (a, b) =>
+          (b.like_count || 0) -
+          (a.like_count || 0)
+      );
+    }
+
+    list.innerHTML =
+      posts
+        .map(post => {
+          const profile =
+            post.profiles ||
+            {};
+
+          const username =
+            profile.username ||
+            "ユーザー";
+
+          return `
+            <article
+              class="post-card"
+              data-post-id="${escapeHTML(
+                post.id
+              )}"
+            >
+
+              <div class="post-card-header">
+
+                <div class="post-user">
+
+                  <div class="avatar">
+                    ${escapeHTML(
+                      username.charAt(0)
+                    )}
+                  </div>
+
+                  <div>
+                    <strong>
+                      ${escapeHTML(
+                        username
+                      )}
+                    </strong>
+
+                    <small>
+                      ${escapeHTML(
+                        formatDate(
+                          post.created_at
+                        )
+                      )}
+                    </small>
+                  </div>
+
+                </div>
+
+                ${
+                  state.user &&
+                  state.user.id ===
+                    post.user_id
+                    ? `
+                      <button
+                        type="button"
+                        class="post-menu-button"
+                        data-delete-post="${escapeHTML(
+                          post.id
+                        )}"
+                      >
+                        削除
+                      </button>
+                    `
+                    : ""
+                }
+
+              </div>
+
+              <div class="post-card-body">
+
+                <span class="post-category">
+                  ${escapeHTML(
+                    post.category
+                  )}
+                </span>
+
+                <h2>
+                  ${escapeHTML(
+                    post.title
+                  )}
+                </h2>
+
+                <p>
+                  ${escapeHTML(
+                    post.content
+                  )}
+                </p>
+
+              </div>
+
+              <footer class="post-card-footer">
+
+                <button
+                  type="button"
+                  class="post-action"
+                  data-like-post="${escapeHTML(
+                    post.id
+                  )}"
+                >
+                  いいね
+                  <span class="like-count">
+                    ${post.like_count || 0}
+                  </span>
+                </button>
+
+                ${
+                  post.allow_replies !==
+                  false
+                    ? `
+                      <button
+                        type="button"
+                        class="post-action"
+                        data-reply-post="${escapeHTML(
+                          post.id
+                        )}"
+                      >
+                        返信
+                      </button>
+                    `
+                    : ""
+                }
+
+                ${
+                  post.allow_share !==
+                  false
+                    ? `
+                      <button
+                        type="button"
+                        class="post-action"
+                        data-share-post="${escapeHTML(
+                          post.id
+                        )}"
+                      >
+                        共有
+                      </button>
+                    `
+                    : ""
+                }
+
+                <button
+                  type="button"
+                  class="post-action"
+                  data-report-post="${escapeHTML(
+                    post.id
+                  )}"
+                >
+                  通報
+                </button>
+
+              </footer>
+
+            </article>
+          `;
+        })
+        .join("");
+  }
+
+  async function createPost() {
+    if (!ensureLogin()) {
+      return;
+    }
 
     const category =
-      $("#post-category")?.value;
+      $("#post-category")
+        ?.value;
 
     const title =
-      $("#post-title")?.value.trim();
+      $("#post-title")
+        ?.value
+        .trim();
 
     const content =
-      $("#post-content")?.value.trim();
+      $("#post-content")
+        ?.value
+        .trim();
 
     const allowReplies =
-      $("#allow-replies")?.checked ??
+      $("#allow-replies")
+        ?.checked ??
       true;
 
     const allowShare =
-      $("#allow-share")?.checked ??
+      $("#allow-share")
+        ?.checked ??
       true;
-
 
     if (
       !category ||
@@ -1152,7 +1177,6 @@
       return;
     }
 
-
     setLoading(true);
 
     try {
@@ -1164,34 +1188,27 @@
           .insert({
             user_id:
               state.user.id,
-
             category,
             title,
             content,
-
+            image_url: null,
             allow_replies:
               allowReplies,
-
             allow_share:
               allowShare
           });
-
 
       if (error) {
         throw error;
       }
 
-
-      form.reset();
-
+      $("#post-form")
+        ?.reset();
 
       toast(
         "投稿しました。",
         "success"
       );
-
-
-      await loadPosts();
 
       navigate("#board");
 
@@ -1209,10 +1226,37 @@
     }
   }
 
+  async function deletePost(
+    postId
+  ) {
+    if (!state.user) {
+      return;
+    }
 
-  async function deletePost(postId) {
-    if (!state.user) return;
+    const post =
+      state.posts.find(
+        item =>
+          item.id === postId
+      );
 
+    if (
+      !post
+    ) {
+      return;
+    }
+
+    if (
+      post.user_id !==
+        state.user.id &&
+      !isAdmin()
+    ) {
+      toast(
+        "この投稿を削除する権限がありません。",
+        "error"
+      );
+
+      return;
+    }
 
     if (
       !confirm(
@@ -1222,37 +1266,18 @@
       return;
     }
 
+    const {
+      error
+    } =
+      await supabase
+        .from("posts")
+        .delete()
+        .eq(
+          "id",
+          postId
+        );
 
-    setLoading(true);
-
-    try {
-      const {
-        error
-      } =
-        await supabase
-          .from("posts")
-          .delete()
-          .eq("id", postId)
-          .eq(
-            "user_id",
-            state.user.id
-          );
-
-
-      if (error) {
-        throw error;
-      }
-
-
-      toast(
-        "投稿を削除しました。",
-        "success"
-      );
-
-
-      await loadPosts();
-
-    } catch (error) {
+    if (error) {
       console.error(error);
 
       toast(
@@ -1260,52 +1285,73 @@
         "error"
       );
 
-    } finally {
-      setLoading(false);
-    }
-  }
-
-
-  async function likePost(postId) {
-    if (!state.user) {
-      toast(
-        "いいねするにはログインしてください。",
-        "error"
-      );
-
       return;
     }
 
+    toast(
+      "投稿を削除しました。",
+      "success"
+    );
+
+    await loadPosts();
+  }
+
+  /* =========================================================
+     LIKE
+     ========================================================= */
+
+  async function likePost(
+    postId
+  ) {
+    if (!ensureLogin()) {
+      return;
+    }
 
     const {
       data: existing,
-      error: findError
+      error: checkError
     } =
       await supabase
         .from("likes")
         .select("id")
-        .eq("post_id", postId)
+        .eq(
+          "post_id",
+          postId
+        )
         .eq(
           "user_id",
           state.user.id
         )
         .maybeSingle();
 
+    if (checkError) {
+      console.error(
+        checkError
+      );
 
-    if (findError) {
-      console.error(findError);
+      toast(
+        "いいねを確認できませんでした。",
+        "error"
+      );
+
       return;
     }
 
-
     if (existing) {
-      await supabase
-        .from("likes")
-        .delete()
-        .eq(
-          "id",
-          existing.id
-        );
+      const {
+        error
+      } =
+        await supabase
+          .from("likes")
+          .delete()
+          .eq(
+            "id",
+            existing.id
+          );
+
+      if (error) {
+        console.error(error);
+      }
 
     } else {
       const {
@@ -1314,43 +1360,61 @@
         await supabase
           .from("likes")
           .insert({
-            post_id: postId,
+            post_id:
+              postId,
             user_id:
               state.user.id
           });
-
 
       if (error) {
         console.error(error);
       }
     }
 
-
     await loadPosts();
   }
 
+  /* =========================================================
+     REPLY
+     ========================================================= */
 
-  async function replyToPost(postId) {
-    if (!state.user) {
+  async function replyToPost(
+    postId
+  ) {
+    if (!ensureLogin()) {
+      return;
+    }
+
+    const post =
+      state.posts.find(
+        item =>
+          item.id === postId
+      );
+
+    if (
+      post &&
+      post.allow_replies ===
+        false
+    ) {
       toast(
-        "返信するにはログインしてください。",
+        "この投稿では返信できません。",
         "error"
       );
 
       return;
     }
 
-
     const content =
       prompt(
         "返信内容を入力してください。"
       );
 
-
-    if (!content?.trim()) {
+    if (
+      !content ||
+      !content.trim()
+    ) {
       return;
     }
-
 
     const {
       error
@@ -1358,13 +1422,13 @@
       await supabase
         .from("replies")
         .insert({
-          post_id: postId,
+          post_id:
+            postId,
           user_id:
             state.user.id,
           content:
             content.trim()
         });
-
 
     if (error) {
       console.error(error);
@@ -1377,65 +1441,180 @@
       return;
     }
 
-
     toast(
       "返信しました。",
       "success"
     );
   }
 
-
   /* =========================================================
-     SHARE
+     SEARCH
      ========================================================= */
 
-  async function sharePost(postId) {
-    const url =
-      `${location.origin}${location.pathname}#board`;
+  async function searchPosts(
+    keyword
+  ) {
+    const result =
+      $("#search-results");
 
-
-    try {
-      await navigator.clipboard.writeText(url);
-
-      toast(
-        "投稿ページのURLをコピーしました。",
-        "success"
-      );
-
-    } catch {
-      prompt(
-        "URLをコピーしてください。",
-        url
-      );
+    if (!result) {
+      return;
     }
-  }
 
+    keyword =
+      String(keyword || "")
+        .trim();
+
+    if (!keyword) {
+      result.innerHTML =
+        "<p>検索キーワードを入力してください。</p>";
+
+      return;
+    }
+
+    result.innerHTML =
+      "<p>検索中...</p>";
+
+    /*
+      ilikeに特殊文字が入っても
+      できるだけ安全に扱う
+    */
+
+    const safeKeyword =
+      keyword
+        .replaceAll("%", "")
+        .replaceAll(",", " ");
+
+    const {
+      data,
+      error
+    } =
+      await supabase
+        .from("posts")
+        .select(`
+          *,
+          profiles:user_id (
+            username
+          )
+        `)
+        .or(
+          `title.ilike.%${safeKeyword}%,content.ilike.%${safeKeyword}%`
+        )
+        .order(
+          "created_at",
+          {
+            ascending: false
+          }
+        );
+
+    if (error) {
+      console.error(error);
+
+      result.innerHTML =
+        "<p>検索に失敗しました。</p>";
+
+      return;
+    }
+
+    if (!data?.length) {
+      result.innerHTML =
+        "<p>該当する投稿はありません。</p>";
+
+      return;
+    }
+
+    result.innerHTML =
+      data
+        .map(post => `
+          <article
+            class="search-result-item"
+          >
+
+            <span>
+              ${escapeHTML(
+                post.category
+              )}
+            </span>
+
+            <h2>
+              ${escapeHTML(
+                post.title
+              )}
+            </h2>
+
+            <p>
+              ${escapeHTML(
+                post.content
+              )}
+            </p>
+
+            <small>
+              ${escapeHTML(
+                post.profiles
+                  ?.username ||
+                "ユーザー"
+              )}
+              ・
+              ${escapeHTML(
+                formatDate(
+                  post.created_at
+                )
+              )}
+            </small>
+
+          </article>
+        `)
+        .join("");
+  }
 
   /* =========================================================
      REPORT
      ========================================================= */
 
-  function reportPost(postId) {
-    state.selectedReportPostId =
-      postId;
+  async function openReportPage(
+    postId
+  ) {
+    if (!ensureLogin()) {
+      return;
+    }
+
+    state.currentReportPostId =
+      postId || null;
 
     navigate("#report");
+
+    setTimeout(
+      () => {
+        loadReportPosts();
+
+        if (postId) {
+          setTimeout(
+            () => {
+              const select =
+                $("#report-post-select");
+
+              if (select) {
+                select.value =
+                  postId;
+
+                updateReportPreview();
+              }
+            },
+            100
+          );
+        }
+      },
+      50
+    );
   }
 
-
-  async function loadReportPage() {
-    const boardSelect =
-      $("#report-board-select");
-
-    const postSelect =
+  async function loadReportPosts() {
+    const select =
       $("#report-post-select");
 
-    const hiddenPost =
-      $("#report-post-id");
-
-    const preview =
-      $("#report-post-preview");
-
+    if (!select) {
+      return;
+    }
 
     const {
       data,
@@ -1443,7 +1622,13 @@
     } =
       await supabase
         .from("posts")
-        .select("*")
+        .select(`
+          id,
+          title,
+          content,
+          category,
+          created_at
+        `)
         .order(
           "created_at",
           {
@@ -1451,679 +1636,233 @@
           }
         );
 
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-
-    const posts =
-      data || [];
-
-
-    /*
-      掲示板 = カテゴリーとして扱う
-    */
-
-    if (boardSelect) {
-      const categories =
-        [...new Set(
-          posts.map(
-            post => post.category
-          )
-        )];
-
-
-      boardSelect.innerHTML =
-        `<option value="">すべて</option>` +
-        categories.map(
-          category => `
-            <option value="${escapeHTML(category)}">
-              ${escapeHTML(category)}
-            </option>
-          `
-        ).join("");
-    }
-
-
-    const selectedId =
-      state.selectedReportPostId ||
-      hiddenPost?.value ||
-      "";
-
-
-    function updatePostOptions() {
-      if (!postSelect) return;
-
-
-      const category =
-        boardSelect?.value || "";
-
-
-      const filtered =
-        category
-          ? posts.filter(
-              post =>
-                post.category ===
-                category
-            )
-          : posts;
-
-
-      postSelect.innerHTML =
-        `<option value="">投稿を選択してください</option>` +
-        filtered.map(
-          post => `
-            <option value="${escapeHTML(post.id)}">
-              ${escapeHTML(post.title)}
-            </option>
-          `
-        ).join("");
-
-
-      if (
-        selectedId &&
-        filtered.some(
-          post =>
-            post.id === selectedId
-        )
-      ) {
-        postSelect.value =
-          selectedId;
-      }
-
-
-      updateReportPreview();
-    }
-
-
-    function updateReportPreview() {
-      const id =
-        postSelect?.value || "";
-
-
-      if (hiddenPost) {
-        hiddenPost.value = id;
-      }
-
-
-      state.selectedReportPostId =
-        id || null;
-
-
-      const post =
-        posts.find(
-          item =>
-            item.id === id
-        );
-
-
-      if (!preview) return;
-
-
-      if (!post) {
-        preview.innerHTML =
-          "投稿を選択してください。";
-
-        return;
-      }
-
-
-      preview.innerHTML = `
-        <strong>
-          ${escapeHTML(post.title)}
-        </strong>
-
-        <p>
-          ${escapeHTML(post.content)}
-        </p>
-      `;
-    }
-
-
-    boardSelect?.addEventListener(
-      "change",
-      updatePostOptions
-    );
-
-
-    postSelect?.addEventListener(
-      "change",
-      updateReportPreview
-    );
-
-
-    updatePostOptions();
-  }
-
-
-  async function submitReport(form) {
-    if (!state.user) {
-      toast(
-        "通報するにはログインしてください。",
-        "error"
-      );
-
-      navigate("#login");
-
-      return;
-    }
-
-
-    const postId =
-      $("#report-post-id")?.value ||
-      $("#report-post-select")?.value;
-
-
-    const reason =
-      $("#report-reason")?.value;
-
-
-    const detail =
-      $("#report-detail")?.value.trim() ||
-      "";
-
-
-    if (!postId) {
-      toast(
-        "通報する投稿を選択してください。",
-        "error"
-      );
-
-      return;
-    }
-
-
-    if (!reason) {
-      toast(
-        "通報理由を選択してください。",
-        "error"
-      );
-
-      return;
-    }
-
-
-    setLoading(true);
-
-    try {
-      const {
-        error
-      } =
-        await supabase
-          .from("reports")
-          .insert({
-            reporter_id:
-              state.user.id,
-
-            post_id: postId,
-
-            reason,
-
-            detail,
-
-            status: "pending"
-          });
-
-
-      if (error) {
-        throw error;
-      }
-
-
-      form.reset();
-
-
-      if ($("#report-post-id")) {
-        $("#report-post-id").value = "";
-      }
-
-
-      state.selectedReportPostId =
-        null;
-
-
-      toast(
-        "通報を送信しました。",
-        "success"
-      );
-
-
-      navigate("#home");
-
-    } catch (error) {
-      console.error(error);
-
-      toast(
-        error.message ||
-          "通報を送信できませんでした。",
-        "error"
-      );
-
-    } finally {
-      setLoading(false);
-    }
-  }
-
-
-  /* =========================================================
-     MY POSTS
-     ========================================================= */
-
-  async function loadMyPosts() {
-    if (!state.user) {
-      navigate("#login");
-      return;
-    }
-
-
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("posts")
-        .select("*")
-        .eq(
-          "user_id",
-          state.user.id
-        )
-        .order(
-          "created_at",
-          {
-            ascending: false
-          }
-        );
-
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-
-    const list =
-      $("#my-post-list");
-
-    const empty =
-      $("#my-posts-empty");
-
-
-    if (!list) return;
-
-
-    if (!data?.length) {
-      list.innerHTML = "";
-
-      if (empty) {
-        empty.hidden = false;
-      }
-
-      return;
-    }
-
-
-    if (empty) {
-      empty.hidden = true;
-    }
-
-
-    list.innerHTML =
-      data.map(post => `
-        <article class="post-card">
-
-          <span class="post-category">
-            ${escapeHTML(post.category)}
-          </span>
-
-          <h2>
-            ${escapeHTML(post.title)}
-          </h2>
-
-          <p>
-            ${escapeHTML(post.content)}
-          </p>
-
-          <time>
-            ${escapeHTML(
-              formatDate(post.created_at)
-            )}
-          </time>
-
-          <button
-            type="button"
-            class="danger-button"
-            data-delete-post="${escapeHTML(post.id)}"
-          >
-            削除
-          </button>
-
-        </article>
-      `).join("");
-  }
-
-
-  /* =========================================================
-     BOOKMARKS
-     ========================================================= */
-
-  async function loadBookmarks() {
-    /*
-      現在のDBにはbookmarksテーブルがないため、
-      ここでは空状態として表示する。
-    */
-
-    const list =
-      $("#bookmark-list");
-
-    const empty =
-      $("#bookmarks-empty");
-
-
-    if (list) {
-      list.innerHTML = "";
-    }
-
-
-    if (empty) {
-      empty.hidden = false;
-    }
-  }
-
-
-  /* =========================================================
-     SEARCH
-     ========================================================= */
-
-  async function searchPosts(keyword) {
-    const list =
-      $("#search-results") ||
-      $("#post-list");
-
-
-    if (!list) return;
-
-
-    const text =
-      keyword.trim();
-
-
-    if (!text) {
-      await loadPosts();
-      return;
-    }
-
-
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("posts")
-        .select("*")
-        .or(
-          `title.ilike.%${text}%,content.ilike.%${text}%`
-        )
-        .order(
-          "created_at",
-          {
-            ascending: false
-          }
-        );
-
-
     if (error) {
       console.error(error);
 
-      toast(
-        "検索に失敗しました。",
-        "error"
-      );
-
       return;
     }
-
 
     state.posts =
       data || [];
 
+    select.innerHTML =
+      `<option value="">
+        投稿を選択してください
+      </option>`;
 
-    renderPosts();
-  }
+    state.posts.forEach(
+      post => {
+        const option =
+          document.createElement(
+            "option"
+          );
 
+        option.value =
+          post.id;
 
-  /* =========================================================
-     PASSWORD
-     ========================================================= */
+        option.textContent =
+          `[${post.category}] ${post.title}`;
 
-  async function changePassword() {
-    if (!state.user) {
-      toast(
-        "ログインしてください。",
-        "error"
-      );
-
-      return;
-    }
-
-
-    const currentPassword =
-      $("#current-password")?.value;
-
-    const newPassword =
-      $("#new-password")?.value;
-
-    const confirmPassword =
-      $("#new-password-confirm")?.value;
-
-
-    if (
-      !currentPassword ||
-      !newPassword ||
-      !confirmPassword
-    ) {
-      toast(
-        "必要な項目を入力してください。",
-        "error"
-      );
-
-      return;
-    }
-
-
-    if (
-      newPassword !==
-      confirmPassword
-    ) {
-      toast(
-        "新しいパスワードが一致しません。",
-        "error"
-      );
-
-      return;
-    }
-
-
-    setLoading(true);
-
-    try {
-      const {
-        error: loginError
-      } =
-        await supabase.auth
-          .signInWithPassword({
-            email:
-              state.user.email,
-            password:
-              currentPassword
-          });
-
-
-      if (loginError) {
-        throw new Error(
-          "現在のパスワードが正しくありません。"
+        select.appendChild(
+          option
         );
       }
+    );
 
+    if (
+      state.currentReportPostId
+    ) {
+      select.value =
+        state.currentReportPostId;
 
-      const {
-        error
-      } =
-        await supabase.auth
-          .updateUser({
-            password:
-              newPassword
-          });
+      updateReportPreview();
+    }
+  }
 
+  function updateReportPreview() {
+    const select =
+      $("#report-post-select");
 
-      if (error) {
-        throw error;
-      }
+    const preview =
+      $("#report-post-preview");
 
+    if (
+      !select ||
+      !preview
+    ) {
+      return;
+    }
 
-      toast(
-        "パスワードを変更しました。",
-        "success"
+    const post =
+      state.posts.find(
+        item =>
+          item.id ===
+          select.value
       );
 
+    if (!post) {
+      preview.innerHTML =
+        "<p>投稿を選択してください。</p>";
 
-      $("#security-form")
-        ?.reset();
+      return;
+    }
 
-    } catch (error) {
+    preview.innerHTML = `
+      <article>
+        <h3>
+          ${escapeHTML(
+            post.title
+          )}
+        </h3>
+
+        <p>
+          ${escapeHTML(
+            post.content
+          )}
+        </p>
+
+        <small>
+          ${escapeHTML(
+            formatDate(
+              post.created_at
+            )
+          )}
+        </small>
+      </article>
+    `;
+  }
+
+  async function submitReport() {
+    if (!ensureLogin()) {
+      return;
+    }
+
+    const postId =
+      $("#report-post-select")
+        ?.value;
+
+    const reason =
+      $("#report-reason")
+        ?.value
+        .trim();
+
+    const detail =
+      $("#report-detail")
+        ?.value
+        .trim();
+
+    if (
+      !postId ||
+      !reason
+    ) {
+      toast(
+        "投稿と通報理由を選択してください。",
+        "error"
+      );
+
+      return;
+    }
+
+    const {
+      error
+    } =
+      await supabase
+        .from("reports")
+        .insert({
+          reporter_id:
+            state.user.id,
+          post_id:
+            postId,
+          reason,
+          detail:
+            detail || null,
+          status:
+            "pending"
+        });
+
+    if (error) {
       console.error(error);
 
       toast(
-        error.message ||
-          "パスワードを変更できませんでした。",
+        "通報できませんでした。",
         "error"
       );
 
-    } finally {
-      setLoading(false);
-    }
-  }
-
-
-  /* =========================================================
-     DELETE ACCOUNT
-     ========================================================= */
-
-  async function deleteAccount() {
-    if (!state.user) return;
-
-
-    if (
-      !confirm(
-        "アカウントを削除しますか？"
-      )
-    ) {
       return;
     }
 
+    $("#report-form")
+      ?.reset();
 
-    const userId =
-      state.user.id;
+    const preview =
+      $("#report-post-preview");
 
-
-    setLoading(true);
-
-    try {
-      await supabase
-        .from("likes")
-        .delete()
-        .eq(
-          "user_id",
-          userId
-        );
-
-
-      await supabase
-        .from("replies")
-        .delete()
-        .eq(
-          "user_id",
-          userId
-        );
-
-
-      await supabase
-        .from("posts")
-        .delete()
-        .eq(
-          "user_id",
-          userId
-        );
-
-
-      await supabase
-        .from("profiles")
-        .delete()
-        .eq(
-          "id",
-          userId
-        );
-
-
-      await supabase.auth.signOut();
-
-
-      state.user = null;
-      state.profile = null;
-
-
-      toast(
-        "アカウントを削除しました。",
-        "success"
-      );
-
-
-      navigate("#home");
-
-    } catch (error) {
-      console.error(error);
-
-      toast(
-        "アカウント削除に失敗しました。",
-        "error"
-      );
-
-    } finally {
-      setLoading(false);
+    if (preview) {
+      preview.innerHTML = "";
     }
+
+    toast(
+      "通報を送信しました。",
+      "success"
+    );
+
+    state.currentReportPostId =
+      null;
   }
 
+  async function reportPost(
+    postId
+  ) {
+    await openReportPage(
+      postId
+    );
+  }
+
+  /* =========================================================
+     SHARE
+     ========================================================= */
+
+  async function sharePost(
+    postId
+  ) {
+    const url =
+      `${location.origin}${location.pathname}#board`;
+
+    if (
+      navigator.clipboard &&
+      navigator.clipboard.writeText
+    ) {
+      try {
+        await navigator.clipboard.writeText(
+          url
+        );
+
+        toast(
+          "リンクをコピーしました。",
+          "success"
+        );
+
+        return;
+
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    prompt(
+      "このリンクをコピーしてください。",
+      url
+    );
+  }
 
   /* =========================================================
      ADMIN
      ========================================================= */
 
-  function ensureAdmin() {
-    if (
-      !state.user ||
-      state.profile?.role !== "admin"
-    ) {
-      toast(
-        "管理者権限が必要です。",
-        "error"
-      );
-
-      navigate("#home");
-
-      return false;
-    }
-
-
-    return true;
-  }
-
-
   async function loadAdminData() {
     if (!ensureAdmin()) {
       return;
     }
-
 
     setLoading(true);
 
@@ -2131,8 +1870,7 @@
       const [
         usersResult,
         postsResult,
-        reportsResult,
-        bansResult
+        reportsResult
       ] =
         await Promise.all([
           supabase
@@ -2163,67 +1901,65 @@
               {
                 ascending: false
               }
-            ),
-
-          supabase
-            .from("ip_bans")
-            .select("*")
+            )
         ]);
 
-
-      if (usersResult.error) {
+      if (
+        usersResult.error
+      ) {
         console.error(
+          "users:",
           usersResult.error
         );
       }
 
-
-      if (postsResult.error) {
+      if (
+        postsResult.error
+      ) {
         console.error(
+          "posts:",
           postsResult.error
         );
       }
 
-
-      if (reportsResult.error) {
+      if (
+        reportsResult.error
+      ) {
         console.error(
+          "reports:",
           reportsResult.error
         );
       }
 
-
       state.users =
-        usersResult.data || [];
+        usersResult.data ||
+        [];
 
       state.posts =
-        postsResult.data || [];
+        postsResult.data ||
+        [];
 
       state.reports =
-        reportsResult.data || [];
+        reportsResult.data ||
+        [];
 
-
-      renderAdmin(
-        bansResult.data || []
-      );
+      renderAdmin();
 
     } finally {
       setLoading(false);
     }
   }
 
-
-  function renderAdmin(bans = []) {
+  function renderAdmin() {
     setText(
       "admin-user-count",
       state.users.length
     );
 
-
     setText(
       "admin-post-count",
       state.posts.length
     );
-
 
     setText(
       "admin-report-count",
@@ -2234,222 +1970,239 @@
       ).length
     );
 
-
     setText(
       "admin-ban-count",
-      bans.length
+      state.users.filter(
+        user =>
+          user.status ===
+          "banned"
+      ).length
     );
-
 
     renderAdminUsers();
     renderAdminPosts();
     renderAdminReports();
   }
 
-
   function renderAdminUsers() {
     const body =
       $("#admin-users-table-body");
 
-    if (!body) return;
-
+    if (!body) {
+      return;
+    }
 
     body.innerHTML =
-      state.users.map(user => `
-        <tr>
+      state.users
+        .map(user => `
+          <tr>
 
-          <td>
-            ${escapeHTML(
-              user.username ||
-              "ユーザー"
-            )}
-          </td>
+            <td>
+              ${escapeHTML(
+                user.username ||
+                "ユーザー"
+              )}
+            </td>
 
-          <td>
-            ${escapeHTML(
-              user.id
-            )}
-          </td>
+            <td>
+              ${escapeHTML(
+                user.id
+              )}
+            </td>
 
-          <td>
-            ${escapeHTML(
-              user.role ||
-              "user"
-            )}
-          </td>
+            <td>
+              ${escapeHTML(
+                user.status ||
+                "active"
+              )}
+            </td>
 
-          <td>
-            ${escapeHTML(
-              user.status ||
-              "active"
-            )}
-          </td>
+            <td>
+              ${escapeHTML(
+                user.role ||
+                "user"
+              )}
+            </td>
 
-          <td>
-            ${escapeHTML(
-              formatDate(
-                user.created_at
-              )
-            )}
-          </td>
+            <td>
+              ${escapeHTML(
+                formatDate(
+                  user.created_at
+                )
+              )}
+            </td>
 
-          <td>
-            <button
-              type="button"
-              class="secondary-button"
-              data-admin-user="${escapeHTML(user.id)}"
-            >
-              編集
-            </button>
-          </td>
+            <td>
+              <button
+                type="button"
+                class="secondary-button"
+                data-admin-user="${escapeHTML(
+                  user.id
+                )}"
+              >
+                編集
+              </button>
+            </td>
 
-        </tr>
-      `).join("");
+          </tr>
+        `)
+        .join("");
   }
-
 
   function renderAdminPosts() {
     const list =
       $("#admin-post-list");
 
-    if (!list) return;
-
+    if (!list) {
+      return;
+    }
 
     list.innerHTML =
-      state.posts.map(post => `
-        <article class="admin-post-item">
-
-          <div>
-
-            <h3>
-              ${escapeHTML(
-                post.title
-              )}
-            </h3>
-
-            <p>
-              ${escapeHTML(
-                post.content
-              )}
-            </p>
-
-            <small>
-              ${escapeHTML(
-                formatDate(
-                  post.created_at
-                )
-              )}
-            </small>
-
-          </div>
-
-          <button
-            type="button"
-            class="danger-button"
-            data-admin-delete-post="${escapeHTML(post.id)}"
+      state.posts
+        .map(post => `
+          <article
+            class="admin-post-item"
           >
-            削除
-          </button>
 
-        </article>
-      `).join("");
+            <div>
+
+              <h3>
+                ${escapeHTML(
+                  post.title
+                )}
+              </h3>
+
+              <p>
+                ${escapeHTML(
+                  post.content
+                )}
+              </p>
+
+              <small>
+                ${escapeHTML(
+                  formatDate(
+                    post.created_at
+                  )
+                )}
+              </small>
+
+            </div>
+
+            <button
+              type="button"
+              class="danger-button"
+              data-admin-delete-post="${escapeHTML(
+                post.id
+              )}"
+            >
+              削除
+            </button>
+
+          </article>
+        `)
+        .join("");
   }
-
 
   function renderAdminReports() {
     const list =
       $("#admin-report-list");
 
-    if (!list) return;
-
+    if (!list) {
+      return;
+    }
 
     list.innerHTML =
-      state.reports.map(report => `
-        <article class="admin-report-item">
+      state.reports
+        .map(report => `
+          <article
+            class="admin-report-item"
+          >
 
-          <strong>
-            ${escapeHTML(
-              report.reason ||
-              "理由なし"
-            )}
-          </strong>
+            <div>
 
-          <p>
-            ${escapeHTML(
-              report.detail ||
-              ""
-            )}
-          </p>
+              <strong>
+                ${escapeHTML(
+                  report.reason ||
+                  "理由なし"
+                )}
+              </strong>
 
-          <small>
-            ステータス：
-            ${escapeHTML(
-              report.status ||
+              <p>
+                ${escapeHTML(
+                  report.detail ||
+                  ""
+                )}
+              </p>
+
+              <small>
+                状態：
+                ${escapeHTML(
+                  report.status ||
+                  "pending"
+                )}
+              </small>
+
+              <br>
+
+              <small>
+                ${escapeHTML(
+                  formatDate(
+                    report.created_at
+                  )
+                )}
+              </small>
+
+            </div>
+
+            ${
+              report.status ===
               "pending"
-            )}
-          </small>
+                ? `
+                  <button
+                    type="button"
+                    class="secondary-button"
+                    data-resolve-report="${escapeHTML(
+                      report.id
+                    )}"
+                  >
+                    対応済みにする
+                  </button>
+                `
+                : ""
+            }
 
-          ${
-            report.status === "pending"
-              ? `
-                <button
-                  type="button"
-                  class="secondary-button"
-                  data-resolve-report="${escapeHTML(report.id)}"
-                >
-                  対応済みにする
-                </button>
-              `
-              : ""
-          }
-
-        </article>
-      `).join("");
+          </article>
+        `)
+        .join("");
   }
 
-
-  async function adminDeletePost(postId) {
-    if (!ensureAdmin()) return;
-
+  async function adminDeletePost(
+    postId
+  ) {
+    if (!ensureAdmin()) {
+      return;
+    }
 
     if (
       !confirm(
-        "管理者権限でこの投稿を削除しますか？"
+        "この投稿を管理者権限で削除しますか？"
       )
     ) {
       return;
     }
 
+    const {
+      error
+    } =
+      await supabase
+        .from("posts")
+        .delete()
+        .eq(
+          "id",
+          postId
+        );
 
-    setLoading(true);
-
-    try {
-      const {
-        error
-      } =
-        await supabase
-          .from("posts")
-          .delete()
-          .eq(
-            "id",
-            postId
-          );
-
-
-      if (error) {
-        throw error;
-      }
-
-
-      toast(
-        "投稿を削除しました。",
-        "success"
-      );
-
-
-      await loadAdminData();
-
-    } catch (error) {
+    if (error) {
       console.error(error);
 
       toast(
@@ -2457,15 +2210,101 @@
         "error"
       );
 
-    } finally {
-      setLoading(false);
+      return;
     }
+
+    toast(
+      "投稿を削除しました。",
+      "success"
+    );
+
+    await loadAdminData();
   }
 
+  async function updateAdminUser(
+    userId
+  ) {
+    if (!ensureAdmin()) {
+      return;
+    }
 
-  async function resolveReport(reportId) {
-    if (!ensureAdmin()) return;
+    const user =
+      state.users.find(
+        item =>
+          item.id === userId
+      );
 
+    if (!user) {
+      return;
+    }
+
+    const username =
+      prompt(
+        "ユーザー名",
+        user.username ||
+          ""
+      );
+
+    if (
+      username === null
+    ) {
+      return;
+    }
+
+    const status =
+      prompt(
+        "状態（active / suspended / banned）",
+        user.status ||
+          "active"
+      );
+
+    if (
+      status === null
+    ) {
+      return;
+    }
+
+    const {
+      error
+    } =
+      await supabase
+        .from("profiles")
+        .update({
+          username:
+            username.trim(),
+          status:
+            status.trim()
+        })
+        .eq(
+          "id",
+          userId
+        );
+
+    if (error) {
+      console.error(error);
+
+      toast(
+        "ユーザー設定を更新できませんでした。",
+        "error"
+      );
+
+      return;
+    }
+
+    toast(
+      "ユーザー設定を更新しました。",
+      "success"
+    );
+
+    await loadAdminData();
+  }
+
+  async function resolveReport(
+    reportId
+  ) {
+    if (!ensureAdmin()) {
+      return;
+    }
 
     const {
       error
@@ -2473,13 +2312,13 @@
       await supabase
         .from("reports")
         .update({
-          status: "resolved"
+          status:
+            "resolved"
         })
         .eq(
           "id",
           reportId
         );
-
 
     if (error) {
       console.error(error);
@@ -2492,104 +2331,212 @@
       return;
     }
 
-
     toast(
       "通報を対応済みにしました。",
       "success"
     );
 
-
     await loadAdminData();
   }
 
-
-  async function openAdminUser(userId) {
-    const user =
-      state.users.find(
-        item =>
-          item.id === userId
-      );
-
-
-    if (!user) return;
-
-
-    const input =
-      $("#admin-detail-user-id");
-
-
-    if (input) {
-      input.value =
-        user.id;
-    }
-
-
-    setText(
-      "admin-detail-username",
-      user.username ||
-        ""
-    );
-
-
-    setText(
-      "admin-detail-role",
-      user.role ||
-        "user"
-    );
-
-
-    navigate(
-      "#admin-user-detail"
-    );
-  }
-
-
   /* =========================================================
-     BOARD UI
+     PASSWORD
      ========================================================= */
 
-  function setupBoard() {
-    $("#board-category")
-      ?.addEventListener(
-        "change",
-        event => {
-          state.currentCategory =
-            event.target.value;
+  async function changePassword() {
+    if (!ensureLogin()) {
+      return;
+    }
 
-          loadPosts();
-        }
+    const newPassword =
+      $("#new-password")
+        ?.value;
+
+    const confirmPassword =
+      $("#new-password-confirm")
+        ?.value;
+
+    if (
+      !newPassword ||
+      !confirmPassword
+    ) {
+      toast(
+        "新しいパスワードを入力してください。",
+        "error"
       );
 
+      return;
+    }
 
-    $$(".board-tab")
-      .forEach(button => {
-        button.addEventListener(
-          "click",
-          () => {
-            $$(".board-tab")
-              .forEach(tab => {
-                tab.classList.remove(
-                  "active"
-                );
-              });
+    if (
+      newPassword !==
+      confirmPassword
+    ) {
+      toast(
+        "新しいパスワードが一致しません。",
+        "error"
+      );
 
+      return;
+    }
 
-            button.classList.add(
-              "active"
-            );
+    const {
+      error
+    } =
+      await supabase.auth
+        .updateUser({
+          password:
+            newPassword
+        });
 
+    if (error) {
+      console.error(error);
 
-            state.currentSort =
-              button.dataset.sort ||
-              "new";
+      toast(
+        "パスワードを変更できませんでした。",
+        "error"
+      );
 
+      return;
+    }
 
-            renderPosts();
-          }
-        );
-      });
+    $("#security-form")
+      ?.reset();
+
+    toast(
+      "パスワードを変更しました。",
+      "success"
+    );
   }
 
+  /* =========================================================
+     DELETE ACCOUNT
+     ========================================================= */
+
+  async function deleteAccount() {
+    if (!ensureLogin()) {
+      return;
+    }
+
+    if (
+      !confirm(
+        "本当にアカウントを削除しますか？"
+      )
+    ) {
+      return;
+    }
+
+    const userId =
+      state.user.id;
+
+    setLoading(true);
+
+    try {
+      /*
+        自分の投稿を削除
+      */
+
+      await supabase
+        .from("likes")
+        .delete()
+        .eq(
+          "user_id",
+          userId
+        );
+
+      await supabase
+        .from("replies")
+        .delete()
+        .eq(
+          "user_id",
+          userId
+        );
+
+      await supabase
+        .from("posts")
+        .delete()
+        .eq(
+          "user_id",
+          userId
+        );
+
+      await supabase
+        .from("profiles")
+        .delete()
+        .eq(
+          "id",
+          userId
+        );
+
+      /*
+        Authセッションを終了
+      */
+
+      await supabase.auth.signOut();
+
+      state.user = null;
+      state.profile = null;
+      state.posts = [];
+      state.reports = [];
+      state.users = [];
+
+      updateAuthUI();
+
+      toast(
+        "アカウントを削除しました。",
+        "success"
+      );
+
+      navigate("#home");
+
+    } catch (error) {
+      console.error(error);
+
+      toast(
+        "アカウント削除中にエラーが発生しました。",
+        "error"
+      );
+
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* =========================================================
+     AUTH UI
+     ========================================================= */
+
+  function updateAuthUI() {
+    const loggedIn =
+      Boolean(state.user);
+
+    $$(
+      '[data-auth="logged-in"]'
+    ).forEach(element => {
+      element.hidden =
+        !loggedIn;
+    });
+
+    $$(
+      '[data-auth="guest"]'
+    ).forEach(element => {
+      element.hidden =
+        loggedIn;
+    });
+
+    /*
+      管理者メニュー
+    */
+
+    $$(
+      '[data-admin-only]'
+    ).forEach(element => {
+      element.hidden =
+        !isAdmin();
+    });
+
+    renderAccount();
+  }
 
   /* =========================================================
      FORMS
@@ -2605,13 +2552,21 @@
         event => {
           event.preventDefault();
 
+          const email =
+            $("#login-email")
+              ?.value
+              .trim();
+
+          const password =
+            $("#login-password")
+              ?.value;
+
           login(
-            $("#login-email")?.value.trim(),
-            $("#login-password")?.value
+            email,
+            password
           );
         }
       );
-
 
     /* REGISTER */
 
@@ -2621,13 +2576,23 @@
         event => {
           event.preventDefault();
 
+          const username =
+            $("#register-username")
+              ?.value
+              .trim();
+
+          const email =
+            $("#register-email")
+              ?.value
+              .trim();
+
           const password =
-            $("#register-password")?.value;
+            $("#register-password")
+              ?.value;
 
           const confirmPassword =
             $("#register-password-confirm")
               ?.value;
-
 
           if (
             password !==
@@ -2641,37 +2606,15 @@
             return;
           }
 
-
           register(
-            $("#register-username")
-              ?.value.trim(),
-
-            $("#register-email")
-              ?.value.trim(),
-
+            username,
+            email,
             password
           );
         }
       );
 
-
-    /* FORGOT PASSWORD */
-
-    $("#forgot-password-form")
-      ?.addEventListener(
-        "submit",
-        event => {
-          event.preventDefault();
-
-          resetPassword(
-            $("#forgot-password-email")
-              ?.value.trim()
-          );
-        }
-      );
-
-
-    /* CREATE POST */
+    /* POST */
 
     $("#post-form")
       ?.addEventListener(
@@ -2679,12 +2622,28 @@
         event => {
           event.preventDefault();
 
-          createPost(
-            event.currentTarget
-          );
+          createPost();
         }
       );
 
+    /* SEARCH */
+
+    $("#search-form")
+      ?.addEventListener(
+        "submit",
+        event => {
+          event.preventDefault();
+
+          const keyword =
+            $("#search-input")
+              ?.value
+              .trim();
+
+          searchPosts(
+            keyword
+          );
+        }
+      );
 
     /* PROFILE */
 
@@ -2694,12 +2653,11 @@
         event => {
           event.preventDefault();
 
-          saveProfile();
+          updateProfile();
         }
       );
 
-
-    /* SECURITY */
+    /* PASSWORD */
 
     $("#security-form")
       ?.addEventListener(
@@ -2710,7 +2668,6 @@
           changePassword();
         }
       );
-
 
     /* DELETE ACCOUNT */
 
@@ -2724,23 +2681,6 @@
         }
       );
 
-
-    /* SEARCH */
-
-    $("#search-form")
-      ?.addEventListener(
-        "submit",
-        event => {
-          event.preventDefault();
-
-          searchPosts(
-            $("#search-input")
-              ?.value || ""
-          );
-        }
-      );
-
-
     /* REPORT */
 
     $("#report-form")
@@ -2749,89 +2689,16 @@
         event => {
           event.preventDefault();
 
-          submitReport(
-            event.currentTarget
-          );
+          submitReport();
         }
       );
 
-
-    /* CREATE BOT */
-
-    $("#create-bot-form")
+    $("#report-post-select")
       ?.addEventListener(
-        "submit",
-        async event => {
-          event.preventDefault();
-
-          await createBot();
-
-          closeModal(
-            "create-bot-dialog"
-          );
-        }
+        "change",
+        updateReportPreview
       );
   }
-
-
-  /* =========================================================
-     BOT
-     ========================================================= */
-
-  async function createBot() {
-    if (!ensureAdmin()) return;
-
-
-    const name =
-      $("#bot-name")?.value.trim();
-
-    const description =
-      $("#bot-description")
-        ?.value.trim() || "";
-
-
-    if (!name) {
-      toast(
-        "Bot名を入力してください。",
-        "error"
-      );
-
-      return;
-    }
-
-
-    try {
-      const {
-        error
-      } =
-        await supabase
-          .from("bots")
-          .insert({
-            name,
-            description
-          });
-
-
-      if (error) {
-        throw error;
-      }
-
-
-      toast(
-        "Botを作成しました。",
-        "success"
-      );
-
-    } catch (error) {
-      console.error(error);
-
-      toast(
-        "Botを作成できませんでした。",
-        "error"
-      );
-    }
-  }
-
 
   /* =========================================================
      CLICK EVENTS
@@ -2842,35 +2709,47 @@
       "click",
       event => {
 
-        /* data-action */
+        /* ACTION */
 
-        const actionTarget =
+        const action =
           event.target.closest(
             "[data-action]"
           );
 
-
-        if (actionTarget) {
-          const action =
-            actionTarget.dataset.action;
-
-
-          if (action === "logout") {
-            logout();
-            return;
-          }
-
-
-          if (action === "login") {
-            navigate("#login");
-            return;
-          }
-
+        if (action) {
+          const name =
+            action.dataset.action;
 
           if (
-            action ===
+            name ===
+            "logout"
+          ) {
+            event.preventDefault();
+
+            logout();
+
+            return;
+          }
+
+          if (
+            name ===
+            "login"
+          ) {
+            event.preventDefault();
+
+            navigate(
+              "#login"
+            );
+
+            return;
+          }
+
+          if (
+            name ===
             "Create_account"
           ) {
+            event.preventDefault();
+
             navigate(
               "#Create_account"
             );
@@ -2879,7 +2758,6 @@
           }
         }
 
-
         /* LIKE */
 
         const like =
@@ -2887,15 +2765,15 @@
             "[data-like-post]"
           );
 
-
         if (like) {
+          event.preventDefault();
+
           likePost(
             like.dataset.likePost
           );
 
           return;
         }
-
 
         /* REPLY */
 
@@ -2904,15 +2782,15 @@
             "[data-reply-post]"
           );
 
-
         if (reply) {
+          event.preventDefault();
+
           replyToPost(
             reply.dataset.replyPost
           );
 
           return;
         }
-
 
         /* SHARE */
 
@@ -2921,15 +2799,15 @@
             "[data-share-post]"
           );
 
-
         if (share) {
+          event.preventDefault();
+
           sharePost(
             share.dataset.sharePost
           );
 
           return;
         }
-
 
         /* REPORT */
 
@@ -2938,15 +2816,15 @@
             "[data-report-post]"
           );
 
-
         if (report) {
+          event.preventDefault();
+
           reportPost(
             report.dataset.reportPost
           );
 
           return;
         }
-
 
         /* DELETE */
 
@@ -2955,15 +2833,16 @@
             "[data-delete-post]"
           );
 
-
         if (deleteButton) {
+          event.preventDefault();
+
           deletePost(
-            deleteButton.dataset.deletePost
+            deleteButton.dataset
+              .deletePost
           );
 
           return;
         }
-
 
         /* ADMIN DELETE */
 
@@ -2972,8 +2851,9 @@
             "[data-admin-delete-post]"
           );
 
-
         if (adminDelete) {
+          event.preventDefault();
+
           adminDeletePost(
             adminDelete.dataset
               .adminDeletePost
@@ -2982,7 +2862,6 @@
           return;
         }
 
-
         /* ADMIN USER */
 
         const adminUser =
@@ -2990,16 +2869,16 @@
             "[data-admin-user]"
           );
 
-
         if (adminUser) {
-          openAdminUser(
+          event.preventDefault();
+
+          updateAdminUser(
             adminUser.dataset
               .adminUser
           );
 
           return;
         }
-
 
         /* RESOLVE REPORT */
 
@@ -3008,8 +2887,9 @@
             "[data-resolve-report]"
           );
 
-
         if (resolve) {
+          event.preventDefault();
+
           resolveReport(
             resolve.dataset
               .resolveReport
@@ -3018,33 +2898,18 @@
           return;
         }
 
+        /* NAVIGATION */
 
-        /* MODAL CLOSE */
-
-        const close =
+        const routeLink =
           event.target.closest(
-            "[data-close-modal]"
+            "[data-route]"
           );
 
+        if (routeLink) {
+          event.preventDefault();
 
-        if (close) {
-          closeModal(
-            close.dataset.closeModal
-          );
-
-          return;
-        }
-
-
-        /* CREATE BOT */
-
-        if (
-          event.target.closest(
-            "#create-bot-button"
-          )
-        ) {
-          openModal(
-            "create-bot-dialog"
+          navigate(
+            routeLink.dataset.route
           );
 
           return;
@@ -3053,9 +2918,179 @@
     );
   }
 
+  /* =========================================================
+     BOARD
+     ========================================================= */
+
+  function setupBoard() {
+    $("#board-category")
+      ?.addEventListener(
+        "change",
+        event => {
+          state.currentCategory =
+            event.target.value ||
+            "all";
+
+          loadPosts();
+        }
+      );
+
+    $$(".board-tab")
+      .forEach(button => {
+        button.addEventListener(
+          "click",
+          () => {
+
+            $$(".board-tab")
+              .forEach(tab => {
+                tab.classList.remove(
+                  "active"
+                );
+              });
+
+            button.classList.add(
+              "active"
+            );
+
+            state.currentSort =
+              button.dataset.sort ||
+              "new";
+
+            renderPosts();
+          }
+        );
+      });
+  }
 
   /* =========================================================
-     AUTH STATE
+     ROUTER
+     ========================================================= */
+
+  async function renderRoute() {
+    const route =
+      getRoute();
+
+    const sections =
+      $$(".page-section");
+
+    sections.forEach(
+      section => {
+        section.hidden = true;
+        section.classList.remove(
+          "active"
+        );
+      }
+    );
+
+    if (!route) {
+      const error =
+        $("#error-page");
+
+      if (error) {
+        error.hidden = false;
+
+        error.classList.add(
+          "active"
+        );
+      }
+
+      return;
+    }
+
+    const target =
+      document.getElementById(
+        route
+      );
+
+    if (!target) {
+      const error =
+        $("#error-page");
+
+      if (error) {
+        error.hidden = false;
+
+        error.classList.add(
+          "active"
+        );
+      }
+
+      return;
+    }
+
+    /*
+      管理者ページ
+    */
+
+    if (
+      route === "admin" ||
+      route.startsWith(
+        "admin-"
+      )
+    ) {
+      if (!ensureAdmin()) {
+        return;
+      }
+    }
+
+    target.hidden = false;
+
+    target.classList.add(
+      "active"
+    );
+
+    /* PAGE LOAD */
+
+    if (
+      route === "board"
+    ) {
+      loadPosts();
+    }
+
+    if (
+      route === "profile"
+    ) {
+      await loadProfile();
+    }
+
+    if (
+      route === "account"
+    ) {
+      renderAccount();
+    }
+
+    if (
+      route === "report"
+    ) {
+      loadReportPosts();
+    }
+
+    /*
+      ★ここが以前の問題
+      admin-pageではなくadmin
+    */
+
+    if (
+      route === "admin" ||
+      route === "admin-users" ||
+      route === "admin-user-detail" ||
+      route === "admin-posts" ||
+      route === "admin-reports" ||
+      route === "admin-ip-ban" ||
+      route === "admin-bots" ||
+      route === "admin-private-boards" ||
+      route === "admin-site-settings"
+    ) {
+      await loadAdminData();
+    }
+
+    window.scrollTo({
+      top: 0,
+      behavior: "instant"
+    });
+  }
+
+  /* =========================================================
+     AUTH STATE LISTENER
      ========================================================= */
 
   function setupAuthListener() {
@@ -3064,23 +3099,50 @@
         event,
         session
       ) => {
+
+        console.log(
+          "Auth event:",
+          event
+        );
+
+        /*
+          SIGNED_OUT
+        */
+
+        if (
+          event ===
+          "SIGNED_OUT"
+        ) {
+          state.user = null;
+          state.profile = null;
+          state.posts = [];
+          state.reports = [];
+          state.users = [];
+
+          updateAuthUI();
+
+          return;
+        }
+
+        /*
+          ログイン・セッション復元
+        */
+
         state.user =
           session?.user ||
           null;
 
-
         if (state.user) {
           await loadProfile();
         } else {
-          state.profile = null;
+          state.profile =
+            null;
         }
-
 
         updateAuthUI();
       }
     );
   }
-
 
   /* =========================================================
      INIT
@@ -3097,10 +3159,13 @@
 
       await loadCurrentUser();
 
-      renderRoute();
+      await renderRoute();
 
     } catch (error) {
-      console.error(error);
+      console.error(
+        "INIT:",
+        error
+      );
 
       toast(
         "ページの初期化に失敗しました。",
@@ -3112,7 +3177,6 @@
     }
   }
 
-
   /* =========================================================
      HASH CHANGE
      ========================================================= */
@@ -3123,7 +3187,6 @@
       renderRoute();
     }
   );
-
 
   /* =========================================================
      START
