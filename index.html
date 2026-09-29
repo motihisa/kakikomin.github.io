@@ -2,57 +2,21 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <meta
-    name="description"
-    content="KAKIKOMI - みんなで自由に書き込める総合掲示板"
-  >
-
-  <meta
-    name="theme-color"
-    content="#ffffff"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="KAKIKOMI - みんなで自由に書き込める総合掲示板">
+  <meta name="theme-color" content="#ffffff">
   <title>KAKIKOMI</title>
-
-  <link
-    rel="stylesheet"
-    href="style.css?v=20260928-3"
-  >
+  <link rel="stylesheet" href="style.css?v=20260928-4">
 </head>
 
 <body>
 
-  <!-- =======================================================
-       HEADER
-  ======================================================== -->
-
-  <header
-    class="site-header"
-    id="site-header"
-  >
-
+  <!-- ================= HEADER ================= -->
+  <header class="site-header" id="site-header">
     <div class="header-inner">
+      <a href="#home" class="site-logo" id="site-logo">KAKIKOMI</a>
 
-      <a
-        href="#home"
-        class="site-logo"
-        id="site-logo"
-      >
-        KAKIKOMI
-      </a>
-
-      <nav
-        class="main-navigation"
-        id="main-navigation"
-        aria-label="メインメニュー"
-      >
-
+      <nav class="main-navigation" id="main-navigation" aria-label="メインメニュー">
         <a href="#home">ホーム</a>
         <a href="#board">掲示板</a>
         <a href="#questions">質問</a>
@@ -60,3268 +24,1092 @@
         <a href="#search">検索</a>
         <a href="#private-boards">限定掲示板</a>
         <a href="#account">アカウント</a>
-
       </nav>
 
       <div class="header-actions">
-
-        <button
-          type="button"
-          class="secondary-button"
-          id="notification-button"
-        >
-          通知
-        </button>
-
+        <a href="#notifications" class="secondary-button" id="notification-button">通知</a>
       </div>
-
     </div>
-
   </header>
 
 
-  <!-- =======================================================
-       MAIN
-  ======================================================== -->
-
   <main id="main-content">
 
-
-    <!-- =====================================================
-         HOME
-    ====================================================== -->
-
-    <section
-      id="home"
-      class="page-section"
-    >
-
+    <!-- ================= HOME ================= -->
+    <section id="home" class="page-section">
       <div class="section-inner">
 
         <div class="hero">
-
-          <p class="section-label">
-            KAKIKOMI
-          </p>
-
-          <h1>
-            みんなで自由に<br>
-            書き込める掲示板
-          </h1>
-
-          <p>
-            気軽に投稿したり、質問したり、相談したりできます。
-          </p>
+          <p class="section-label">KAKIKOMI</p>
+          <h1>みんなで自由に<br>書き込める掲示板</h1>
+          <p>気軽に投稿したり、質問したり、相談したりできます。</p>
 
           <div class="hero-actions">
-
-            <a
-              href="#board"
-              class="primary-button"
-            >
-              掲示板を見る
-            </a>
-
-            <a
-              href="#Create_account"
-              class="secondary-button"
-            >
-              アカウントを作成
-            </a>
-
+            <a href="#board" class="primary-button">掲示板を見る</a>
+            <a href="#Create_account" class="secondary-button">アカウントを作成</a>
           </div>
-
         </div>
-
 
         <div class="home-sections">
-
           <div class="home-card">
-
-            <h2>
-              人気の掲示板
-            </h2>
-
-            <div
-              id="popular-categories"
-              class="category-list"
-            >
-            </div>
-
+            <h2>人気の掲示板</h2>
+            <!-- CSSに合わせて category-list → category-grid -->
+            <div id="popular-categories" class="category-grid"></div>
           </div>
 
-
           <div class="home-card">
-
-            <h2>
-              お知らせ
-            </h2>
-
-            <div
-              id="announcement-list"
-              class="announcement-list"
-            >
-            </div>
-
+            <h2>お知らせ</h2>
+            <div id="announcement-list" class="announcement-list"></div>
           </div>
-
         </div>
 
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         LOGIN
-    ====================================================== -->
-
-    <section
-      id="login"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= LOGIN ================= -->
+    <section id="login" class="page-section" hidden>
       <div class="section-inner narrow-section">
-
         <div class="page-header">
-
-          <p class="section-label">
-            LOGIN
-          </p>
-
-          <h1>
-            ログイン
-          </h1>
-
+          <p class="section-label">LOGIN</p>
+          <h1>ログイン</h1>
         </div>
 
-
-        <form
-          id="login-form"
-          class="settings-form"
-        >
-
+        <form id="login-form" class="settings-form">
           <div class="form-group">
-
-            <label for="login-email">
-              メールアドレス
-            </label>
-
-            <input
-              type="email"
-              id="login-email"
-              autocomplete="email"
-              required
-            >
-
+            <label for="login-email">メールアドレス</label>
+            <input type="email" id="login-email" autocomplete="email" required>
           </div>
 
-
           <div class="form-group">
-
-            <label for="login-password">
-              パスワード
-            </label>
-
-            <input
-              type="password"
-              id="login-password"
-              autocomplete="current-password"
-              required
-            >
-
+            <label for="login-password">パスワード</label>
+            <input type="password" id="login-password" autocomplete="current-password" required>
           </div>
-
 
           <div class="form-option">
-
-            <input
-              type="checkbox"
-              id="remember-login"
-            >
-
-            <label for="remember-login">
-              ログイン状態を保持する
-            </label>
-
+            <input type="checkbox" id="remember-login">
+            <label for="remember-login">ログイン状態を保持する</label>
           </div>
 
-
-          <button
-            type="submit"
-            class="primary-button"
-          >
-            ログイン
-          </button>
-
+          <button type="submit" class="primary-button">ログイン</button>
         </form>
-
 
         <div class="page-links">
-
-          <a href="#forgot-password">
-            パスワードを忘れた場合
-          </a>
-
-          <a href="#Create_account">
-            アカウントを作成する
-          </a>
-
+          <a href="#forgot-password">パスワードを忘れた場合</a>
+          <a href="#Create_account">アカウントを作成する</a>
         </div>
-
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         CREATE ACCOUNT
-    ====================================================== -->
-
-    <section
-      id="Create_account"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= CREATE ACCOUNT ================= -->
+    <section id="Create_account" class="page-section" hidden>
       <div class="section-inner narrow-section">
-
         <div class="page-header">
-
-          <p class="section-label">
-            CREATE ACCOUNT
-          </p>
-
-          <h1>
-            アカウント作成
-          </h1>
-
+          <p class="section-label">CREATE ACCOUNT</p>
+          <h1>アカウント作成</h1>
         </div>
 
-
-        <form
-          id="register-form"
-          class="settings-form"
-        >
-
+        <form id="register-form" class="settings-form">
           <div class="form-group">
-
-            <label for="register-username">
-              ユーザー名
-            </label>
-
-            <input
-              type="text"
-              id="register-username"
-              maxlength="30"
-              required
-            >
-
+            <label for="register-username">ユーザー名</label>
+            <input type="text" id="register-username" maxlength="30" required>
           </div>
 
-
           <div class="form-group">
-
-            <label for="register-email">
-              メールアドレス
-            </label>
-
-            <input
-              type="email"
-              id="register-email"
-              autocomplete="email"
-              required
-            >
-
+            <label for="register-email">メールアドレス</label>
+            <input type="email" id="register-email" autocomplete="email" required>
           </div>
 
-
           <div class="form-group">
-
-            <label for="register-password">
-              パスワード
-            </label>
-
-            <input
-              type="password"
-              id="register-password"
-              minlength="8"
-              autocomplete="new-password"
-              required
-            >
-
+            <label for="register-password">パスワード</label>
+            <input type="password" id="register-password" minlength="8" autocomplete="new-password" required>
           </div>
 
-
           <div class="form-group">
-
-            <label for="register-password-confirm">
-              パスワード（確認）
-            </label>
-
-            <input
-              type="password"
-              id="register-password-confirm"
-              minlength="8"
-              autocomplete="new-password"
-              required
-            >
-
+            <label for="register-password-confirm">パスワード（確認）</label>
+            <input type="password" id="register-password-confirm" minlength="8" autocomplete="new-password" required>
           </div>
-
 
           <div class="form-option">
-
-            <input
-              type="checkbox"
-              id="agree-rules"
-              required
-            >
-
-            <label for="agree-rules">
-              利用ルールに同意します
-            </label>
-
+            <input type="checkbox" id="agree-rules" required>
+            <label for="agree-rules">利用ルールに同意します</label>
           </div>
 
-
-          <button
-            type="submit"
-            class="primary-button"
-          >
-            アカウントを作成
-          </button>
-
+          <button type="submit" class="primary-button">アカウントを作成</button>
         </form>
-
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         FORGOT PASSWORD
-    ====================================================== -->
-
-    <section
-      id="forgot-password"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= FORGOT PASSWORD ================= -->
+    <section id="forgot-password" class="page-section" hidden>
       <div class="section-inner narrow-section">
-
         <div class="page-header">
-
-          <p class="section-label">
-            PASSWORD
-          </p>
-
-          <h1>
-            パスワードを忘れた場合
-          </h1>
-
+          <p class="section-label">PASSWORD</p>
+          <h1>パスワードを忘れた場合</h1>
         </div>
 
-        <p>
-          登録したメールアドレスを入力してください。
-        </p>
+        <p>登録したメールアドレスを入力してください。</p>
 
-        <form
-          id="forgot-password-form"
-          class="settings-form"
-        >
-
+        <form id="forgot-password-form" class="settings-form">
           <div class="form-group">
-
-            <label for="forgot-password-email">
-              メールアドレス
-            </label>
-
-            <input
-              type="email"
-              id="forgot-password-email"
-              required
-            >
-
+            <label for="forgot-password-email">メールアドレス</label>
+            <input type="email" id="forgot-password-email" required>
           </div>
 
-          <button
-            type="submit"
-            class="primary-button"
-          >
-            リセットメールを送信
-          </button>
-
+          <button type="submit" class="primary-button">リセットメールを送信</button>
         </form>
-
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         ACCOUNT
-    ====================================================== -->
-
-    <section
-      id="account"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= ACCOUNT ================= -->
+    <section id="account" class="page-section" hidden>
       <div class="section-inner">
-
         <div class="page-header">
-
-          <p class="section-label">
-            ACCOUNT
-          </p>
-
-          <h1>
-            アカウント
-          </h1>
-
+          <p class="section-label">ACCOUNT</p>
+          <h1>アカウント</h1>
         </div>
-
 
         <!-- 未ログイン -->
-
-        <div
-          class="account-panel"
-          id="guest-account"
-        >
-
-          <h2>
-            KAKIKOMIアカウント
-          </h2>
-
-          <p>
-            アカウントを作成すると、投稿や設定を管理できます。
-          </p>
+        <div class="account-panel" id="guest-account">
+          <h2>KAKIKOMIアカウント</h2>
+          <p>アカウントを作成すると、投稿や設定を管理できます。</p>
 
           <div class="account-actions">
-
-            <a
-              href="#login"
-              class="primary-button"
-            >
-              ログイン
-            </a>
-
-            <a
-              href="#Create_account"
-              class="secondary-button"
-            >
-              アカウント作成
-            </a>
-
+            <a href="#login" class="primary-button">ログイン</a>
+            <a href="#Create_account" class="secondary-button">アカウント作成</a>
           </div>
-
         </div>
-
 
         <!-- ログイン後 -->
-
-        <div
-          class="account-panel"
-          id="logged-in-account"
-          hidden
-        >
-
+        <div class="account-panel" id="logged-in-account" hidden>
           <div class="profile-header">
-
-            <div class="large-avatar">
-              ?
-            </div>
-
+            <div class="large-avatar">?</div>
             <div>
-
-              <h2 id="account-username">
-                ユーザー名
-              </h2>
-
-              <p id="account-user-id">
-                -
-              </p>
-
+              <h2 id="account-username">ユーザー名</h2>
+              <p id="account-user-id">-</p>
             </div>
-
           </div>
-
 
           <div class="account-actions">
-
-            <a
-              href="#profile"
-              class="secondary-button"
-            >
-              プロフィール
-            </a>
-
-            <a
-              href="#my-posts"
-              class="secondary-button"
-            >
-              自分の投稿
-            </a>
-
-            <a
-              href="#bookmarks"
-              class="secondary-button"
-            >
-              ブックマーク
-            </a>
-
-            <a
-              href="#account-settings"
-              class="secondary-button"
-            >
-              アカウント設定
-            </a>
-
-            <a
-              href="#security-settings"
-              class="secondary-button"
-            >
-              セキュリティ
-            </a>
-
+            <a href="#profile" class="secondary-button">プロフィール</a>
+            <a href="#my-posts" class="secondary-button">自分の投稿</a>
+            <a href="#bookmarks" class="secondary-button">ブックマーク</a>
+            <a href="#account-settings" class="secondary-button">アカウント設定</a>
+            <a href="#security-settings" class="secondary-button">セキュリティ</a>
           </div>
-
         </div>
-
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         BOARD
-    ====================================================== -->
-
-    <section
-      id="board"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= BOARD ================= -->
+    <section id="board" class="page-section" hidden>
       <div class="section-inner">
 
         <div class="page-header">
-
           <div>
-
-            <p class="section-label">
-              BOARD
-            </p>
-
-            <h1>
-              掲示板
-            </h1>
-
+            <p class="section-label">BOARD</p>
+            <h1>掲示板</h1>
           </div>
-
 
           <div class="page-header-actions">
-
-            <a
-              href="#report"
-              class="danger-button"
-            >
-              通報する
-            </a>
-
-            <a
-              href="#create-post"
-              class="primary-button"
-            >
-              投稿する
-            </a>
-
+            <a href="#report" class="danger-button">通報する</a>
+            <a href="#create-post" class="primary-button">投稿する</a>
           </div>
-
         </div>
 
-
-        <div class="board-toolbar">
-
-          <label for="board-category-filter">
-            掲示板
-          </label>
-
-          <select
-            id="board-category-filter"
-          >
-
-            <option value="">
-              すべて
-            </option>
-
+        <!-- CSSに合わせて board-toolbar → filter-area -->
+        <div class="filter-area">
+          <label for="board-category-filter">掲示板</label>
+          <select id="board-category-filter">
+            <option value="">すべて</option>
           </select>
-
         </div>
 
+        <div class="post-list" id="post-list"></div>
 
-        <div
-          class="post-list"
-          id="post-list"
-        >
-        </div>
-
-
-        <div
-          id="no-posts"
-          class="empty-state"
-          hidden
-        >
-
-          <p>
-            まだ投稿がありません。
-          </p>
-
+        <div id="no-posts" class="empty-state" hidden>
+          <p>まだ投稿がありません。</p>
         </div>
 
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         CREATE POST
-    ====================================================== -->
-
-    <section
-      id="create-post"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= CREATE POST ================= -->
+    <section id="create-post" class="page-section" hidden>
       <div class="section-inner narrow-section">
-
         <div class="page-header">
-
-          <p class="section-label">
-            CREATE POST
-          </p>
-
-          <h1>
-            投稿を作成
-          </h1>
-
+          <p class="section-label">CREATE POST</p>
+          <h1>投稿を作成</h1>
         </div>
 
-
-        <form
-          id="post-form"
-          class="settings-form"
-        >
-
+        <form id="post-form" class="settings-form">
           <div class="form-group">
-
-            <label for="post-category">
-              掲示板
-            </label>
-
-            <select
-              id="post-category"
-              required
-            >
-
-              <option value="">
-                掲示板を選択
-              </option>
-
+            <label for="post-category">掲示板</label>
+            <select id="post-category" required>
+              <option value="">掲示板を選択</option>
             </select>
-
           </div>
-
 
           <div class="form-group">
-
-            <label for="post-title">
-              タイトル
-            </label>
-
-            <input
-              type="text"
-              id="post-title"
-              maxlength="100"
-              required
-            >
-
+            <label for="post-title">タイトル</label>
+            <input type="text" id="post-title" maxlength="100" required>
           </div>
-
 
           <div class="form-group">
-
-            <label for="post-content">
-              本文
-            </label>
-
-            <textarea
-              id="post-content"
-              maxlength="5000"
-              required
-            ></textarea>
-
-            <div id="post-character-count">
-              0 / 5000
-            </div>
-
+            <label for="post-content">本文</label>
+            <textarea id="post-content" maxlength="5000" required></textarea>
+            <div id="post-character-count" class="character-counter">0 / 5000</div>
           </div>
-
 
           <div class="form-group">
-
-            <label for="post-image">
-              画像URL
-            </label>
-
-            <input
-              type="url"
-              id="post-image"
-              placeholder="https://..."
-            >
-
+            <label for="post-image">画像URL</label>
+            <input type="url" id="post-image" placeholder="https://...">
           </div>
 
-
-          <div
-            id="image-preview"
-            hidden
-          ></div>
-
+          <div id="image-preview" class="image-preview" hidden></div>
 
           <div class="form-option">
-
-            <input
-              type="checkbox"
-              id="allow-replies"
-              checked
-            >
-
-            <label for="allow-replies">
-              返信を許可する
-            </label>
-
+            <input type="checkbox" id="allow-replies" checked>
+            <label for="allow-replies">返信を許可する</label>
           </div>
-
 
           <div class="form-option">
-
-            <input
-              type="checkbox"
-              id="allow-share"
-              checked
-            >
-
-            <label for="allow-share">
-              共有を許可する
-            </label>
-
+            <input type="checkbox" id="allow-share" checked>
+            <label for="allow-share">共有を許可する</label>
           </div>
 
+          <button type="submit" class="primary-button">投稿する</button>
+        </form>
+      </div>
+    </section>
 
-          <button
-            type="submit"
-            class="primary-button"
-          >
-            投稿する
-          </button>
 
+    <!-- ================= QUESTIONS ================= -->
+    <section id="questions" class="page-section" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">QUESTIONS</p>
+          <h1>質問</h1>
+        </div>
+        <div id="question-list" class="post-list"></div>
+      </div>
+    </section>
+
+
+    <!-- ================= CONSULTATIONS ================= -->
+    <section id="consultations" class="page-section" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">CONSULTATIONS</p>
+          <h1>相談</h1>
+        </div>
+        <div id="consultation-list" class="post-list"></div>
+      </div>
+    </section>
+
+
+    <!-- ================= SEARCH ================= -->
+    <section id="search" class="page-section" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">SEARCH</p>
+          <h1>検索</h1>
+        </div>
+
+        <form id="search-form" class="search-form">
+          <input type="search" id="search-input" placeholder="投稿を検索">
+          <button type="submit" class="primary-button">検索</button>
         </form>
 
+        <div id="search-results" class="post-list"></div>
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         QUESTIONS
-    ====================================================== -->
-
-    <section
-      id="questions"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= PROFILE ================= -->
+    <section id="profile" class="page-section" hidden>
       <div class="section-inner">
 
-        <div class="page-header">
-
-          <p class="section-label">
-            QUESTIONS
-          </p>
-
-          <h1>
-            質問
-          </h1>
-
-        </div>
-
-        <div
-          id="question-list"
-          class="post-list"
-        >
-        </div>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- =====================================================
-         CONSULTATIONS
-    ====================================================== -->
-
-    <section
-      id="consultations"
-      class="page-section"
-      hidden
-    >
-
-      <div class="section-inner">
-
-        <div class="page-header">
-
-          <p class="section-label">
-            CONSULTATIONS
-          </p>
-
-          <h1>
-            相談
-          </h1>
-
-        </div>
-
-        <div
-          id="consultation-list"
-          class="post-list"
-        >
-        </div>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- =====================================================
-         SEARCH
-    ====================================================== -->
-
-    <section
-      id="search"
-      class="page-section"
-      hidden
-    >
-
-      <div class="section-inner">
-
-        <div class="page-header">
-
-          <p class="section-label">
-            SEARCH
-          </p>
-
-          <h1>
-            検索
-          </h1>
-
-        </div>
-
-
-        <form
-          id="search-form"
-          class="search-form"
-        >
-
-          <input
-            type="search"
-            id="search-input"
-            placeholder="投稿を検索"
-          >
-
-          <button
-            type="submit"
-            class="primary-button"
-          >
-            検索
-          </button>
-
-        </form>
-
-
-        <div
-          id="search-results"
-          class="post-list"
-        >
-        </div>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- =====================================================
-         PROFILE
-    ====================================================== -->
-
-    <section
-      id="profile"
-      class="page-section"
-      hidden
-    >
-
-      <div class="section-inner">
-
-        <div
-          class="profile-header"
-          id="profile-header"
-        >
-
-          <div class="large-avatar">
-            ?
-          </div>
-
+        <div class="profile-header" id="profile-header">
+          <div class="large-avatar">?</div>
           <div>
-
-            <h1 id="profile-name">
-              ユーザー
-            </h1>
-
-            <p id="profile-description">
-            </p>
-
+            <h1 id="profile-name">ユーザー</h1>
+            <p id="profile-description"></p>
           </div>
-
         </div>
-
 
         <div class="profile-stats">
-
-          <div>
-            <strong id="profile-post-count">0</strong>
-            <span>投稿</span>
-          </div>
-
-          <div>
-            <strong id="profile-followers">0</strong>
-            <span>フォロワー</span>
-          </div>
-
-          <div>
-            <strong id="profile-following">0</strong>
-            <span>フォロー中</span>
-          </div>
-
+          <div><strong id="profile-post-count">0</strong> <span>投稿</span></div>
+          <div><strong id="profile-followers">0</strong> <span>フォロワー</span></div>
+          <div><strong id="profile-following">0</strong> <span>フォロー中</span></div>
         </div>
 
+        <button type="button" class="secondary-button" id="follow-button">フォロー</button>
 
-        <button
-          type="button"
-          class="secondary-button"
-          id="follow-button"
-        >
-          フォロー
-        </button>
-
-
-        <div
-          class="post-list"
-          id="profile-posts"
-        >
-        </div>
+        <div class="post-list" id="profile-posts"></div>
 
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         MY POSTS
-    ====================================================== -->
-
-    <section
-      id="my-posts"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= MY POSTS ================= -->
+    <section id="my-posts" class="page-section" hidden>
       <div class="section-inner">
-
         <div class="page-header">
-
-          <p class="section-label">
-            MY POSTS
-          </p>
-
-          <h1>
-            自分の投稿
-          </h1>
-
+          <p class="section-label">MY POSTS</p>
+          <h1>自分の投稿</h1>
         </div>
-
-        <div
-          id="my-post-list"
-          class="post-list"
-        >
-        </div>
-
+        <div id="my-post-list" class="post-list"></div>
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         BOOKMARKS
-    ====================================================== -->
-
-    <section
-      id="bookmarks"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= BOOKMARKS ================= -->
+    <section id="bookmarks" class="page-section" hidden>
       <div class="section-inner">
-
         <div class="page-header">
-
-          <p class="section-label">
-            BOOKMARKS
-          </p>
-
-          <h1>
-            ブックマーク
-          </h1>
-
+          <p class="section-label">BOOKMARKS</p>
+          <h1>ブックマーク</h1>
         </div>
-
-        <div
-          id="bookmark-list"
-          class="post-list"
-        >
-        </div>
-
+        <div id="bookmark-list" class="post-list"></div>
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         NOTIFICATIONS
-    ====================================================== -->
-
-    <section
-      id="notifications"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= NOTIFICATIONS ================= -->
+    <section id="notifications" class="page-section" hidden>
       <div class="section-inner">
-
         <div class="page-header">
-
           <div>
-
-            <p class="section-label">
-              NOTIFICATIONS
-            </p>
-
-            <h1>
-              通知
-            </h1>
-
+            <p class="section-label">NOTIFICATIONS</p>
+            <h1>通知</h1>
           </div>
-
-          <button
-            type="button"
-            class="secondary-button"
-            id="mark-notifications-read"
-          >
-            すべて既読
-          </button>
-
+          <button type="button" class="secondary-button" id="mark-notifications-read">すべて既読</button>
         </div>
-
-
-        <div
-          class="notification-list"
-          id="notification-list"
-        >
-        </div>
-
+        <div class="notification-list" id="notification-list"></div>
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         REPORT
-    ====================================================== -->
-
-    <section
-      id="report"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= REPORT ================= -->
+    <section id="report" class="page-section" hidden>
       <div class="section-inner narrow-section">
-
         <div class="page-header">
-
-          <p class="section-label">
-            REPORT
-          </p>
-
-          <h1>
-            通報
-          </h1>
-
-          <p>
-            ルール違反などの投稿を通報できます。
-          </p>
-
+          <p class="section-label">REPORT</p>
+          <h1>通報</h1>
+          <p>ルール違反などの投稿を通報できます。</p>
         </div>
 
-
-        <form
-          id="report-form"
-          class="report-form"
-        >
-
-          <input
-            type="hidden"
-            id="report-post-id"
-            name="postId"
-          >
-
+        <form id="report-form" class="report-form">
+          <input type="hidden" id="report-post-id" name="postId">
 
           <div class="form-group">
-
-            <label for="report-board-select">
-              掲示板
-            </label>
-
-            <select
-              id="report-board-select"
-              name="board"
-              required
-            >
-
-              <option value="">
-                掲示板を選択してください
-              </option>
-
+            <label for="report-board-select">掲示板</label>
+            <select id="report-board-select" name="board" required>
+              <option value="">掲示板を選択してください</option>
             </select>
-
           </div>
 
-
           <div class="form-group">
-
-            <label for="report-post-select">
-              通報する投稿
-            </label>
-
-            <select
-              id="report-post-select"
-              name="post"
-              required
-            >
-
-              <option value="">
-                投稿を選択してください
-              </option>
-
+            <label for="report-post-select">通報する投稿</label>
+            <select id="report-post-select" name="post" required>
+              <option value="">投稿を選択してください</option>
             </select>
-
           </div>
 
-
-          <div
-            class="report-post-preview"
-            id="report-post-preview"
-            hidden
-          >
-
-            <h2>
-              選択した投稿
-            </h2>
-
-            <p id="report-post-preview-text">
-            </p>
-
+          <div class="report-post-preview" id="report-post-preview" hidden>
+            <h2>選択した投稿</h2>
+            <p id="report-post-preview-text"></p>
           </div>
-
 
           <div class="form-group">
-
-            <label for="report-reason">
-              通報理由
-            </label>
-
-            <select
-              id="report-reason"
-              name="reason"
-              required
-            >
-
-              <option value="">
-                選択してください
-              </option>
-
-              <option value="spam">
-                スパム・迷惑行為
-              </option>
-
-              <option value="harassment">
-                嫌がらせ
-              </option>
-
-              <option value="illegal">
-                不適切な内容
-              </option>
-
-              <option value="copyright">
-                著作権に関する問題
-              </option>
-
-              <option value="impersonation">
-                なりすまし
-              </option>
-
-              <option value="other">
-                その他
-              </option>
-
+            <label for="report-reason">通報理由</label>
+            <select id="report-reason" name="reason" required>
+              <option value="">選択してください</option>
+              <option value="spam">スパム・迷惑行為</option>
+              <option value="harassment">嫌がらせ</option>
+              <option value="illegal">不適切な内容</option>
+              <option value="copyright">著作権に関する問題</option>
+              <option value="impersonation">なりすまし</option>
+              <option value="other">その他</option>
             </select>
-
           </div>
-
 
           <div class="form-group">
-
-            <label for="report-detail">
-              詳細
-            </label>
-
-            <textarea
-              id="report-detail"
-              name="detail"
-              maxlength="2000"
-              placeholder="問題の内容を入力してください"
-            ></textarea>
-
+            <label for="report-detail">詳細</label>
+            <textarea id="report-detail" name="detail" maxlength="2000" placeholder="問題の内容を入力してください"></textarea>
           </div>
 
-
-          <button
-            type="submit"
-            class="danger-button"
-          >
-            通報する
-          </button>
-
+          <button type="submit" class="danger-button">通報する</button>
         </form>
-
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         SHARE
-    ====================================================== -->
-
-    <section
-      id="share"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= SHARE ================= -->
+    <section id="share" class="page-section" hidden>
       <div class="section-inner narrow-section">
-
         <div class="page-header">
-
-          <p class="section-label">
-            SHARE
-          </p>
-
-          <h1>
-            共有
-          </h1>
-
+          <p class="section-label">SHARE</p>
+          <h1>共有</h1>
         </div>
-
 
         <div class="share-panel">
-
-          <p>
-            この投稿を共有できます。
-          </p>
+          <p>この投稿を共有できます。</p>
 
           <div class="share-url-area">
-
-            <label for="share-url">
-              共有URL
-            </label>
-
-            <input
-              type="text"
-              id="share-url"
-              readonly
-            >
-
-            <button
-              type="button"
-              class="primary-button"
-              id="copy-share-url"
-            >
-              URLをコピー
-            </button>
-
+            <label for="share-url" class="visually-hidden">共有URL</label>
+            <input type="text" id="share-url" readonly>
+            <button type="button" class="primary-button" id="copy-share-url">URLをコピー</button>
           </div>
-
 
           <div class="share-options">
-
-            <button
-              type="button"
-              data-share="native"
-            >
-              端末の共有機能
-            </button>
-
-            <button
-              type="button"
-              data-share="copy"
-            >
-              URLをコピー
-            </button>
-
+            <button type="button" class="secondary-button" data-share="native">端末の共有機能</button>
+            <button type="button" class="secondary-button" data-share="copy">URLをコピー</button>
           </div>
-
         </div>
-
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         PRIVATE BOARDS
-    ====================================================== -->
-
-    <section
-      id="private-boards"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= PRIVATE BOARDS ================= -->
+    <section id="private-boards" class="page-section" hidden>
       <div class="section-inner">
 
         <div class="page-header">
-
           <div>
-
-            <p class="section-label">
-              PRIVATE BOARDS
-            </p>
-
-            <h1>
-              プライベート掲示板
-            </h1>
-
+            <p class="section-label">PRIVATE BOARDS</p>
+            <h1>プライベート掲示板</h1>
           </div>
-
-
-          <button
-            type="button"
-            class="primary-button"
-            id="create-private-board-button"
-          >
-            掲示板を作成
-          </button>
-
+          <button type="button" class="primary-button" id="create-private-board-button">掲示板を作成</button>
         </div>
 
+        <div class="board-list" id="private-board-list"></div>
 
-        <div
-          class="board-list"
-          id="private-board-list"
-        >
-        </div>
+        <div class="private-board-join" id="private-board-join">
+          <h2>招待コードで参加</h2>
 
-
-        <div
-          class="private-board-join"
-          id="private-board-join"
-        >
-
-          <h2>
-            招待コードで参加
-          </h2>
-
-          <form id="join-private-board-form">
-
-            <label for="private-board-code">
-              招待コード
-            </label>
-
-            <input
-              type="text"
-              id="private-board-code"
-              maxlength="100"
-              placeholder="招待コードを入力"
-              required
-            >
-
-            <button
-              type="submit"
-              class="primary-button"
-            >
-              参加
-            </button>
-
+          <form id="join-private-board-form" class="settings-form">
+            <div class="form-group">
+              <label for="private-board-code">招待コード</label>
+              <input type="text" id="private-board-code" maxlength="100" placeholder="招待コードを入力" required>
+            </div>
+            <button type="submit" class="primary-button">参加</button>
           </form>
-
         </div>
 
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         ACCOUNT SETTINGS
-    ====================================================== -->
-
-    <section
-      id="account-settings"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= ACCOUNT SETTINGS ================= -->
+    <section id="account-settings" class="page-section" hidden>
       <div class="section-inner">
-
         <div class="page-header">
-
-          <p class="section-label">
-            SETTINGS
-          </p>
-
-          <h1>
-            アカウント設定
-          </h1>
-
+          <p class="section-label">SETTINGS</p>
+          <h1>アカウント設定</h1>
         </div>
 
-
-        <form
-          id="profile-settings-form"
-          class="settings-form"
-        >
-
+        <form id="profile-settings-form" class="settings-form">
           <div class="form-group">
-
-            <label for="settings-username">
-              ユーザー名
-            </label>
-
-            <input
-              type="text"
-              id="settings-username"
-              maxlength="30"
-            >
-
+            <label for="profile-username-input">ユーザー名</label>
+            <!-- JSが #profile-username-input を読むのでIDを合わせた -->
+            <input type="text" id="profile-username-input" maxlength="30">
           </div>
 
-
           <div class="form-group">
-
-            <label for="settings-bio">
-              自己紹介
-            </label>
-
-            <textarea
-              id="settings-bio"
-              maxlength="500"
-            ></textarea>
-
+            <label for="profile-bio-input">自己紹介</label>
+            <!-- JSが #profile-bio-input を読むのでIDを合わせた -->
+            <textarea id="profile-bio-input" maxlength="500"></textarea>
           </div>
 
-
-          <button
-            type="submit"
-            class="primary-button"
-          >
-            保存
-          </button>
-
+          <button type="submit" class="primary-button">保存</button>
         </form>
-
 
         <hr>
 
-
         <div class="settings-danger-zone">
+          <h2>アカウント</h2>
 
-          <h2>
-            アカウント
-          </h2>
-
-          <button
-            type="button"
-            class="secondary-button"
-            id="logout-button"
-          >
-            ログアウト
-          </button>
-
-          <button
-            type="button"
-            class="danger-button"
-            id="delete-account-button"
-          >
-            アカウントを削除
-          </button>
-
+          <!-- data-action="logout" を追加（JSが見ているのはこれ） -->
+          <button type="button" class="secondary-button" id="logout-button" data-action="logout">ログアウト</button>
+          <button type="button" class="danger-button" id="delete-account-button">アカウントを削除</button>
         </div>
-
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         SECURITY SETTINGS
-    ====================================================== -->
-
-    <section
-      id="security-settings"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= SECURITY SETTINGS ================= -->
+    <section id="security-settings" class="page-section" hidden>
       <div class="section-inner narrow-section">
-
         <div class="page-header">
-
-          <p class="section-label">
-            SECURITY
-          </p>
-
-          <h1>
-            セキュリティ
-          </h1>
-
+          <p class="section-label">SECURITY</p>
+          <h1>セキュリティ</h1>
         </div>
 
-
-        <form
-          id="change-password-form"
-          class="settings-form"
-        >
-
+        <form id="change-password-form" class="settings-form">
           <div class="form-group">
-
-            <label for="current-password">
-              現在のパスワード
-            </label>
-
-            <input
-              type="password"
-              id="current-password"
-              autocomplete="current-password"
-              required
-            >
-
+            <label for="current-password">現在のパスワード</label>
+            <input type="password" id="current-password" autocomplete="current-password" required>
           </div>
 
-
           <div class="form-group">
-
-            <label for="new-password">
-              新しいパスワード
-            </label>
-
-            <input
-              type="password"
-              id="new-password"
-              minlength="8"
-              autocomplete="new-password"
-              required
-            >
-
+            <label for="new-password">新しいパスワード</label>
+            <input type="password" id="new-password" minlength="8" autocomplete="new-password" required>
           </div>
 
-
           <div class="form-group">
-
-            <label for="new-password-confirm">
-              新しいパスワード（確認）
-            </label>
-
-            <input
-              type="password"
-              id="new-password-confirm"
-              minlength="8"
-              autocomplete="new-password"
-              required
-            >
-
+            <label for="new-password-confirm">新しいパスワード（確認）</label>
+            <input type="password" id="new-password-confirm" minlength="8" autocomplete="new-password" required>
           </div>
 
-
-          <button
-            type="submit"
-            class="primary-button"
-          >
-            パスワードを変更
-          </button>
-
+          <button type="submit" class="primary-button">パスワードを変更</button>
         </form>
 
-
-        <div
-          class="security-notice"
-          id="forced-password-change"
-          hidden
-        >
-
-          <h2>
-            パスワードの変更が必要です
-          </h2>
-
-          <p>
-            管理者によってパスワード変更が必要に設定されています。
-          </p>
-
-          <a
-            href="#security-settings"
-            class="primary-button"
-          >
-            パスワードを変更する
-          </a>
-
+        <div class="security-notice" id="forced-password-change" hidden>
+          <h2>パスワードの変更が必要です</h2>
+          <p>管理者によってパスワード変更が必要に設定されています。</p>
+          <a href="#security-settings" class="primary-button">パスワードを変更する</a>
         </div>
-
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         BOT
-    ====================================================== -->
-
-    <section
-      id="bot"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= BOT ================= -->
+    <section id="bot" class="page-section" hidden>
       <div class="section-inner">
-
         <div class="page-header">
-
           <div>
-
-            <p class="section-label">
-              BOT
-            </p>
-
-            <h1>
-              Bot
-            </h1>
-
-            <p>
-              KAKIKOMIのBot一覧です。
-            </p>
-
+            <p class="section-label">BOT</p>
+            <h1>Bot</h1>
+            <p>KAKIKOMIのBot一覧です。</p>
           </div>
-
         </div>
 
+        <div id="bot-list" class="bot-list"></div>
 
-        <div
-          id="bot-list"
-          class="bot-list"
-        >
+        <div id="bot-management" class="bot-management" hidden>
+          <h2>Bot管理</h2>
+          <button type="button" class="primary-button" id="create-bot-button">Botを作成</button>
         </div>
-
-
-        <div
-          id="bot-management"
-          class="bot-management"
-          hidden
-        >
-
-          <h2>
-            Bot管理
-          </h2>
-
-          <button
-            type="button"
-            class="primary-button"
-            id="create-bot-button"
-          >
-            Botを作成
-          </button>
-
-        </div>
-
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         RULES
-    ====================================================== -->
-
-    <section
-      id="rules"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= RULES ================= -->
+    <section id="rules" class="page-section" hidden>
       <div class="section-inner narrow-section">
-
         <div class="page-header">
-
-          <p class="section-label">
-            RULES
-          </p>
-
-          <h1>
-            利用ルール
-          </h1>
-
+          <p class="section-label">RULES</p>
+          <h1>利用ルール</h1>
         </div>
 
         <ol class="rules-list">
-
-          <li>
-            他の利用者を傷つける投稿は禁止です。
-          </li>
-
-          <li>
-            法律に違反する投稿は禁止です。
-          </li>
-
-          <li>
-            個人情報を無断で公開しないでください。
-          </li>
-
-          <li>
-            スパムや迷惑行為は禁止です。
-          </li>
-
-          <li>
-            他の利用者が安心して利用できるようにしてください。
-          </li>
-
+          <li>他の利用者を傷つける投稿は禁止です。</li>
+          <li>法律に違反する投稿は禁止です。</li>
+          <li>個人情報を無断で公開しないでください。</li>
+          <li>スパムや迷惑行為は禁止です。</li>
+          <li>他の利用者が安心して利用できるようにしてください。</li>
         </ol>
-
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         PRIVACY
-    ====================================================== -->
-
-    <section
-      id="privacy"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= PRIVACY ================= -->
+    <section id="privacy" class="page-section" hidden>
       <div class="section-inner narrow-section">
-
         <div class="page-header">
-
-          <p class="section-label">
-            PRIVACY
-          </p>
-
-          <h1>
-            プライバシー
-          </h1>
-
+          <p class="section-label">PRIVACY</p>
+          <h1>プライバシー</h1>
         </div>
-
-        <p>
-          KAKIKOMIでは、サービス提供に必要な情報を適切に取り扱います。
-        </p>
-
+        <p>KAKIKOMIでは、サービス提供に必要な情報を適切に取り扱います。</p>
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         CONTACT
-    ====================================================== -->
-
-    <section
-      id="contact"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= CONTACT ================= -->
+    <section id="contact" class="page-section" hidden>
       <div class="section-inner narrow-section">
-
         <div class="page-header">
-
-          <p class="section-label">
-            CONTACT
-          </p>
-
-          <h1>
-            お問い合わせ
-          </h1>
-
+          <p class="section-label">CONTACT</p>
+          <h1>お問い合わせ</h1>
         </div>
-
-        <p>
-          KAKIKOMIに関するお問い合わせはこちらから行えます。
-        </p>
-
+        <p>KAKIKOMIに関するお問い合わせはこちらから行えます。</p>
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         ADMIN DASHBOARD
-    ====================================================== -->
-
-    <section
-      id="admin"
-      class="page-section admin-page"
-      hidden
-    >
-
+    <!-- ================= ADMIN DASHBOARD ================= -->
+    <section id="admin" class="page-section admin-page" hidden>
       <div class="section-inner">
 
         <div class="admin-header">
-
           <div>
-
-            <p class="section-label">
-              ADMINISTRATION
-            </p>
-
-            <h1>
-              ADMINPAGE
-            </h1>
-
-            <p>
-              KAKIKOMI管理者用ページ
-            </p>
-
+            <p class="section-label">ADMINISTRATION</p>
+            <h1>ADMINPAGE</h1>
+            <p>KAKIKOMI管理者用ページ</p>
           </div>
-
-          <span class="admin-badge">
-            ADMIN
-          </span>
-
+          <span class="admin-badge">ADMIN</span>
         </div>
-
 
         <div class="admin-dashboard">
-
-          <div class="admin-stat-card">
-
-            <span>
-              ユーザー
-            </span>
-
-            <strong id="admin-user-count">
-              0
-            </strong>
-
-          </div>
-
-
-          <div class="admin-stat-card">
-
-            <span>
-              投稿
-            </span>
-
-            <strong id="admin-post-count">
-              0
-            </strong>
-
-          </div>
-
-
-          <div class="admin-stat-card">
-
-            <span>
-              通報
-            </span>
-
-            <strong id="admin-report-count">
-              0
-            </strong>
-
-          </div>
-
-
-          <div class="admin-stat-card">
-
-            <span>
-              BAN中
-            </span>
-
-            <strong id="admin-ban-count">
-              0
-            </strong>
-
-          </div>
-
+          <div class="admin-stat-card"><span>ユーザー</span><strong id="admin-user-count">0</strong></div>
+          <div class="admin-stat-card"><span>投稿</span><strong id="admin-post-count">0</strong></div>
+          <div class="admin-stat-card"><span>通報</span><strong id="admin-report-count">0</strong></div>
+          <div class="admin-stat-card"><span>BAN中</span><strong id="admin-ban-count">0</strong></div>
         </div>
 
-
-        <nav
-          class="admin-navigation"
-          aria-label="管理メニュー"
-        >
-
-          <a href="#admin-users">
-            ユーザー管理
-          </a>
-
-          <a href="#admin-posts">
-            投稿管理
-          </a>
-
-          <a href="#admin-reports">
-            通報管理
-          </a>
-
-          <a href="#admin-ip-ban">
-            IP制限
-          </a>
-
-          <a href="#admin-bots">
-            Bot管理
-          </a>
-
-          <a href="#admin-private-boards">
-            掲示板管理
-          </a>
-
-          <a href="#admin-site-settings">
-            サイト設定
-          </a>
-
+        <nav class="admin-navigation" aria-label="管理メニュー">
+          <a href="#admin-users">ユーザー管理</a>
+          <a href="#admin-posts">投稿管理</a>
+          <a href="#admin-reports">通報管理</a>
+          <a href="#admin-ip-ban">IP制限</a>
+          <a href="#admin-bots">Bot管理</a>
+          <a href="#admin-private-boards">掲示板管理</a>
+          <a href="#admin-site-settings">サイト設定</a>
         </nav>
 
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         ADMIN USERS
-    ====================================================== -->
-
-    <section
-      id="admin-users"
-      class="page-section admin-page"
-      hidden
-    >
-
+    <!-- ================= ADMIN USERS ================= -->
+    <section id="admin-users" class="page-section admin-page" hidden>
       <div class="section-inner">
 
         <div class="admin-section-header">
-
           <div>
-
-            <p class="section-label">
-              USERS
-            </p>
-
-            <h1>
-              ユーザー管理
-            </h1>
-
+            <p class="section-label">USERS</p>
+            <h1>ユーザー管理</h1>
           </div>
-
         </div>
 
-
-        <form
-          id="admin-user-search-form"
-          class="search-form"
-        >
-
-          <input
-            type="search"
-            id="admin-user-search"
-            placeholder="ユーザー名を検索"
-          >
-
-          <button
-            type="submit"
-            class="primary-button"
-          >
-            検索
-          </button>
-
+        <form id="admin-user-search-form" class="search-form">
+          <input type="search" id="admin-user-search" placeholder="ユーザー名を検索">
+          <button type="submit" class="primary-button">検索</button>
         </form>
 
-
-        <div
-          class="admin-table-wrapper"
-          id="admin-user-list"
-        >
-
+        <div class="admin-table-wrapper" id="admin-user-list">
           <table class="admin-table">
-
             <thead>
-
               <tr>
-
-                <th>
-                  ユーザー名
-                </th>
-
-                <th>
-                  状態
-                </th>
-
-                <th>
-                  権限
-                </th>
-
-                <th>
-                  操作
-                </th>
-
+                <!-- JSが出力する5列に合わせた -->
+                <th>ユーザー名</th>
+                <th>ID</th>
+                <th>状態</th>
+                <th>作成日</th>
+                <th>操作</th>
               </tr>
-
             </thead>
-
-            <tbody id="admin-users-table-body">
-            </tbody>
-
+            <tbody id="admin-users-table-body"></tbody>
           </table>
-
         </div>
 
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         ADMIN USER DETAIL
-    ====================================================== -->
-
-    <section
-      id="admin-user-detail"
-      class="page-section admin-page"
-      hidden
-    >
-
+    <!-- ================= ADMIN USER DETAIL ================= -->
+    <section id="admin-user-detail" class="page-section admin-page" hidden>
       <div class="section-inner narrow-section">
 
         <div class="page-header">
-
-          <p class="section-label">
-            USER DETAIL
-          </p>
-
-          <h1>
-            ユーザー詳細
-          </h1>
-
+          <p class="section-label">USER DETAIL</p>
+          <h1>ユーザー詳細</h1>
         </div>
 
-
-        <input
-          type="hidden"
-          id="admin-target-user-id"
-        >
-
+        <input type="hidden" id="admin-target-user-id">
 
         <div class="account-panel">
-
-          <h2 id="admin-target-username">
-            ユーザー
-          </h2>
-
-          <p>
-            ユーザーの管理設定を変更できます。
-          </p>
-
+          <h2 id="admin-target-username">ユーザー</h2>
+          <p>ユーザーの管理設定を変更できます。</p>
         </div>
 
-
-        <form
-          id="admin-user-settings-form"
-          class="settings-form"
-        >
-
+        <form id="admin-user-settings-form" class="settings-form">
           <div class="form-group">
-
-            <label for="admin-target-status">
-              アカウント状態
-            </label>
-
+            <label for="admin-target-status">アカウント状態</label>
             <select id="admin-target-status">
-
-              <option value="active">
-                有効
-              </option>
-
-              <option value="suspended">
-                停止
-              </option>
-
-              <option value="banned">
-                BAN
-              </option>
-
+              <option value="active">有効</option>
+              <option value="suspended">停止</option>
+              <option value="banned">BAN</option>
             </select>
-
           </div>
-
 
           <div class="form-option">
-
-            <input
-              type="checkbox"
-              id="admin-disable-posting"
-            >
-
-            <label for="admin-disable-posting">
-              投稿を禁止
-            </label>
-
+            <input type="checkbox" id="admin-disable-posting">
+            <label for="admin-disable-posting">投稿を禁止</label>
           </div>
-
 
           <div class="form-option">
-
-            <input
-              type="checkbox"
-              id="admin-disable-replies"
-            >
-
-            <label for="admin-disable-replies">
-              返信を禁止
-            </label>
-
+            <input type="checkbox" id="admin-disable-replies">
+            <label for="admin-disable-replies">返信を禁止</label>
           </div>
-
 
           <div class="form-option">
-
-            <input
-              type="checkbox"
-              id="admin-force-password-change"
-            >
-
-            <label for="admin-force-password-change">
-              次回ログイン時にパスワード変更を要求
-            </label>
-
+            <input type="checkbox" id="admin-force-password-change">
+            <label for="admin-force-password-change">次回ログイン時にパスワード変更を要求</label>
           </div>
 
-
-          <button
-            type="submit"
-            class="primary-button"
-          >
-            保存
-          </button>
-
-          <button
-            type="button"
-            class="danger-button"
-            id="admin-force-logout"
-          >
-            強制ログアウト
-          </button>
-
+          <button type="submit" class="primary-button">保存</button>
+          <button type="button" class="danger-button" id="admin-force-logout">強制ログアウト</button>
         </form>
 
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         ADMIN POSTS
-    ====================================================== -->
-
-    <section
-      id="admin-posts"
-      class="page-section admin-page"
-      hidden
-    >
-
+    <!-- ================= ADMIN POSTS ================= -->
+    <section id="admin-posts" class="page-section admin-page" hidden>
       <div class="section-inner">
-
         <div class="page-header">
-
-          <p class="section-label">
-            POSTS
-          </p>
-
-          <h1>
-            投稿管理
-          </h1>
-
+          <p class="section-label">POSTS</p>
+          <h1>投稿管理</h1>
         </div>
 
-
-        <div
-          class="admin-table-wrapper"
-          id="admin-post-list"
-        >
-
-          <table class="admin-table">
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  投稿日時
-                </th>
-
-                <th>
-                  掲示板
-                </th>
-
-                <th>
-                  タイトル
-                </th>
-
-                <th>
-                  投稿者
-                </th>
-
-                <th>
-                  操作
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-            </tbody>
-
-          </table>
-
-        </div>
-
+        <!-- JSがinnerHTMLで<article>を流し込むので、tableをやめて
+             CSSの .admin-post-list（grid）に合わせた -->
+        <div class="admin-post-list" id="admin-post-list"></div>
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         ADMIN REPORTS
-    ====================================================== -->
-
-    <section
-      id="admin-reports"
-      class="page-section admin-page"
-      hidden
-    >
-
+    <!-- ================= ADMIN REPORTS ================= -->
+    <section id="admin-reports" class="page-section admin-page" hidden>
       <div class="section-inner">
-
         <div class="page-header">
-
-          <p class="section-label">
-            REPORTS
-          </p>
-
-          <h1>
-            通報管理
-          </h1>
-
+          <p class="section-label">REPORTS</p>
+          <h1>通報管理</h1>
         </div>
 
-
-        <div
-          class="admin-table-wrapper"
-          id="admin-report-list"
-        >
-
-          <table class="admin-table">
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  日時
-                </th>
-
-                <th>
-                  投稿
-                </th>
-
-                <th>
-                  理由
-                </th>
-
-                <th>
-                  状態
-                </th>
-
-                <th>
-                  操作
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-            </tbody>
-
-          </table>
-
-        </div>
-
+        <!-- 上と同じ理由でtableをやめた -->
+        <div class="report-list" id="admin-report-list"></div>
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         ADMIN IP BAN
-    ====================================================== -->
-
-    <section
-      id="admin-ip-ban"
-      class="page-section admin-page"
-      hidden
-    >
-
+    <!-- ================= ADMIN IP BAN ================= -->
+    <section id="admin-ip-ban" class="page-section admin-page" hidden>
       <div class="section-inner">
-
         <div class="page-header">
-
-          <p class="section-label">
-            IP BAN
-          </p>
-
-          <h1>
-            IP制限
-          </h1>
-
+          <p class="section-label">IP BAN</p>
+          <h1>IP制限</h1>
         </div>
 
-
-        <form
-          id="ip-ban-form"
-          class="settings-form"
-        >
-
+        <form id="ip-ban-form" class="settings-form">
           <div class="form-group">
-
-            <label for="ban-ip">
-              IPアドレス
-            </label>
-
-            <input
-              type="text"
-              id="ban-ip"
-              required
-            >
-
+            <label for="ban-ip">IPアドレス</label>
+            <input type="text" id="ban-ip" required>
           </div>
 
-
           <div class="form-group">
-
-            <label for="ban-reason">
-              理由
-            </label>
-
-            <input
-              type="text"
-              id="ban-reason"
-              maxlength="500"
-            >
-
+            <label for="ban-reason">理由</label>
+            <input type="text" id="ban-reason" maxlength="500">
           </div>
 
-
           <div class="form-group">
-
-            <label for="ban-duration">
-              期間
-            </label>
-
+            <label for="ban-duration">期間</label>
             <select id="ban-duration">
-
-              <option value="1">
-                1日
-              </option>
-
-              <option value="7">
-                7日
-              </option>
-
-              <option value="30">
-                30日
-              </option>
-
-              <option value="permanent">
-                無期限
-              </option>
-
+              <option value="1">1日</option>
+              <option value="7">7日</option>
+              <option value="30">30日</option>
+              <option value="permanent">無期限</option>
             </select>
-
           </div>
 
-
-          <button
-            type="submit"
-            class="danger-button"
-          >
-            アクセス制限を追加
-          </button>
-
+          <button type="submit" class="danger-button">アクセス制限を追加</button>
         </form>
 
-
-        <div
-          id="ip-ban-list"
-          class="admin-table-wrapper"
-        >
-
+        <div id="ip-ban-list" class="admin-table-wrapper">
           <table class="admin-table">
-
             <thead>
-
               <tr>
-
-                <th>
-                  IP
-                </th>
-
-                <th>
-                  理由
-                </th>
-
-                <th>
-                  期間
-                </th>
-
-                <th>
-                  操作
-                </th>
-
+                <th>IP</th>
+                <th>理由</th>
+                <th>期間</th>
+                <th>操作</th>
               </tr>
-
             </thead>
-
-            <tbody id="ip-ban-table-body">
-            </tbody>
-
+            <tbody id="ip-ban-table-body"></tbody>
           </table>
-
         </div>
-
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         ADMIN BOTS
-    ====================================================== -->
-
-    <section
-      id="admin-bots"
-      class="page-section admin-page"
-      hidden
-    >
-
+    <!-- ================= ADMIN BOTS ================= -->
+    <section id="admin-bots" class="page-section admin-page" hidden>
       <div class="section-inner">
 
         <div class="admin-section-header">
-
           <div>
-
-            <p class="section-label">
-              BOTS
-            </p>
-
-            <h1>
-              Bot管理
-            </h1>
-
+            <p class="section-label">BOTS</p>
+            <h1>Bot管理</h1>
           </div>
-
-
-          <button
-            type="button"
-            id="admin-create-bot"
-            class="primary-button"
-          >
-            Botを作成
-          </button>
-
+          <button type="button" id="admin-create-bot" class="primary-button">Botを作成</button>
         </div>
 
-
-        <div
-          id="admin-bot-list"
-          class="admin-bot-list"
-        >
-        </div>
+        <div id="admin-bot-list" class="admin-bot-list"></div>
 
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         ADMIN PRIVATE BOARDS
-    ====================================================== -->
-
-    <section
-      id="admin-private-boards"
-      class="page-section admin-page"
-      hidden
-    >
-
+    <!-- ================= ADMIN PRIVATE BOARDS ================= -->
+    <section id="admin-private-boards" class="page-section admin-page" hidden>
       <div class="section-inner">
 
         <div class="admin-section-header">
-
           <div>
-
-            <p class="section-label">
-              PRIVATE BOARDS
-            </p>
-
-            <h1>
-              プライベート掲示板管理
-            </h1>
-
+            <p class="section-label">PRIVATE BOARDS</p>
+            <h1>プライベート掲示板管理</h1>
           </div>
-
         </div>
 
-
-        <div
-          id="admin-private-board-list"
-          class="admin-table-wrapper"
-        >
-
+        <div id="admin-private-board-list" class="admin-table-wrapper">
           <table class="admin-table">
-
             <thead>
-
               <tr>
-
-                <th>
-                  掲示板名
-                </th>
-
-                <th>
-                  作成者
-                </th>
-
-                <th>
-                  公開設定
-                </th>
-
-                <th>
-                  メンバー
-                </th>
-
-                <th>
-                  操作
-                </th>
-
+                <th>掲示板名</th>
+                <th>作成者</th>
+                <th>公開設定</th>
+                <th>メンバー</th>
+                <th>操作</th>
               </tr>
-
             </thead>
-
-            <tbody id="admin-private-board-table-body">
-            </tbody>
-
+            <tbody id="admin-private-board-table-body"></tbody>
           </table>
-
         </div>
 
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         ADMIN SITE SETTINGS
-    ====================================================== -->
-
-    <section
-      id="admin-site-settings"
-      class="page-section admin-page"
-      hidden
-    >
-
+    <!-- ================= ADMIN SITE SETTINGS ================= -->
+    <section id="admin-site-settings" class="page-section admin-page" hidden>
       <div class="section-inner narrow-section">
 
         <div class="admin-section-header">
-
           <div>
-
-            <p class="section-label">
-              SITE SETTINGS
-            </p>
-
-            <h1>
-              サイト設定
-            </h1>
-
+            <p class="section-label">SITE SETTINGS</p>
+            <h1>サイト設定</h1>
           </div>
-
         </div>
 
-
-        <form
-          id="admin-site-settings-form"
-          class="settings-form"
-        >
+        <form id="admin-site-settings-form" class="settings-form">
+          <div class="form-group">
+            <label for="site-name">サイト名</label>
+            <input type="text" id="site-name" value="KAKIKOMI" maxlength="100">
+          </div>
 
           <div class="form-group">
-
-            <label for="site-name">
-              サイト名
-            </label>
-
-            <input
-              type="text"
-              id="site-name"
-              value="KAKIKOMI"
-              maxlength="100"
-            >
-
+            <label for="site-description">サイト説明</label>
+            <textarea id="site-description" maxlength="1000">みんなで自由に書き込める総合掲示板</textarea>
           </div>
-
-
-          <div class="form-group">
-
-            <label for="site-description">
-              サイト説明
-            </label>
-
-            <textarea
-              id="site-description"
-              maxlength="1000"
-            >みんなで自由に書き込める総合掲示板</textarea>
-
-          </div>
-
 
           <div class="form-option">
-
-            <input
-              type="checkbox"
-              id="site-registration-enabled"
-              checked
-            >
-
-            <label for="site-registration-enabled">
-              新規アカウント登録を許可
-            </label>
-
+            <input type="checkbox" id="site-registration-enabled" checked>
+            <label for="site-registration-enabled">新規アカウント登録を許可</label>
           </div>
-
 
           <div class="form-option">
-
-            <input
-              type="checkbox"
-              id="site-posting-enabled"
-              checked
-            >
-
-            <label for="site-posting-enabled">
-              投稿を許可
-            </label>
-
+            <input type="checkbox" id="site-posting-enabled" checked>
+            <label for="site-posting-enabled">投稿を許可</label>
           </div>
-
 
           <div class="form-option">
-
-            <input
-              type="checkbox"
-              id="site-maintenance-mode"
-            >
-
-            <label for="site-maintenance-mode">
-              メンテナンスモード
-            </label>
-
+            <input type="checkbox" id="site-maintenance-mode">
+            <label for="site-maintenance-mode">メンテナンスモード</label>
           </div>
 
-
-          <button
-            type="submit"
-            class="primary-button"
-          >
-            サイト設定を保存
-          </button>
-
+          <button type="submit" class="primary-button">サイト設定を保存</button>
         </form>
 
       </div>
-
     </section>
 
 
-
-    <!-- =====================================================
-         ERROR
-    ====================================================== -->
-
-    <section
-      id="error-page"
-      class="page-section"
-      hidden
-    >
-
+    <!-- ================= ERROR ================= -->
+    <section id="error-page" class="page-section" hidden>
       <div class="section-inner narrow-section">
-
-        <h1>
-          ページが見つかりません
-        </h1>
-
-        <p>
-          指定されたページは存在しません。
-        </p>
-
-        <a
-          href="#home"
-          class="primary-button"
-        >
-          ホームへ戻る
-        </a>
-
+        <h1>ページが見つかりません</h1>
+        <p>指定されたページは存在しません。</p>
+        <a href="#home" class="primary-button">ホームへ戻る</a>
       </div>
-
     </section>
 
   </main>
 
 
-
-  <!-- =======================================================
-       FOOTER
-  ======================================================== -->
-
-  <footer
-    class="site-footer"
-    id="site-footer"
-  >
-
+  <!-- ================= FOOTER ================= -->
+  <footer class="site-footer" id="site-footer">
     <div class="footer-inner">
-
       <div>
-
-        <strong>
-          KAKIKOMI
-        </strong>
-
-        <p>
-          みんなで自由に書き込める総合掲示板
-        </p>
-
+        <strong class="footer-brand">KAKIKOMI</strong>
+        <p>みんなで自由に書き込める総合掲示板</p>
       </div>
 
-
-      <nav>
-
-        <a href="#rules">
-          利用ルール
-        </a>
-
-        <a href="#privacy">
-          プライバシー
-        </a>
-
-        <a href="#contact">
-          お問い合わせ
-        </a>
-
+      <nav class="footer-navigation">
+        <a href="#rules">利用ルール</a>
+        <a href="#privacy">プライバシー</a>
+        <a href="#contact">お問い合わせ</a>
       </nav>
-
     </div>
-
   </footer>
 
 
+  <!-- =====================================================
+       MODALS
+       CSSは .modal > .modal-backdrop + .modal-panel を想定しているので、
+       .modal-content をやめてその構造に合わせた。
+       背景クリックで閉じられるよう、backdropにも data-close-modal を付けてある。
+       （開閉のJSはまだ無いので、次のJS修正で追加する）
+  ====================================================== -->
 
-  <!-- =======================================================
-       REPORT MODAL
-  ======================================================== -->
+  <!-- 通報モーダル -->
+  <div class="modal" id="report-dialog" hidden>
+    <div class="modal-backdrop" data-close-modal="report-dialog"></div>
 
-  <div
-    class="modal"
-    id="report-dialog"
-    hidden
-  >
-
-    <div class="modal-content">
-
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="report-dialog-title">
       <header class="modal-header">
-
-        <h2>
-          投稿を通報
-        </h2>
-
-        <button
-          type="button"
-          class="modal-close"
-          data-close-modal="report-dialog"
-          aria-label="閉じる"
-        >
-          &times;
-        </button>
-
+        <h2 id="report-dialog-title">投稿を通報</h2>
+        <button type="button" class="modal-close" data-close-modal="report-dialog" aria-label="閉じる">&times;</button>
       </header>
 
-
       <div class="modal-body">
-
-        <form id="modal-report-form">
-
-          <input
-            type="hidden"
-            id="modal-report-post-id"
-          >
-
+        <form id="modal-report-form" class="report-form">
+          <input type="hidden" id="modal-report-post-id">
 
           <div class="form-group">
-
-            <label for="modal-report-reason">
-              通報理由
-            </label>
-
-            <select
-              id="modal-report-reason"
-              required
-            >
-
-              <option value="">
-                選択してください
-              </option>
-
-              <option value="spam">
-                スパム・迷惑行為
-              </option>
-
-              <option value="harassment">
-                嫌がらせ
-              </option>
-
-              <option value="illegal">
-                不適切な内容
-              </option>
-
-              <option value="copyright">
-                著作権に関する問題
-              </option>
-
-              <option value="impersonation">
-                なりすまし
-              </option>
-
-              <option value="other">
-                その他
-              </option>
-
+            <label for="modal-report-reason">通報理由</label>
+            <select id="modal-report-reason" required>
+              <option value="">選択してください</option>
+              <option value="spam">スパム・迷惑行為</option>
+              <option value="harassment">嫌がらせ</option>
+              <option value="illegal">不適切な内容</option>
+              <option value="copyright">著作権に関する問題</option>
+              <option value="impersonation">なりすまし</option>
+              <option value="other">その他</option>
             </select>
-
           </div>
-
 
           <div class="form-group">
-
-            <label for="modal-report-detail">
-              詳細
-            </label>
-
-            <textarea
-              id="modal-report-detail"
-              maxlength="2000"
-            ></textarea>
-
+            <label for="modal-report-detail">詳細</label>
+            <textarea id="modal-report-detail" maxlength="2000"></textarea>
           </div>
 
-
-          <button
-            type="submit"
-            class="danger-button"
-          >
-            通報する
-          </button>
-
+          <button type="submit" class="danger-button">通報する</button>
         </form>
-
       </div>
-
     </div>
-
   </div>
 
 
+  <!-- 投稿削除モーダル -->
+  <div class="modal" id="delete-post-dialog" hidden>
+    <div class="modal-backdrop" data-close-modal="delete-post-dialog"></div>
 
-  <!-- =======================================================
-       DELETE POST MODAL
-  ======================================================== -->
-
-  <div
-    class="modal"
-    id="delete-post-dialog"
-    hidden
-  >
-
-    <div class="modal-content">
-
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="delete-post-dialog-title">
       <header class="modal-header">
-
-        <h2>
-          投稿を削除
-        </h2>
-
-        <button
-          type="button"
-          class="modal-close"
-          data-close-modal="delete-post-dialog"
-          aria-label="閉じる"
-        >
-          &times;
-        </button>
-
+        <h2 id="delete-post-dialog-title">投稿を削除</h2>
+        <button type="button" class="modal-close" data-close-modal="delete-post-dialog" aria-label="閉じる">&times;</button>
       </header>
 
-
       <div class="modal-body">
+        <p>この投稿を削除しますか？</p>
 
-        <p>
-          この投稿を削除しますか？
-        </p>
-
-        <form id="delete-post-form">
-
-          <input
-            type="hidden"
-            id="delete-post-id"
-          >
+        <form id="delete-post-form" class="settings-form">
+          <input type="hidden" id="delete-post-id">
 
           <div class="modal-footer">
-
-            <button
-              type="button"
-              class="secondary-button"
-              data-close-modal="delete-post-dialog"
-            >
-              キャンセル
-            </button>
-
-            <button
-              type="submit"
-              class="danger-button"
-            >
-              削除する
-            </button>
-
+            <button type="button" class="secondary-button" data-close-modal="delete-post-dialog">キャンセル</button>
+            <button type="submit" class="danger-button">削除する</button>
           </div>
-
         </form>
-
       </div>
-
     </div>
-
   </div>
 
 
+  <!-- アカウント削除モーダル -->
+  <div class="modal" id="delete-account-dialog" hidden>
+    <div class="modal-backdrop" data-close-modal="delete-account-dialog"></div>
 
-  <!-- =======================================================
-       DELETE ACCOUNT MODAL
-  ======================================================== -->
-
-  <div
-    class="modal"
-    id="delete-account-dialog"
-    hidden
-  >
-
-    <div class="modal-content">
-
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="delete-account-dialog-title">
       <header class="modal-header">
-
-        <h2>
-          アカウント削除
-        </h2>
-
-        <button
-          type="button"
-          class="modal-close"
-          data-close-modal="delete-account-dialog"
-          aria-label="閉じる"
-        >
-          &times;
-        </button>
-
+        <h2 id="delete-account-dialog-title">アカウント削除</h2>
+        <button type="button" class="modal-close" data-close-modal="delete-account-dialog" aria-label="閉じる">&times;</button>
       </header>
 
-
       <div class="modal-body">
+        <p>アカウントを削除しますか？</p>
 
-        <p>
-          アカウントを削除しますか？
-        </p>
-
-        <form id="delete-account-form">
-
+        <form id="delete-account-form" class="settings-form">
           <div class="form-group">
-
-            <label for="delete-account-password">
-              パスワード
-            </label>
-
-            <input
-              type="password"
-              id="delete-account-password"
-              required
-            >
-
+            <label for="delete-account-password">パスワード</label>
+            <input type="password" id="delete-account-password" autocomplete="current-password" required>
           </div>
-
 
           <div class="modal-footer">
-
-            <button
-              type="button"
-              class="secondary-button"
-              data-close-modal="delete-account-dialog"
-            >
-              キャンセル
-            </button>
-
-            <button
-              type="submit"
-              class="danger-button"
-            >
-              アカウントを削除
-            </button>
-
+            <button type="button" class="secondary-button" data-close-modal="delete-account-dialog">キャンセル</button>
+            <button type="submit" class="danger-button">アカウントを削除</button>
           </div>
-
         </form>
-
       </div>
-
     </div>
-
   </div>
 
 
+  <!-- Bot作成モーダル
+       formをpanelの外側に出さず、form自体をflex縦並びのpanelにした
+       （.modal-panel の flex レイアウトが header/body/footer に効くようにするため） -->
+  <div class="modal" id="create-bot-dialog" hidden>
+    <div class="modal-backdrop" data-close-modal="create-bot-dialog"></div>
 
-  <!-- =======================================================
-       CREATE BOT MODAL
-  ======================================================== -->
+    <form class="modal-panel" id="create-bot-form" role="dialog" aria-modal="true" aria-labelledby="create-bot-dialog-title">
+      <header class="modal-header">
+        <h2 id="create-bot-dialog-title">Botを作成</h2>
+        <button type="button" class="modal-close" data-close-modal="create-bot-dialog" aria-label="閉じる">&times;</button>
+      </header>
 
-  <div
-    class="modal"
-    id="create-bot-dialog"
-    hidden
-  >
-
-    <div class="modal-content">
-
-      <form id="create-bot-form">
-
-        <header class="modal-header">
-
-          <h2>
-            Botを作成
-          </h2>
-
-          <button
-            type="button"
-            class="modal-close"
-            data-close-modal="create-bot-dialog"
-            aria-label="閉じる"
-          >
-            &times;
-          </button>
-
-        </header>
-
-
-        <div class="modal-body">
-
-          <div class="form-group">
-
-            <label for="bot-name">
-              Bot名
-            </label>
-
-            <input
-              type="text"
-              id="bot-name"
-              maxlength="50"
-              required
-            >
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="bot-description">
-              説明
-            </label>
-
-            <textarea
-              id="bot-description"
-              maxlength="500"
-            ></textarea>
-
-          </div>
-
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="bot-name">Bot名</label>
+          <input type="text" id="bot-name" maxlength="50" required>
         </div>
 
+        <div class="form-group">
+          <label for="bot-description">説明</label>
+          <textarea id="bot-description" maxlength="500"></textarea>
+        </div>
+      </div>
 
-        <footer class="modal-footer">
-
-          <button
-            type="button"
-            class="secondary-button"
-            data-close-modal="create-bot-dialog"
-          >
-            キャンセル
-          </button>
-
-          <button
-            type="submit"
-            class="primary-button"
-          >
-            作成
-          </button>
-
-        </footer>
-
-      </form>
-
-    </div>
-
+      <footer class="modal-footer">
+        <button type="button" class="secondary-button" data-close-modal="create-bot-dialog">キャンセル</button>
+        <button type="submit" class="primary-button">作成</button>
+      </footer>
+    </form>
   </div>
 
 
+  <!-- ================= TOAST ================= -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- =======================================================
-       TOAST / MESSAGE
-  ======================================================== -->
 
-  <div
-    class="toast-container"
-    id="toast-container"
-    aria-live="polite"
-    aria-atomic="true"
-  >
+  <!-- ================= LOADING ================= -->
+  <div class="global-loading" id="global-loading" aria-hidden="true" hidden>
+    <div class="loading-spinner"></div>
+    <p>読み込み中...</p>
   </div>
 
 
-
-  <!-- =======================================================
-       LOADING
-  ======================================================== -->
-
-  <div
-    class="global-loading"
-    id="global-loading"
-    aria-hidden="true"
-    hidden
-  >
-
-    <div class="loading-spinner">
-    </div>
-
-    <p>
-      読み込み中...
-    </p>
-
-  </div>
-
-
-
-  <!-- =======================================================
-       SUPABASE
-  ======================================================== -->
-
-  <script
-    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-  ></script>
-
-
-  <!-- =======================================================
-       KAKIKOMI JAVASCRIPT
-  ======================================================== -->
-
-  <script
-    src="script.js?v=20260928-3"
-  ></script>
+  <!-- ================= SCRIPTS ================= -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js?v=20260928-4"></script>
 
 </body>
 </html>
