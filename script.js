@@ -17,7 +17,7 @@
     "sb_publishable_Mk4N_TF_cynZ53R7nmUyjQ_JeXsZ_Cs";
 
   const ADMIN_EMAIL =
-    "ywcnbkceqon@admin-account";
+    "ywcnbkceqon@admin.account";
 
   const supabase =
     window.supabase.createClient(
