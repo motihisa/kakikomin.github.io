@@ -1,14 +1,11 @@
 /* =========================================================
    KAKIKOMI - script.js
    Supabase + Hash Router
+   IP BAN対応版
    ========================================================= */
 
 (() => {
   "use strict";
-
-  /* =========================================================
-     SUPABASE
-     ========================================================= */
 
   const SUPABASE_URL =
     "https://wtlmjaqyphmaeqhipqht.supabase.co";
@@ -17,17 +14,12 @@
     "sb_publishable_Mk4N_TF_cynZ53R7nmUyjQ_JeXsZ_Cs";
 
   const ADMIN_EMAIL =
-    "ywcnbkceqon@admin.account";
+    "ywcnbkceqon@admin-account";
 
-  const supabase =
-    window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
-    );
-
-  /* =========================================================
-     DOM
-     ========================================================= */
+  const supabase = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
 
   const $ = (selector, root = document) =>
     root.querySelector(selector);
@@ -35,20 +27,15 @@
   const $$ = (selector, root = document) =>
     [...root.querySelectorAll(selector)];
 
-  /* =========================================================
-     STATE
-     ========================================================= */
-
   const state = {
     user: null,
     profile: null,
     posts: [],
     reports: [],
     users: [],
-    likes: [],
+    ipBans: [],
     currentCategory: "all",
-    currentSort: "new",
-    currentReportPostId: null
+    currentSort: "new"
   };
 
   /* =========================================================
@@ -82,34 +69,17 @@
     });
   }
 
-  function setText(id, value) {
-    const element =
-      document.getElementById(id);
-
-    if (element) {
-      element.textContent =
-        value ?? "";
-    }
-  }
-
-  function toast(
-    message,
-    type = "info"
-  ) {
-    const container =
-      $("#toast-container");
+  function toast(message, type = "info") {
+    const container = $("#toast-container");
 
     if (!container) {
       alert(message);
       return;
     }
 
-    const item =
-      document.createElement("div");
+    const item = document.createElement("div");
 
-    item.className =
-      `toast toast-${type}`;
-
+    item.className = `toast toast-${type}`;
     item.textContent = message;
 
     container.appendChild(item);
@@ -120,21 +90,27 @@
   }
 
   function setLoading(value) {
-    const loading =
-      $("#global-loading");
+    const loading = $("#global-loading");
 
     if (!loading) return;
 
     loading.hidden = !value;
-
     loading.setAttribute(
       "aria-hidden",
       value ? "false" : "true"
     );
   }
 
+  function setText(id, value) {
+    const element = document.getElementById(id);
+
+    if (element) {
+      element.textContent = value ?? "";
+    }
+  }
+
   /* =========================================================
-     ROUTES
+     ROUTER
      ========================================================= */
 
   const ROUTES = {
@@ -142,128 +118,51 @@
     "home": "home",
 
     "login": "login",
+    "Create_account": "Create_account",
+    "register": "Create_account",
 
-    "Create_account":
-      "Create_account",
+    "profile": "profile",
+    "account": "account",
 
-    "register":
-      "Create_account",
+    "board": "board",
+    "create-post": "create-post",
 
-    "forgot-password":
-      "forgot-password",
+    "questions": "questions",
+    "consultations": "consultations",
 
-    "account":
-      "account",
+    "search": "search",
+    "notifications": "notifications",
 
-    "profile":
-      "profile",
+    "report": "report",
+    "share": "share",
 
-    "board":
-      "board",
+    "account-settings": "account-settings",
+    "security-settings": "security-settings",
 
-    "create-post":
-      "create-post",
+    "private-boards": "private-boards",
+    "rules": "rules",
+    "privacy": "privacy",
+    "contact": "contact",
 
-    "questions":
-      "questions",
+    "bot": "bot",
 
-    "consultations":
-      "consultations",
-
-    "search":
-      "search",
-
-    "my-posts":
-      "my-posts",
-
-    "bookmarks":
-      "bookmarks",
-
-    "notifications":
-      "notifications",
-
-    "report":
-      "report",
-
-    "share":
-      "share",
-
-    "private-boards":
-      "private-boards",
-
-    "account-settings":
-      "account-settings",
-
-    "security-settings":
-      "security-settings",
-
-    "bot":
-      "bot",
-
-    "rules":
-      "rules",
-
-    "privacy":
-      "privacy",
-
-    "contact":
-      "contact",
-
-    /* ADMIN */
-    "admin":
-      "admin",
-
-    "admin-users":
-      "admin-users",
-
-    "admin-user-detail":
-      "admin-user-detail",
-
-    "admin-posts":
-      "admin-posts",
-
-    "admin-reports":
-      "admin-reports",
-
-    "admin-ip-ban":
-      "admin-ip-ban",
-
-    "admin-bots":
-      "admin-bots",
-
-    "admin-private-boards":
-      "admin-private-boards",
-
-    "admin-site-settings":
-      "admin-site-settings",
-
-    "error-page":
-      "error-page"
+    /* 管理画面 */
+    "admin": "admin",
+    "admin-users": "admin-users",
+    "admin-user-detail": "admin-user-detail",
+    "admin-posts": "admin-posts",
+    "admin-reports": "admin-reports",
+    "admin-ip-ban": "admin-ip-ban",
+    "admin-bots": "admin-bots",
+    "admin-private-boards": "admin-private-boards",
+    "admin-site-settings": "admin-site-settings"
   };
 
   function getRoute() {
     const hash =
-      location.hash.replace(
-        /^#/,
-        ""
-      );
+      location.hash.replace(/^#/, "");
 
-    if (ROUTES[hash]) {
-      return ROUTES[hash];
-    }
-
-    /*
-      HTMLに直接存在するIDなら
-      そのままルートとして使用する
-    */
-    if (
-      hash &&
-      document.getElementById(hash)
-    ) {
-      return hash;
-    }
-
-    return null;
+    return ROUTES[hash] || null;
   }
 
   function navigate(route) {
@@ -271,143 +170,129 @@
       route = `#${route}`;
     }
 
-    if (
-      location.hash === route
-    ) {
+    if (location.hash === route) {
       renderRoute();
     } else {
       location.hash = route;
     }
   }
 
+  function renderRoute() {
+    const route = getRoute();
+
+    const sections =
+      $$(".page-section");
+
+    sections.forEach(section => {
+      section.hidden = true;
+      section.classList.remove("active");
+    });
+
+    if (!route) {
+      const error = $("#error-page");
+
+      if (error) {
+        error.hidden = false;
+        error.classList.add("active");
+      }
+
+      return;
+    }
+
+    const target =
+      document.getElementById(route);
+
+    if (!target) {
+      const error = $("#error-page");
+
+      if (error) {
+        error.hidden = false;
+        error.classList.add("active");
+      }
+
+      return;
+    }
+
+    if (route.startsWith("admin")) {
+      if (!ensureAdmin()) {
+        return;
+      }
+    }
+
+    target.hidden = false;
+    target.classList.add("active");
+
+    if (route === "board") {
+      loadPosts();
+    }
+
+    if (route === "profile") {
+      loadProfile();
+    }
+
+    if (route === "account") {
+      renderAccount();
+    }
+
+    if (
+      route === "admin" ||
+      route === "admin-users" ||
+      route === "admin-user-detail" ||
+      route === "admin-posts" ||
+      route === "admin-reports" ||
+      route === "admin-ip-ban" ||
+      route === "admin-bots" ||
+      route === "admin-private-boards" ||
+      route === "admin-site-settings"
+    ) {
+      loadAdminData();
+    }
+
+    window.scrollTo({
+      top: 0,
+      behavior: "instant"
+    });
+  }
+
   /* =========================================================
      AUTH
      ========================================================= */
 
-  function isAdmin() {
-    if (!state.user) {
-      return false;
-    }
-
-    /*
-      基本はprofiles.roleを使用。
-      さらに指定された管理者メールも
-      管理者として認識する。
-    */
-
-    if (
-      state.profile?.role ===
-      "admin"
-    ) {
-      return true;
-    }
-
-    if (
-      state.user.email ===
-      ADMIN_EMAIL
-    ) {
-      return true;
-    }
-
-    return false;
-  }
-
-  function ensureLogin() {
-    if (state.user) {
-      return true;
-    }
-
-    toast(
-      "ログインしてください。",
-      "error"
-    );
-
-    navigate("#login");
-
-    return false;
-  }
-
-  function ensureAdmin() {
-    if (!state.user) {
-      toast(
-        "管理者ページを開くにはログインしてください。",
-        "error"
-      );
-
-      navigate("#login");
-
-      return false;
-    }
-
-    if (!isAdmin()) {
-      toast(
-        "管理者権限が必要です。",
-        "error"
-      );
-
-      navigate("#home");
-
-      return false;
-    }
-
-    return true;
-  }
-
   async function loadCurrentUser() {
-    try {
-      const {
-        data,
-        error
-      } =
-        await supabase.auth.getUser();
+    const {
+      data,
+      error
+    } = await supabase.auth.getUser();
 
-      if (error) {
-        console.error(
-          "getUser:",
-          error
-        );
-
-        state.user = null;
-        state.profile = null;
-
-        updateAuthUI();
-
-        return;
-      }
-
-      state.user =
-        data?.user || null;
-
-      if (!state.user) {
-        state.profile = null;
-        updateAuthUI();
-        return;
-      }
-
-      await loadProfile();
-
-      updateAuthUI();
-
-    } catch (error) {
+    if (error) {
       console.error(error);
 
       state.user = null;
       state.profile = null;
 
       updateAuthUI();
+
+      return;
     }
+
+    state.user = data.user || null;
+
+    if (!state.user) {
+      state.profile = null;
+      updateAuthUI();
+      return;
+    }
+
+    await loadProfile();
+    updateAuthUI();
   }
 
-  async function login(
-    email,
-    password
-  ) {
+  async function login(email, password) {
     if (!email || !password) {
       toast(
         "メールアドレスとパスワードを入力してください。",
         "error"
       );
-
       return;
     }
 
@@ -417,29 +302,18 @@
       const {
         data,
         error
-      } =
-        await supabase.auth
-          .signInWithPassword({
-            email,
-            password
-          });
+      } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
       if (error) {
         throw error;
       }
 
-      state.user =
-        data?.user || null;
-
-      if (!state.user) {
-        throw new Error(
-          "ログイン情報を取得できませんでした。"
-        );
-      }
+      state.user = data.user;
 
       await loadProfile();
-
-      updateAuthUI();
 
       toast(
         "ログインしました。",
@@ -447,19 +321,14 @@
       );
 
       navigate("#home");
-
     } catch (error) {
-      console.error(
-        "login:",
-        error
-      );
+      console.error(error);
 
       toast(
         error.message ||
           "ログインに失敗しました。",
         "error"
       );
-
     } finally {
       setLoading(false);
     }
@@ -470,16 +339,11 @@
     email,
     password
   ) {
-    if (
-      !username ||
-      !email ||
-      !password
-    ) {
+    if (!username || !email || !password) {
       toast(
         "必要な項目を入力してください。",
         "error"
       );
-
       return;
     }
 
@@ -489,50 +353,35 @@
       const {
         data,
         error
-      } =
-        await supabase.auth
-          .signUp({
-            email,
-            password
-          });
+      } = await supabase.auth.signUp({
+        email,
+        password
+      });
 
       if (error) {
         throw error;
       }
 
-      if (!data?.user) {
+      if (!data.user) {
         throw new Error(
           "アカウントを作成できませんでした。"
         );
       }
 
-      /*
-        Supabase AuthのUUIDと
-        profiles.idを同じにする
-      */
-
       const {
         error: profileError
-      } =
-        await supabase
-          .from("profiles")
-          .upsert(
-            {
-              id: data.user.id,
-              username,
-              bio: "",
-              role: "user"
-            },
-            {
-              onConflict: "id"
-            }
-          );
+      } = await supabase
+        .from("profiles")
+        .upsert({
+          id: data.user.id,
+          username,
+          bio: "",
+          role: "user",
+          status: "active"
+        });
 
       if (profileError) {
-        console.error(
-          "profile:",
-          profileError
-        );
+        console.error(profileError);
 
         toast(
           "アカウントは作成されましたが、プロフィール作成に失敗しました。",
@@ -542,12 +391,9 @@
         return;
       }
 
-      state.user =
-        data.user;
+      state.user = data.user;
 
       await loadProfile();
-
-      updateAuthUI();
 
       toast(
         "アカウントを作成しました。",
@@ -555,84 +401,45 @@
       );
 
       navigate("#home");
-
     } catch (error) {
-      console.error(
-        "register:",
-        error
-      );
+      console.error(error);
 
       toast(
         error.message ||
           "アカウント作成に失敗しました。",
         "error"
       );
-
     } finally {
       setLoading(false);
     }
   }
 
-  /* =========================================================
-     LOGOUT
-     ========================================================= */
-
   async function logout() {
     setLoading(true);
 
     try {
-      /*
-        Supabaseからログアウト
-      */
       const {
         error
-      } =
-        await supabase.auth.signOut();
+      } = await supabase.auth.signOut();
 
       if (error) {
         throw error;
       }
 
-      /*
-        ローカル状態も必ず消す
-      */
       state.user = null;
       state.profile = null;
-      state.posts = [];
-      state.reports = [];
-      state.users = [];
-      state.likes = [];
-      state.currentReportPostId =
-        null;
-
-      updateAuthUI();
 
       toast(
         "ログアウトしました。",
         "success"
       );
 
-      /*
-        ログイン画面へ
-      */
       navigate("#login");
-
     } catch (error) {
-      console.error(
-        "logout:",
-        error
-      );
-
-      /*
-        Supabase側でセッションが
-        既に消えている場合でも
-        ローカル状態を消す
-      */
+      console.error(error);
 
       state.user = null;
       state.profile = null;
-
-      updateAuthUI();
 
       toast(
         "ログアウト処理を完了しました。",
@@ -640,7 +447,6 @@
       );
 
       navigate("#login");
-
     } finally {
       setLoading(false);
     }
@@ -656,69 +462,43 @@
       return null;
     }
 
-    try {
-      const {
-        data,
-        error
-      } =
-        await supabase
-          .from("profiles")
-          .select("*")
-          .eq(
-            "id",
-            state.user.id
-          )
-          .maybeSingle();
+    const {
+      data,
+      error
+    } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", state.user.id)
+      .maybeSingle();
 
-      if (error) {
-        console.error(
-          "profile:",
-          error
-        );
-
-        state.profile = null;
-
-        return null;
-      }
-
-      /*
-        指定管理者メールなら
-        profileがまだrole=adminでなくても
-        管理者として扱う
-      */
-
-      if (
-        data &&
-        state.user.email ===
-          ADMIN_EMAIL &&
-        data.role !== "admin"
-      ) {
-        data.role = "admin";
-      }
-
-      state.profile = data;
-
-      renderProfile();
-      renderAccount();
-
-      return data;
-
-    } catch (error) {
+    if (error) {
       console.error(error);
-
       state.profile = null;
-
       return null;
     }
+
+    state.profile = data;
+
+    renderProfile();
+    renderAccount();
+
+    return data;
   }
 
   function renderProfile() {
-    const profile =
-      state.profile;
+    const profile = state.profile;
 
-    if (!profile) {
-      return;
-    }
+    if (!profile) return;
+
+    setText(
+      "profile-username",
+      profile.username || ""
+    );
+
+    setText(
+      "profile-bio",
+      profile.bio || ""
+    );
 
     const header =
       $("#profile-header");
@@ -731,32 +511,17 @@
 
       if (avatar) {
         avatar.textContent =
-          profile.username
-            ?.charAt(0) ||
-          "?";
+          profile.username?.charAt(0) || "?";
       }
 
       const name =
-        header.querySelector(
-          "h1, h2"
-        );
+        header.querySelector("h1, h2");
 
       if (name) {
         name.textContent =
-          profile.username ||
-          "ユーザー";
+          profile.username || "ユーザー";
       }
     }
-
-    setText(
-      "profile-username",
-      profile.username || ""
-    );
-
-    setText(
-      "profile-bio",
-      profile.bio || ""
-    );
   }
 
   function renderAccount() {
@@ -767,24 +532,13 @@
       $("#logged-in-account");
 
     if (!state.user) {
-      if (guest) {
-        guest.hidden = false;
-      }
-
-      if (loggedIn) {
-        loggedIn.hidden = true;
-      }
-
+      if (guest) guest.hidden = false;
+      if (loggedIn) loggedIn.hidden = true;
       return;
     }
 
-    if (guest) {
-      guest.hidden = true;
-    }
-
-    if (loggedIn) {
-      loggedIn.hidden = false;
-    }
+    if (guest) guest.hidden = true;
+    if (loggedIn) loggedIn.hidden = false;
 
     setText(
       "account-username",
@@ -799,45 +553,46 @@
   }
 
   async function updateProfile() {
-    if (!ensureLogin()) {
+    if (!state.user) {
+      toast(
+        "ログインしてください。",
+        "error"
+      );
       return;
     }
 
     const username =
-      $("#profile-username-input")
-        ?.value
-        .trim();
+      $(
+        "#profile-username-input"
+      )?.value.trim();
 
     const bio =
-      $("#profile-bio-input")
-        ?.value
-        .trim();
+      $(
+        "#profile-bio-input"
+      )?.value.trim();
 
     if (!username) {
       toast(
         "ユーザー名を入力してください。",
         "error"
       );
-
       return;
     }
 
     const {
       error
-    } =
-      await supabase
-        .from("profiles")
-        .update({
-          username,
-          bio,
-          updated_at:
-            new Date()
-              .toISOString()
-        })
-        .eq(
-          "id",
-          state.user.id
-        );
+    } = await supabase
+      .from("profiles")
+      .update({
+        username,
+        bio,
+        updated_at:
+          new Date().toISOString()
+      })
+      .eq(
+        "id",
+        state.user.id
+      );
 
     if (error) {
       console.error(error);
@@ -866,9 +621,7 @@
     const list =
       $("#post-list");
 
-    if (!list) {
-      return;
-    }
+    if (!list) return;
 
     list.innerHTML =
       "<p>読み込み中...</p>";
@@ -892,14 +645,12 @@
         );
 
     if (
-      state.currentCategory !==
-      "all"
+      state.currentCategory !== "all"
     ) {
-      query =
-        query.eq(
-          "category",
-          state.currentCategory
-        );
+      query = query.eq(
+        "category",
+        state.currentCategory
+      );
     }
 
     const {
@@ -919,34 +670,6 @@
     state.posts =
       data || [];
 
-    /*
-      いいね数を取得
-    */
-
-    for (
-      const post of state.posts
-    ) {
-      const {
-        count
-      } =
-        await supabase
-          .from("likes")
-          .select(
-            "id",
-            {
-              count: "exact",
-              head: true
-            }
-          )
-          .eq(
-            "post_id",
-            post.id
-          );
-
-      post.like_count =
-        count || 0;
-    }
-
     renderPosts();
   }
 
@@ -954,14 +677,11 @@
     const list =
       $("#post-list");
 
-    if (!list) {
-      return;
-    }
+    if (!list) return;
 
     if (!state.posts.length) {
       list.innerHTML =
-        "<p id=\"no-posts\">投稿はありません。</p>";
-
+        "<p>投稿はありません。</p>";
       return;
     }
 
@@ -980,200 +700,191 @@
     }
 
     list.innerHTML =
-      posts
-        .map(post => {
-          const profile =
-            post.profiles ||
-            {};
+      posts.map(post => {
+        const profile =
+          post.profiles || {};
 
-          const username =
-            profile.username ||
-            "ユーザー";
+        const username =
+          profile.username ||
+          "ユーザー";
 
-          return `
-            <article
-              class="post-card"
-              data-post-id="${escapeHTML(
-                post.id
-              )}"
-            >
+        return `
+          <article
+            class="post-card"
+            data-post-id="${escapeHTML(post.id)}"
+          >
 
-              <div class="post-card-header">
+            <div class="post-card-header">
 
-                <div class="post-user">
+              <div class="post-user">
 
-                  <div class="avatar">
-                    ${escapeHTML(
-                      username.charAt(0)
-                    )}
-                  </div>
-
-                  <div>
-                    <strong>
-                      ${escapeHTML(
-                        username
-                      )}
-                    </strong>
-
-                    <small>
-                      ${escapeHTML(
-                        formatDate(
-                          post.created_at
-                        )
-                      )}
-                    </small>
-                  </div>
-
+                <div class="avatar">
+                  ${escapeHTML(
+                    username.charAt(0)
+                  )}
                 </div>
 
-                ${
-                  state.user &&
+                <div>
+                  <strong>
+                    ${escapeHTML(username)}
+                  </strong>
+
+                  <small>
+                    ${escapeHTML(
+                      formatDate(
+                        post.created_at
+                      )
+                    )}
+                  </small>
+                </div>
+
+              </div>
+
+              ${
+                state.user &&
+                (
                   state.user.id ===
-                    post.user_id
-                    ? `
-                      <button
-                        type="button"
-                        class="post-menu-button"
-                        data-delete-post="${escapeHTML(
-                          post.id
-                        )}"
-                      >
-                        削除
-                      </button>
-                    `
-                    : ""
-                }
+                  post.user_id ||
+                  state.profile?.role ===
+                    "admin"
+                )
+                  ? `
+                    <button
+                      type="button"
+                      class="post-menu-button"
+                      data-delete-post="${escapeHTML(
+                        post.id
+                      )}"
+                    >
+                      削除
+                    </button>
+                  `
+                  : ""
+              }
 
-              </div>
+            </div>
 
-              <div class="post-card-body">
+            <div class="post-card-body">
 
-                <span class="post-category">
-                  ${escapeHTML(
-                    post.category
-                  )}
+              <span class="post-category">
+                ${escapeHTML(
+                  post.category
+                )}
+              </span>
+
+              <h2>
+                ${escapeHTML(
+                  post.title
+                )}
+              </h2>
+
+              <p>
+                ${escapeHTML(
+                  post.content
+                )}
+              </p>
+
+            </div>
+
+            <footer class="post-card-footer">
+
+              <button
+                type="button"
+                class="post-action"
+                data-like-post="${escapeHTML(
+                  post.id
+                )}"
+              >
+                いいね
+                <span class="like-count">
+                  ${post.like_count || 0}
                 </span>
+              </button>
 
-                <h2>
-                  ${escapeHTML(
-                    post.title
-                  )}
-                </h2>
+              ${
+                post.allow_replies !== false
+                  ? `
+                    <button
+                      type="button"
+                      class="post-action"
+                      data-reply-post="${escapeHTML(
+                        post.id
+                      )}"
+                    >
+                      返信
+                    </button>
+                  `
+                  : ""
+              }
 
-                <p>
-                  ${escapeHTML(
-                    post.content
-                  )}
-                </p>
+              ${
+                post.allow_share !== false
+                  ? `
+                    <button
+                      type="button"
+                      class="post-action"
+                      data-share-post="${escapeHTML(
+                        post.id
+                      )}"
+                    >
+                      共有
+                    </button>
+                  `
+                  : ""
+              }
 
-              </div>
+              <button
+                type="button"
+                class="post-action"
+                data-report-post="${escapeHTML(
+                  post.id
+                )}"
+              >
+                通報
+              </button>
 
-              <footer class="post-card-footer">
+            </footer>
 
-                <button
-                  type="button"
-                  class="post-action"
-                  data-like-post="${escapeHTML(
-                    post.id
-                  )}"
-                >
-                  いいね
-                  <span class="like-count">
-                    ${post.like_count || 0}
-                  </span>
-                </button>
-
-                ${
-                  post.allow_replies !==
-                  false
-                    ? `
-                      <button
-                        type="button"
-                        class="post-action"
-                        data-reply-post="${escapeHTML(
-                          post.id
-                        )}"
-                      >
-                        返信
-                      </button>
-                    `
-                    : ""
-                }
-
-                ${
-                  post.allow_share !==
-                  false
-                    ? `
-                      <button
-                        type="button"
-                        class="post-action"
-                        data-share-post="${escapeHTML(
-                          post.id
-                        )}"
-                      >
-                        共有
-                      </button>
-                    `
-                    : ""
-                }
-
-                <button
-                  type="button"
-                  class="post-action"
-                  data-report-post="${escapeHTML(
-                    post.id
-                  )}"
-                >
-                  通報
-                </button>
-
-              </footer>
-
-            </article>
-          `;
-        })
-        .join("");
+          </article>
+        `;
+      }).join("");
   }
 
   async function createPost() {
-    if (!ensureLogin()) {
+    if (!state.user) {
+      toast(
+        "投稿するにはログインしてください。",
+        "error"
+      );
+
+      navigate("#login");
       return;
     }
 
     const category =
-      $("#post-category")
-        ?.value;
+      $("#post-category")?.value;
 
     const title =
-      $("#post-title")
-        ?.value
-        .trim();
+      $("#post-title")?.value.trim();
 
     const content =
-      $("#post-content")
-        ?.value
-        .trim();
+      $("#post-content")?.value.trim();
 
     const allowReplies =
-      $("#allow-replies")
-        ?.checked ??
+      $("#allow-replies")?.checked ??
       true;
 
     const allowShare =
-      $("#allow-share")
-        ?.checked ??
+      $("#allow-share")?.checked ??
       true;
 
-    if (
-      !category ||
-      !title ||
-      !content
-    ) {
+    if (!category ||
+        !title ||
+        !content) {
       toast(
         "必要な項目を入力してください。",
         "error"
       );
-
       return;
     }
 
@@ -1182,28 +893,26 @@
     try {
       const {
         error
-      } =
-        await supabase
-          .from("posts")
-          .insert({
-            user_id:
-              state.user.id,
-            category,
-            title,
-            content,
-            image_url: null,
-            allow_replies:
-              allowReplies,
-            allow_share:
-              allowShare
-          });
+      } = await supabase
+        .from("posts")
+        .insert({
+          user_id:
+            state.user.id,
+          category,
+          title,
+          content,
+          image_url: null,
+          allow_replies:
+            allowReplies,
+          allow_share:
+            allowShare
+        });
 
       if (error) {
         throw error;
       }
 
-      $("#post-form")
-        ?.reset();
+      $("#post-form")?.reset();
 
       toast(
         "投稿しました。",
@@ -1211,7 +920,6 @@
       );
 
       navigate("#board");
-
     } catch (error) {
       console.error(error);
 
@@ -1220,18 +928,13 @@
           "投稿に失敗しました。",
         "error"
       );
-
     } finally {
       setLoading(false);
     }
   }
 
-  async function deletePost(
-    postId
-  ) {
-    if (!state.user) {
-      return;
-    }
+  async function deletePost(postId) {
+    if (!state.user) return;
 
     const post =
       state.posts.find(
@@ -1239,22 +942,21 @@
           item.id === postId
       );
 
-    if (
-      !post
-    ) {
-      return;
-    }
+    if (!post) return;
 
-    if (
-      post.user_id !==
-        state.user.id &&
-      !isAdmin()
-    ) {
+    const isOwner =
+      post.user_id ===
+      state.user.id;
+
+    const isAdmin =
+      state.profile?.role ===
+      "admin";
+
+    if (!isOwner && !isAdmin) {
       toast(
         "この投稿を削除する権限がありません。",
         "error"
       );
-
       return;
     }
 
@@ -1268,14 +970,10 @@
 
     const {
       error
-    } =
-      await supabase
-        .from("posts")
-        .delete()
-        .eq(
-          "id",
-          postId
-        );
+    } = await supabase
+      .from("posts")
+      .delete()
+      .eq("id", postId);
 
     if (error) {
       console.error(error);
@@ -1300,75 +998,54 @@
      LIKE
      ========================================================= */
 
-  async function likePost(
-    postId
-  ) {
-    if (!ensureLogin()) {
+  async function likePost(postId) {
+    if (!state.user) {
+      toast(
+        "いいねするにはログインしてください。",
+        "error"
+      );
+
+      navigate("#login");
       return;
     }
 
     const {
       data: existing,
       error: checkError
-    } =
-      await supabase
-        .from("likes")
-        .select("id")
-        .eq(
-          "post_id",
-          postId
-        )
-        .eq(
-          "user_id",
-          state.user.id
-        )
-        .maybeSingle();
+    } = await supabase
+      .from("likes")
+      .select("id")
+      .eq(
+        "post_id",
+        postId
+      )
+      .eq(
+        "user_id",
+        state.user.id
+      )
+      .maybeSingle();
 
     if (checkError) {
-      console.error(
-        checkError
-      );
-
-      toast(
-        "いいねを確認できませんでした。",
-        "error"
-      );
-
+      console.error(checkError);
       return;
     }
 
     if (existing) {
-      const {
-        error
-      } =
-        await supabase
-          .from("likes")
-          .delete()
-          .eq(
-            "id",
-            existing.id
-          );
-
-      if (error) {
-        console.error(error);
-      }
-
+      await supabase
+        .from("likes")
+        .delete()
+        .eq(
+          "id",
+          existing.id
+        );
     } else {
-      const {
-        error
-      } =
-        await supabase
-          .from("likes")
-          .insert({
-            post_id:
-              postId,
-            user_id:
-              state.user.id
-          });
-
-      if (error) {
-        console.error(error);
-      }
+      await supabase
+        .from("likes")
+        .insert({
+          post_id: postId,
+          user_id:
+            state.user.id
+        });
     }
 
     await loadPosts();
@@ -1378,29 +1055,14 @@
      REPLY
      ========================================================= */
 
-  async function replyToPost(
-    postId
-  ) {
-    if (!ensureLogin()) {
-      return;
-    }
-
-    const post =
-      state.posts.find(
-        item =>
-          item.id === postId
-      );
-
-    if (
-      post &&
-      post.allow_replies ===
-        false
-    ) {
+  async function replyToPost(postId) {
+    if (!state.user) {
       toast(
-        "この投稿では返信できません。",
+        "返信するにはログインしてください。",
         "error"
       );
 
+      navigate("#login");
       return;
     }
 
@@ -1409,26 +1071,21 @@
         "返信内容を入力してください。"
       );
 
-    if (
-      !content ||
-      !content.trim()
-    ) {
+    if (!content?.trim()) {
       return;
     }
 
     const {
       error
-    } =
-      await supabase
-        .from("replies")
-        .insert({
-          post_id:
-            postId,
-          user_id:
-            state.user.id,
-          content:
-            content.trim()
-        });
+    } = await supabase
+      .from("replies")
+      .insert({
+        post_id: postId,
+        user_id:
+          state.user.id,
+        content:
+          content.trim()
+      });
 
     if (error) {
       console.error(error);
@@ -1451,61 +1108,41 @@
      SEARCH
      ========================================================= */
 
-  async function searchPosts(
-    keyword
-  ) {
+  async function searchPosts(keyword) {
     const result =
       $("#search-results");
 
-    if (!result) {
-      return;
-    }
-
-    keyword =
-      String(keyword || "")
-        .trim();
+    if (!result) return;
 
     if (!keyword) {
       result.innerHTML =
         "<p>検索キーワードを入力してください。</p>";
-
       return;
     }
 
     result.innerHTML =
       "<p>検索中...</p>";
 
-    /*
-      ilikeに特殊文字が入っても
-      できるだけ安全に扱う
-    */
-
-    const safeKeyword =
-      keyword
-        .replaceAll("%", "")
-        .replaceAll(",", " ");
-
     const {
       data,
       error
-    } =
-      await supabase
-        .from("posts")
-        .select(`
-          *,
-          profiles:user_id (
-            username
-          )
-        `)
-        .or(
-          `title.ilike.%${safeKeyword}%,content.ilike.%${safeKeyword}%`
+    } = await supabase
+      .from("posts")
+      .select(`
+        *,
+        profiles:user_id (
+          username
         )
-        .order(
-          "created_at",
-          {
-            ascending: false
-          }
-        );
+      `)
+      .or(
+        `title.ilike.%${keyword}%,content.ilike.%${keyword}%`
+      )
+      .order(
+        "created_at",
+        {
+          ascending: false
+        }
+      );
 
     if (error) {
       console.error(error);
@@ -1519,266 +1156,86 @@
     if (!data?.length) {
       result.innerHTML =
         "<p>該当する投稿はありません。</p>";
-
       return;
     }
 
     result.innerHTML =
-      data
-        .map(post => `
-          <article
-            class="search-result-item"
-          >
+      data.map(post => `
+        <article class="search-result-item">
 
-            <span>
-              ${escapeHTML(
-                post.category
-              )}
-            </span>
+          <span>
+            ${escapeHTML(
+              post.category
+            )}
+          </span>
 
-            <h2>
-              ${escapeHTML(
-                post.title
-              )}
-            </h2>
+          <h2>
+            ${escapeHTML(
+              post.title
+            )}
+          </h2>
 
-            <p>
-              ${escapeHTML(
-                post.content
-              )}
-            </p>
+          <p>
+            ${escapeHTML(
+              post.content
+            )}
+          </p>
 
-            <small>
-              ${escapeHTML(
-                post.profiles
-                  ?.username ||
-                "ユーザー"
-              )}
-              ・
-              ${escapeHTML(
-                formatDate(
-                  post.created_at
-                )
-              )}
-            </small>
+          <small>
+            ${escapeHTML(
+              post.profiles?.username ||
+              "ユーザー"
+            )}
+            ・
+            ${escapeHTML(
+              formatDate(
+                post.created_at
+              )
+            )}
+          </small>
 
-          </article>
-        `)
-        .join("");
+        </article>
+      `).join("");
   }
 
   /* =========================================================
      REPORT
      ========================================================= */
 
-  async function openReportPage(
-    postId
-  ) {
-    if (!ensureLogin()) {
-      return;
-    }
-
-    state.currentReportPostId =
-      postId || null;
-
-    navigate("#report");
-
-    setTimeout(
-      () => {
-        loadReportPosts();
-
-        if (postId) {
-          setTimeout(
-            () => {
-              const select =
-                $("#report-post-select");
-
-              if (select) {
-                select.value =
-                  postId;
-
-                updateReportPreview();
-              }
-            },
-            100
-          );
-        }
-      },
-      50
-    );
-  }
-
-  async function loadReportPosts() {
-    const select =
-      $("#report-post-select");
-
-    if (!select) {
-      return;
-    }
-
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("posts")
-        .select(`
-          id,
-          title,
-          content,
-          category,
-          created_at
-        `)
-        .order(
-          "created_at",
-          {
-            ascending: false
-          }
-        );
-
-    if (error) {
-      console.error(error);
-
-      return;
-    }
-
-    state.posts =
-      data || [];
-
-    select.innerHTML =
-      `<option value="">
-        投稿を選択してください
-      </option>`;
-
-    state.posts.forEach(
-      post => {
-        const option =
-          document.createElement(
-            "option"
-          );
-
-        option.value =
-          post.id;
-
-        option.textContent =
-          `[${post.category}] ${post.title}`;
-
-        select.appendChild(
-          option
-        );
-      }
-    );
-
-    if (
-      state.currentReportPostId
-    ) {
-      select.value =
-        state.currentReportPostId;
-
-      updateReportPreview();
-    }
-  }
-
-  function updateReportPreview() {
-    const select =
-      $("#report-post-select");
-
-    const preview =
-      $("#report-post-preview");
-
-    if (
-      !select ||
-      !preview
-    ) {
-      return;
-    }
-
-    const post =
-      state.posts.find(
-        item =>
-          item.id ===
-          select.value
-      );
-
-    if (!post) {
-      preview.innerHTML =
-        "<p>投稿を選択してください。</p>";
-
-      return;
-    }
-
-    preview.innerHTML = `
-      <article>
-        <h3>
-          ${escapeHTML(
-            post.title
-          )}
-        </h3>
-
-        <p>
-          ${escapeHTML(
-            post.content
-          )}
-        </p>
-
-        <small>
-          ${escapeHTML(
-            formatDate(
-              post.created_at
-            )
-          )}
-        </small>
-      </article>
-    `;
-  }
-
-  async function submitReport() {
-    if (!ensureLogin()) {
-      return;
-    }
-
-    const postId =
-      $("#report-post-select")
-        ?.value;
-
-    const reason =
-      $("#report-reason")
-        ?.value
-        .trim();
-
-    const detail =
-      $("#report-detail")
-        ?.value
-        .trim();
-
-    if (
-      !postId ||
-      !reason
-    ) {
+  async function reportPost(postId) {
+    if (!state.user) {
       toast(
-        "投稿と通報理由を選択してください。",
+        "通報するにはログインしてください。",
         "error"
       );
 
+      navigate("#login");
+      return;
+    }
+
+    const reason =
+      prompt(
+        "通報理由を入力してください。"
+      );
+
+    if (!reason?.trim()) {
       return;
     }
 
     const {
       error
-    } =
-      await supabase
-        .from("reports")
-        .insert({
-          reporter_id:
-            state.user.id,
-          post_id:
-            postId,
-          reason,
-          detail:
-            detail || null,
-          status:
-            "pending"
-        });
+    } = await supabase
+      .from("reports")
+      .insert({
+        reporter_id:
+          state.user.id,
+        post_id:
+          postId,
+        reason:
+          reason.trim(),
+        status:
+          "pending"
+      });
 
     if (error) {
       console.error(error);
@@ -1791,30 +1248,9 @@
       return;
     }
 
-    $("#report-form")
-      ?.reset();
-
-    const preview =
-      $("#report-post-preview");
-
-    if (preview) {
-      preview.innerHTML = "";
-    }
-
     toast(
       "通報を送信しました。",
       "success"
-    );
-
-    state.currentReportPostId =
-      null;
-  }
-
-  async function reportPost(
-    postId
-  ) {
-    await openReportPage(
-      postId
     );
   }
 
@@ -1822,9 +1258,7 @@
      SHARE
      ========================================================= */
 
-  async function sharePost(
-    postId
-  ) {
+  async function sharePost(postId) {
     const url =
       `${location.origin}${location.pathname}#board`;
 
@@ -1843,9 +1277,8 @@
         );
 
         return;
-
-      } catch (error) {
-        console.error(error);
+      } catch {
+        // fallback
       }
     }
 
@@ -1859,95 +1292,125 @@
      ADMIN
      ========================================================= */
 
+  function ensureAdmin() {
+    const isAdmin =
+      state.profile?.role ===
+      "admin";
+
+    const isAdminEmail =
+      state.user?.email ===
+      ADMIN_EMAIL;
+
+    if (
+      !state.user ||
+      (!isAdmin && !isAdminEmail)
+    ) {
+      toast(
+        "管理者権限が必要です。",
+        "error"
+      );
+
+      navigate("#home");
+
+      return false;
+    }
+
+    return true;
+  }
+
   async function loadAdminData() {
     if (!ensureAdmin()) {
       return;
     }
 
-    setLoading(true);
+    const [
+      usersResult,
+      postsResult,
+      reportsResult,
+      ipBansResult
+    ] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("*")
+        .order(
+          "created_at",
+          {
+            ascending: false
+          }
+        ),
 
-    try {
-      const [
-        usersResult,
-        postsResult,
-        reportsResult
-      ] =
-        await Promise.all([
-          supabase
-            .from("profiles")
-            .select("*")
-            .order(
-              "created_at",
-              {
-                ascending: false
-              }
-            ),
+      supabase
+        .from("posts")
+        .select("*")
+        .order(
+          "created_at",
+          {
+            ascending: false
+          }
+        ),
 
-          supabase
-            .from("posts")
-            .select("*")
-            .order(
-              "created_at",
-              {
-                ascending: false
-              }
-            ),
+      supabase
+        .from("reports")
+        .select("*")
+        .order(
+          "created_at",
+          {
+            ascending: false
+          }
+        ),
 
-          supabase
-            .from("reports")
-            .select("*")
-            .order(
-              "created_at",
-              {
-                ascending: false
-              }
-            )
-        ]);
+      supabase
+        .from("ip_bans")
+        .select("*")
+        .order(
+          "created_at",
+          {
+            ascending: false
+          }
+        )
+    ]);
 
-      if (
+    if (usersResult.error) {
+      console.error(
+        "Users:",
         usersResult.error
-      ) {
-        console.error(
-          "users:",
-          usersResult.error
-        );
-      }
-
-      if (
-        postsResult.error
-      ) {
-        console.error(
-          "posts:",
-          postsResult.error
-        );
-      }
-
-      if (
-        reportsResult.error
-      ) {
-        console.error(
-          "reports:",
-          reportsResult.error
-        );
-      }
-
-      state.users =
-        usersResult.data ||
-        [];
-
-      state.posts =
-        postsResult.data ||
-        [];
-
-      state.reports =
-        reportsResult.data ||
-        [];
-
-      renderAdmin();
-
-    } finally {
-      setLoading(false);
+      );
     }
+
+    if (postsResult.error) {
+      console.error(
+        "Posts:",
+        postsResult.error
+      );
+    }
+
+    if (reportsResult.error) {
+      console.error(
+        "Reports:",
+        reportsResult.error
+      );
+    }
+
+    if (ipBansResult.error) {
+      console.error(
+        "IP Bans:",
+        ipBansResult.error
+      );
+    }
+
+    state.users =
+      usersResult.data || [];
+
+    state.posts =
+      postsResult.data || [];
+
+    state.reports =
+      reportsResult.data || [];
+
+    state.ipBans =
+      ipBansResult.data || [];
+
+    renderAdmin();
   }
 
   function renderAdmin() {
@@ -1970,215 +1433,434 @@
       ).length
     );
 
+    const activeBans =
+      state.ipBans.filter(
+        ban =>
+          !ban.expires_at ||
+          new Date(
+            ban.expires_at
+          ) > new Date()
+      );
+
     setText(
       "admin-ban-count",
-      state.users.filter(
-        user =>
-          user.status ===
-          "banned"
-      ).length
+      activeBans.length
     );
 
     renderAdminUsers();
     renderAdminPosts();
     renderAdminReports();
+    renderIPBans();
   }
 
   function renderAdminUsers() {
     const body =
       $("#admin-users-table-body");
 
-    if (!body) {
-      return;
-    }
+    if (!body) return;
 
     body.innerHTML =
-      state.users
-        .map(user => `
-          <tr>
+      state.users.map(user => `
+        <tr>
 
-            <td>
-              ${escapeHTML(
-                user.username ||
-                "ユーザー"
-              )}
-            </td>
+          <td>
+            ${escapeHTML(
+              user.username ||
+              "ユーザー"
+            )}
+          </td>
 
-            <td>
-              ${escapeHTML(
+          <td>
+            ${escapeHTML(
+              user.id
+            )}
+          </td>
+
+          <td>
+            ${escapeHTML(
+              user.status ||
+              "active"
+            )}
+          </td>
+
+          <td>
+            ${escapeHTML(
+              formatDate(
+                user.created_at
+              )
+            )}
+          </td>
+
+          <td>
+            <button
+              type="button"
+              class="secondary-button"
+              data-admin-user="${escapeHTML(
                 user.id
-              )}
-            </td>
+              )}"
+            >
+              編集
+            </button>
+          </td>
 
-            <td>
-              ${escapeHTML(
-                user.status ||
-                "active"
-              )}
-            </td>
-
-            <td>
-              ${escapeHTML(
-                user.role ||
-                "user"
-              )}
-            </td>
-
-            <td>
-              ${escapeHTML(
-                formatDate(
-                  user.created_at
-                )
-              )}
-            </td>
-
-            <td>
-              <button
-                type="button"
-                class="secondary-button"
-                data-admin-user="${escapeHTML(
-                  user.id
-                )}"
-              >
-                編集
-              </button>
-            </td>
-
-          </tr>
-        `)
-        .join("");
+        </tr>
+      `).join("");
   }
 
   function renderAdminPosts() {
     const list =
       $("#admin-post-list");
 
-    if (!list) {
-      return;
-    }
+    if (!list) return;
 
     list.innerHTML =
-      state.posts
-        .map(post => `
-          <article
-            class="admin-post-item"
+      state.posts.map(post => `
+        <article class="admin-post-item">
+
+          <div>
+
+            <h3>
+              ${escapeHTML(
+                post.title
+              )}
+            </h3>
+
+            <p>
+              ${escapeHTML(
+                post.content
+              )}
+            </p>
+
+            <small>
+              ${escapeHTML(
+                formatDate(
+                  post.created_at
+                )
+              )}
+            </small>
+
+          </div>
+
+          <button
+            type="button"
+            class="danger-button"
+            data-admin-delete-post="${escapeHTML(
+              post.id
+            )}"
           >
+            削除
+          </button>
 
-            <div>
-
-              <h3>
-                ${escapeHTML(
-                  post.title
-                )}
-              </h3>
-
-              <p>
-                ${escapeHTML(
-                  post.content
-                )}
-              </p>
-
-              <small>
-                ${escapeHTML(
-                  formatDate(
-                    post.created_at
-                  )
-                )}
-              </small>
-
-            </div>
-
-            <button
-              type="button"
-              class="danger-button"
-              data-admin-delete-post="${escapeHTML(
-                post.id
-              )}"
-            >
-              削除
-            </button>
-
-          </article>
-        `)
-        .join("");
+        </article>
+      `).join("");
   }
 
   function renderAdminReports() {
     const list =
       $("#admin-report-list");
 
-    if (!list) {
+    if (!list) return;
+
+    list.innerHTML =
+      state.reports.map(report => `
+        <article class="admin-report-item">
+
+          <div>
+
+            <strong>
+              ${escapeHTML(
+                report.reason ||
+                "理由なし"
+              )}
+            </strong>
+
+            <p>
+              ${escapeHTML(
+                report.detail ||
+                ""
+              )}
+            </p>
+
+            <small>
+              ${escapeHTML(
+                report.status ||
+                "pending"
+              )}
+            </small>
+
+          </div>
+
+        </article>
+      `).join("");
+  }
+
+  /* =========================================================
+     IP BAN
+     ========================================================= */
+
+  async function addIPBan() {
+    if (!ensureAdmin()) {
       return;
     }
 
-    list.innerHTML =
-      state.reports
-        .map(report => `
-          <article
-            class="admin-report-item"
-          >
+    const ip =
+      $("#ban-ip")
+        ?.value.trim();
 
-            <div>
+    const reason =
+      $("#ban-reason")
+        ?.value.trim();
 
-              <strong>
-                ${escapeHTML(
-                  report.reason ||
-                  "理由なし"
-                )}
-              </strong>
+    const duration =
+      $("#ban-duration")
+        ?.value;
 
-              <p>
-                ${escapeHTML(
-                  report.detail ||
-                  ""
-                )}
-              </p>
+    if (!ip) {
+      toast(
+        "IPアドレスを入力してください。",
+        "error"
+      );
+      return;
+    }
 
-              <small>
-                状態：
-                ${escapeHTML(
-                  report.status ||
-                  "pending"
-                )}
-              </small>
+    /*
+      temporary = 24時間
+      permanent = 無期限
+    */
 
-              <br>
+    let expiresAt = null;
 
-              <small>
-                ${escapeHTML(
-                  formatDate(
-                    report.created_at
-                  )
-                )}
-              </small>
+    if (
+      duration ===
+      "temporary"
+    ) {
+      expiresAt =
+        new Date(
+          Date.now() +
+          24 * 60 * 60 * 1000
+        ).toISOString();
+    }
 
-            </div>
+    /*
+      同じIPが既にある場合は
+      古いレコードを削除してから登録
+    */
 
-            ${
-              report.status ===
-              "pending"
-                ? `
-                  <button
-                    type="button"
-                    class="secondary-button"
-                    data-resolve-report="${escapeHTML(
-                      report.id
-                    )}"
-                  >
-                    対応済みにする
-                  </button>
-                `
-                : ""
-            }
+    const {
+      error: deleteError
+    } = await supabase
+      .from("ip_bans")
+      .delete()
+      .eq("ip", ip);
 
-          </article>
-        `)
-        .join("");
+    if (deleteError) {
+      console.error(
+        "IP BAN old record:",
+        deleteError
+      );
+    }
+
+    const {
+      error
+    } = await supabase
+      .from("ip_bans")
+      .insert({
+        ip,
+        reason:
+          reason ||
+          "管理者によるアクセス制限",
+        duration:
+          duration ||
+          "permanent",
+        expires_at:
+          expiresAt
+      });
+
+    if (error) {
+      console.error(
+        "IP BAN insert:",
+        error
+      );
+
+      toast(
+        "IP BANの登録に失敗しました。",
+        "error"
+      );
+
+      return;
+    }
+
+    toast(
+      "IP BANを追加しました。",
+      "success"
+    );
+
+    $("#ip-ban-form")?.reset();
+
+    await loadAdminData();
   }
 
-  async function adminDeletePost(
-    postId
-  ) {
+  async function loadIPBans() {
+    if (!ensureAdmin()) {
+      return;
+    }
+
+    const {
+      data,
+      error
+    } = await supabase
+      .from("ip_bans")
+      .select("*")
+      .order(
+        "created_at",
+        {
+          ascending: false
+        }
+      );
+
+    if (error) {
+      console.error(
+        "IP BAN load:",
+        error
+      );
+
+      return;
+    }
+
+    state.ipBans =
+      data || [];
+
+    renderIPBans();
+  }
+
+  function renderIPBans() {
+    const body =
+      $("#ip-ban-table-body");
+
+    if (!body) return;
+
+    if (!state.ipBans.length) {
+      body.innerHTML = `
+        <tr>
+          <td colspan="4">
+            BANされているIPはありません。
+          </td>
+        </tr>
+      `;
+
+      return;
+    }
+
+    body.innerHTML =
+      state.ipBans.map(ban => {
+        const expired =
+          ban.expires_at &&
+          new Date(
+            ban.expires_at
+          ) <= new Date();
+
+        let period;
+
+        if (!ban.expires_at) {
+          period = "無期限";
+        } else if (expired) {
+          period = "期限切れ";
+        } else {
+          period =
+            `～ ${formatDate(
+              ban.expires_at
+            )}`;
+        }
+
+        return `
+          <tr>
+
+            <td>
+              ${escapeHTML(
+                ban.ip
+              )}
+            </td>
+
+            <td>
+              ${escapeHTML(
+                ban.reason ||
+                ""
+              )}
+            </td>
+
+            <td>
+              ${escapeHTML(
+                period
+              )}
+            </td>
+
+            <td>
+              <button
+                type="button"
+                class="danger-button"
+                data-delete-ip-ban="${escapeHTML(
+                  ban.id
+                )}"
+              >
+                解除
+              </button>
+            </td>
+
+          </tr>
+        `;
+      }).join("");
+  }
+
+  async function removeIPBan(id) {
+    if (!ensureAdmin()) {
+      return;
+    }
+
+    if (
+      !confirm(
+        "このIP BANを解除しますか？"
+      )
+    ) {
+      return;
+    }
+
+    const {
+      error
+    } = await supabase
+      .from("ip_bans")
+      .delete()
+      .eq(
+        "id",
+        id
+      );
+
+    if (error) {
+      console.error(
+        "IP BAN delete:",
+        error
+      );
+
+      toast(
+        "IP BANの解除に失敗しました。",
+        "error"
+      );
+
+      return;
+    }
+
+    toast(
+      "IP BANを解除しました。",
+      "success"
+    );
+
+    await loadAdminData();
+  }
+
+  /* =========================================================
+     ADMIN POST
+     ========================================================= */
+
+  async function adminDeletePost(postId) {
     if (!ensureAdmin()) {
       return;
     }
@@ -2193,14 +1875,13 @@
 
     const {
       error
-    } =
-      await supabase
-        .from("posts")
-        .delete()
-        .eq(
-          "id",
-          postId
-        );
+    } = await supabase
+      .from("posts")
+      .delete()
+      .eq(
+        "id",
+        postId
+      );
 
     if (error) {
       console.error(error);
@@ -2221,9 +1902,7 @@
     await loadAdminData();
   }
 
-  async function updateAdminUser(
-    userId
-  ) {
+  async function updateAdminUser(userId) {
     if (!ensureAdmin()) {
       return;
     }
@@ -2234,20 +1913,15 @@
           item.id === userId
       );
 
-    if (!user) {
-      return;
-    }
+    if (!user) return;
 
     const username =
       prompt(
         "ユーザー名",
-        user.username ||
-          ""
+        user.username || ""
       );
 
-    if (
-      username === null
-    ) {
+    if (username === null) {
       return;
     }
 
@@ -2258,27 +1932,22 @@
           "active"
       );
 
-    if (
-      status === null
-    ) {
+    if (status === null) {
       return;
     }
 
     const {
       error
-    } =
-      await supabase
-        .from("profiles")
-        .update({
-          username:
-            username.trim(),
-          status:
-            status.trim()
-        })
-        .eq(
-          "id",
-          userId
-        );
+    } = await supabase
+      .from("profiles")
+      .update({
+        username,
+        status
+      })
+      .eq(
+        "id",
+        userId
+      );
 
     if (error) {
       console.error(error);
@@ -2299,54 +1968,22 @@
     await loadAdminData();
   }
 
-  async function resolveReport(
-    reportId
-  ) {
-    if (!ensureAdmin()) {
-      return;
-    }
-
-    const {
-      error
-    } =
-      await supabase
-        .from("reports")
-        .update({
-          status:
-            "resolved"
-        })
-        .eq(
-          "id",
-          reportId
-        );
-
-    if (error) {
-      console.error(error);
-
-      toast(
-        "通報を更新できませんでした。",
-        "error"
-      );
-
-      return;
-    }
-
-    toast(
-      "通報を対応済みにしました。",
-      "success"
-    );
-
-    await loadAdminData();
-  }
-
   /* =========================================================
      PASSWORD
      ========================================================= */
 
   async function changePassword() {
-    if (!ensureLogin()) {
+    if (!state.user) {
+      toast(
+        "ログインしてください。",
+        "error"
+      );
       return;
     }
+
+    const currentPassword =
+      $("#current-password")
+        ?.value;
 
     const newPassword =
       $("#new-password")
@@ -2357,14 +1994,14 @@
         ?.value;
 
     if (
+      !currentPassword ||
       !newPassword ||
       !confirmPassword
     ) {
       toast(
-        "新しいパスワードを入力してください。",
+        "必要な項目を入力してください。",
         "error"
       );
-
       return;
     }
 
@@ -2376,7 +2013,25 @@
         "新しいパスワードが一致しません。",
         "error"
       );
+      return;
+    }
 
+    const {
+      error: loginError
+    } =
+      await supabase.auth
+        .signInWithPassword({
+          email:
+            state.user.email,
+          password:
+            currentPassword
+        });
+
+    if (loginError) {
+      toast(
+        "現在のパスワードが正しくありません。",
+        "error"
+      );
       return;
     }
 
@@ -2400,13 +2055,13 @@
       return;
     }
 
-    $("#security-form")
-      ?.reset();
-
     toast(
       "パスワードを変更しました。",
       "success"
     );
+
+    $("#security-form")?.reset();
+    $("#change-password-form")?.reset();
   }
 
   /* =========================================================
@@ -2414,13 +2069,13 @@
      ========================================================= */
 
   async function deleteAccount() {
-    if (!ensureLogin()) {
+    if (!state.user) {
       return;
     }
 
     if (
       !confirm(
-        "本当にアカウントを削除しますか？"
+        "アカウントを削除しますか？"
       )
     ) {
       return;
@@ -2432,10 +2087,6 @@
     setLoading(true);
 
     try {
-      /*
-        自分の投稿を削除
-      */
-
       await supabase
         .from("likes")
         .delete()
@@ -2468,19 +2119,10 @@
           userId
         );
 
-      /*
-        Authセッションを終了
-      */
-
       await supabase.auth.signOut();
 
       state.user = null;
       state.profile = null;
-      state.posts = [];
-      state.reports = [];
-      state.users = [];
-
-      updateAuthUI();
 
       toast(
         "アカウントを削除しました。",
@@ -2488,22 +2130,20 @@
       );
 
       navigate("#home");
-
     } catch (error) {
       console.error(error);
 
       toast(
-        "アカウント削除中にエラーが発生しました。",
+        "アカウント削除に失敗しました。",
         "error"
       );
-
     } finally {
       setLoading(false);
     }
   }
 
   /* =========================================================
-     AUTH UI
+     UI
      ========================================================= */
 
   function updateAuthUI() {
@@ -2524,28 +2164,14 @@
         loggedIn;
     });
 
-    /*
-      管理者メニュー
-    */
-
-    $$(
-      '[data-admin-only]'
-    ).forEach(element => {
-      element.hidden =
-        !isAdmin();
-    });
-
     renderAccount();
   }
 
   /* =========================================================
-     FORMS
+     FORM EVENTS
      ========================================================= */
 
   function setupForms() {
-
-    /* LOGIN */
-
     $("#login-form")
       ?.addEventListener(
         "submit",
@@ -2554,8 +2180,7 @@
 
           const email =
             $("#login-email")
-              ?.value
-              .trim();
+              ?.value.trim();
 
           const password =
             $("#login-password")
@@ -2568,8 +2193,6 @@
         }
       );
 
-    /* REGISTER */
-
     $("#register-form")
       ?.addEventListener(
         "submit",
@@ -2578,13 +2201,11 @@
 
           const username =
             $("#register-username")
-              ?.value
-              .trim();
+              ?.value.trim();
 
           const email =
             $("#register-email")
-              ?.value
-              .trim();
+              ?.value.trim();
 
           const password =
             $("#register-password")
@@ -2614,19 +2235,14 @@
         }
       );
 
-    /* POST */
-
     $("#post-form")
       ?.addEventListener(
         "submit",
         event => {
           event.preventDefault();
-
           createPost();
         }
       );
-
-    /* SEARCH */
 
     $("#search-form")
       ?.addEventListener(
@@ -2636,67 +2252,64 @@
 
           const keyword =
             $("#search-input")
-              ?.value
-              .trim();
+              ?.value.trim();
 
-          searchPosts(
-            keyword
-          );
+          searchPosts(keyword);
         }
       );
-
-    /* PROFILE */
-
-    $("#profile-form")
-      ?.addEventListener(
-        "submit",
-        event => {
-          event.preventDefault();
-
-          updateProfile();
-        }
-      );
-
-    /* PASSWORD */
 
     $("#security-form")
       ?.addEventListener(
         "submit",
         event => {
           event.preventDefault();
-
           changePassword();
         }
       );
 
-    /* DELETE ACCOUNT */
+    $("#change-password-form")
+      ?.addEventListener(
+        "submit",
+        event => {
+          event.preventDefault();
+          changePassword();
+        }
+      );
+
+    $("#profile-form")
+      ?.addEventListener(
+        "submit",
+        event => {
+          event.preventDefault();
+          updateProfile();
+        }
+      );
+
+    $("#profile-settings-form")
+      ?.addEventListener(
+        "submit",
+        event => {
+          event.preventDefault();
+          updateProfile();
+        }
+      );
 
     $("#delete-account-form")
       ?.addEventListener(
         "submit",
         event => {
           event.preventDefault();
-
           deleteAccount();
         }
       );
 
-    /* REPORT */
-
-    $("#report-form")
+    $("#ip-ban-form")
       ?.addEventListener(
         "submit",
         event => {
           event.preventDefault();
-
-          submitReport();
+          addIPBan();
         }
-      );
-
-    $("#report-post-select")
-      ?.addEventListener(
-        "change",
-        updateReportPreview
       );
   }
 
@@ -2709,56 +2322,38 @@
       "click",
       event => {
 
-        /* ACTION */
-
-        const action =
+        const actionTarget =
           event.target.closest(
             "[data-action]"
           );
 
-        if (action) {
-          const name =
-            action.dataset.action;
+        if (actionTarget) {
+          const action =
+            actionTarget.dataset.action;
 
           if (
-            name ===
+            action ===
             "logout"
           ) {
-            event.preventDefault();
-
             logout();
-
-            return;
           }
 
           if (
-            name ===
+            action ===
             "login"
           ) {
-            event.preventDefault();
-
-            navigate(
-              "#login"
-            );
-
-            return;
+            navigate("#login");
           }
 
           if (
-            name ===
+            action ===
             "Create_account"
           ) {
-            event.preventDefault();
-
             navigate(
               "#Create_account"
             );
-
-            return;
           }
         }
-
-        /* LIKE */
 
         const like =
           event.target.closest(
@@ -2766,16 +2361,10 @@
           );
 
         if (like) {
-          event.preventDefault();
-
           likePost(
             like.dataset.likePost
           );
-
-          return;
         }
-
-        /* REPLY */
 
         const reply =
           event.target.closest(
@@ -2783,16 +2372,10 @@
           );
 
         if (reply) {
-          event.preventDefault();
-
           replyToPost(
             reply.dataset.replyPost
           );
-
-          return;
         }
-
-        /* SHARE */
 
         const share =
           event.target.closest(
@@ -2800,16 +2383,10 @@
           );
 
         if (share) {
-          event.preventDefault();
-
           sharePost(
             share.dataset.sharePost
           );
-
-          return;
         }
-
-        /* REPORT */
 
         const report =
           event.target.closest(
@@ -2817,16 +2394,10 @@
           );
 
         if (report) {
-          event.preventDefault();
-
           reportPost(
             report.dataset.reportPost
           );
-
-          return;
         }
-
-        /* DELETE */
 
         const deleteButton =
           event.target.closest(
@@ -2834,17 +2405,10 @@
           );
 
         if (deleteButton) {
-          event.preventDefault();
-
           deletePost(
-            deleteButton.dataset
-              .deletePost
+            deleteButton.dataset.deletePost
           );
-
-          return;
         }
-
-        /* ADMIN DELETE */
 
         const adminDelete =
           event.target.closest(
@@ -2852,17 +2416,11 @@
           );
 
         if (adminDelete) {
-          event.preventDefault();
-
           adminDeletePost(
             adminDelete.dataset
               .adminDeletePost
           );
-
-          return;
         }
-
-        /* ADMIN USER */
 
         const adminUser =
           event.target.closest(
@@ -2870,49 +2428,22 @@
           );
 
         if (adminUser) {
-          event.preventDefault();
-
           updateAdminUser(
             adminUser.dataset
               .adminUser
           );
-
-          return;
         }
 
-        /* RESOLVE REPORT */
-
-        const resolve =
+        const deleteIPBan =
           event.target.closest(
-            "[data-resolve-report]"
+            "[data-delete-ip-ban]"
           );
 
-        if (resolve) {
-          event.preventDefault();
-
-          resolveReport(
-            resolve.dataset
-              .resolveReport
+        if (deleteIPBan) {
+          removeIPBan(
+            deleteIPBan.dataset
+              .deleteIpBan
           );
-
-          return;
-        }
-
-        /* NAVIGATION */
-
-        const routeLink =
-          event.target.closest(
-            "[data-route]"
-          );
-
-        if (routeLink) {
-          event.preventDefault();
-
-          navigate(
-            routeLink.dataset.route
-          );
-
-          return;
         }
       }
     );
@@ -2928,8 +2459,7 @@
         "change",
         event => {
           state.currentCategory =
-            event.target.value ||
-            "all";
+            event.target.value;
 
           loadPosts();
         }
@@ -2940,7 +2470,6 @@
         button.addEventListener(
           "click",
           () => {
-
             $$(".board-tab")
               .forEach(tab => {
                 tab.classList.remove(
@@ -2963,134 +2492,7 @@
   }
 
   /* =========================================================
-     ROUTER
-     ========================================================= */
-
-  async function renderRoute() {
-    const route =
-      getRoute();
-
-    const sections =
-      $$(".page-section");
-
-    sections.forEach(
-      section => {
-        section.hidden = true;
-        section.classList.remove(
-          "active"
-        );
-      }
-    );
-
-    if (!route) {
-      const error =
-        $("#error-page");
-
-      if (error) {
-        error.hidden = false;
-
-        error.classList.add(
-          "active"
-        );
-      }
-
-      return;
-    }
-
-    const target =
-      document.getElementById(
-        route
-      );
-
-    if (!target) {
-      const error =
-        $("#error-page");
-
-      if (error) {
-        error.hidden = false;
-
-        error.classList.add(
-          "active"
-        );
-      }
-
-      return;
-    }
-
-    /*
-      管理者ページ
-    */
-
-    if (
-      route === "admin" ||
-      route.startsWith(
-        "admin-"
-      )
-    ) {
-      if (!ensureAdmin()) {
-        return;
-      }
-    }
-
-    target.hidden = false;
-
-    target.classList.add(
-      "active"
-    );
-
-    /* PAGE LOAD */
-
-    if (
-      route === "board"
-    ) {
-      loadPosts();
-    }
-
-    if (
-      route === "profile"
-    ) {
-      await loadProfile();
-    }
-
-    if (
-      route === "account"
-    ) {
-      renderAccount();
-    }
-
-    if (
-      route === "report"
-    ) {
-      loadReportPosts();
-    }
-
-    /*
-      ★ここが以前の問題
-      admin-pageではなくadmin
-    */
-
-    if (
-      route === "admin" ||
-      route === "admin-users" ||
-      route === "admin-user-detail" ||
-      route === "admin-posts" ||
-      route === "admin-reports" ||
-      route === "admin-ip-ban" ||
-      route === "admin-bots" ||
-      route === "admin-private-boards" ||
-      route === "admin-site-settings"
-    ) {
-      await loadAdminData();
-    }
-
-    window.scrollTo({
-      top: 0,
-      behavior: "instant"
-    });
-  }
-
-  /* =========================================================
-     AUTH STATE LISTENER
+     AUTH STATE
      ========================================================= */
 
   function setupAuthListener() {
@@ -3099,35 +2501,6 @@
         event,
         session
       ) => {
-
-        console.log(
-          "Auth event:",
-          event
-        );
-
-        /*
-          SIGNED_OUT
-        */
-
-        if (
-          event ===
-          "SIGNED_OUT"
-        ) {
-          state.user = null;
-          state.profile = null;
-          state.posts = [];
-          state.reports = [];
-          state.users = [];
-
-          updateAuthUI();
-
-          return;
-        }
-
-        /*
-          ログイン・セッション復元
-        */
-
         state.user =
           session?.user ||
           null;
@@ -3135,11 +2508,17 @@
         if (state.user) {
           await loadProfile();
         } else {
-          state.profile =
-            null;
+          state.profile = null;
         }
 
         updateAuthUI();
+
+        if (
+          event ===
+          "SIGNED_OUT"
+        ) {
+          navigate("#login");
+        }
       }
     );
   }
@@ -3159,38 +2538,23 @@
 
       await loadCurrentUser();
 
-      await renderRoute();
-
+      renderRoute();
     } catch (error) {
-      console.error(
-        "INIT:",
-        error
-      );
+      console.error(error);
 
       toast(
         "ページの初期化に失敗しました。",
         "error"
       );
-
     } finally {
       setLoading(false);
     }
   }
 
-  /* =========================================================
-     HASH CHANGE
-     ========================================================= */
-
   window.addEventListener(
     "hashchange",
-    () => {
-      renderRoute();
-    }
+    renderRoute
   );
-
-  /* =========================================================
-     START
-     ========================================================= */
 
   document.addEventListener(
     "DOMContentLoaded",
