@@ -207,7 +207,7 @@
 
     const announcements = $("#announcement-list");
     if (announcements && !announcements.children.length) {
-      announcements.innerHTML = `<div class="announcement-item">お知らせはありません。</div>`;
+      announcements.innerHTML = `<div class="announcement-item">サイトを公開しました！🎉2026.9/30</div>`;
     }
   }
 
