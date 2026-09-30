@@ -208,7 +208,7 @@
 
     const announcements = $("#announcement-list");
     if (announcements && !announcements.children.length) {
-      announcements.innerHTML = `<div class="announcement-item">現在DB側で問題が発生しているため，KAKIKOMINにどのような影響がわからないため，メンテナンスモードに入ります。しばらく投稿ができませんご了承ください</div>`;
+      announcements.innerHTML = `<div class="announcement-item">開発者が調査したところ今のところは問題ないためメンテナンスモードを終了いたします。今後の状況次第，再びメンテナンスモードに入る可能性がありますご了承ください。</div>`;
     }
   }
 
