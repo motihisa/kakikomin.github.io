@@ -1,3 +1,4 @@
+```css
 :root {
   --bg: #f6f7f9;
   --surface: #ffffff;
@@ -17,13 +18,17 @@
   --shadow: 0 6px 20px rgba(16,24,40,.07);
   --radius: 12px;
   --radius-sm: 8px;
+  --sticky-header-offset: 64px;
   --max-width: 1120px;
   --narrow-width: 560px;
   --transition: .18s ease;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--sticky-header-offset);
+}
 body {
   margin: 0;
   background: var(--bg);
@@ -56,7 +61,10 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 28px 0; }
 .section-inner.narrow-section {
   width: min(calc(100% - 32px), var(--narrow-width));
 }
-.page-section { padding: 44px 0 72px; }
+.page-section {
+  padding: 44px 0 72px;
+  scroll-margin-top: var(--sticky-header-offset);
+}
 .section-label {
   margin: 0 0 6px;
   color: var(--primary);
@@ -515,6 +523,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
 
 /* ===== responsive ===== */
 @media (max-width: 900px) {
+  :root { --sticky-header-offset: 108px; }
+
   .category-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .admin-dashboard { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .home-sections { grid-template-columns: 1fr; }
@@ -531,7 +541,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
     scrollbar-width: none;
   }
   .main-navigation::-webkit-scrollbar { display: none; }
-  .admin-navigation { top: 108px; }
+  .admin-navigation { top: var(--sticky-header-offset); }
 }
 
 @media (max-width: 680px) {
@@ -554,6 +564,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
 
 @media (max-width: 430px) {
   .category-grid, .admin-dashboard { grid-template-columns: 1fr; }
+  #popular-categories { grid-template-columns: 1fr; }
   .post-card-header { align-items: flex-start; }
   .post-category { font-size: .68rem; }
   .hero-actions, .form-actions { flex-direction: column; }
@@ -564,3 +575,4 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+```
