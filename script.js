@@ -40,7 +40,16 @@
     users: [],
     ipBans: [],
     currentCategory: "",   // "" = すべて（HTMLの「すべて」の value と揃えた）
-    currentSort: "new"
+    currentSort: "new",
+    ipBanned: false,
+    site: {
+      site_name: "KAKIKOMI",
+      site_description: "みんなで自由に書き込める総合掲示板",
+      registration_enabled: true,
+      posting_enabled: true,
+      maintenance_mode: false
+    },
+    openReplies: new Set()   // 返信欄を開いている投稿ID
   };
 
   /* =========================================================
@@ -113,6 +122,38 @@
 
   function comingSoon(name = "この機能") {
     toast(`${name}はまだ準備中です。`, "info");
+  }
+
+  // 書き込み系のエラー文言。RLSで弾かれたとき(42501)に分かりやすく出す。
+  function writeErrorMessage(error, fallback) {
+    if (state.ipBanned) {
+      return "このネットワークからの書き込みは制限されています。";
+    }
+    if (!isAdminUser()) {
+      if (state.site.maintenance_mode) return "現在メンテナンス中のため、書き込みできません。";
+      if (state.site.posting_enabled === false) return "現在、投稿は停止されています。";
+    }
+    if (error?.code === "42501") {
+      return "書き込みが制限されています。アカウントの状態を確認してください。";
+    }
+    return error?.message || fallback;
+  }
+
+  // このリクエスト元IPがBAN中か（サーバー側の is_ip_banned() を呼ぶ）
+  async function checkIpBan() {
+    try {
+      const { data, error } = await supabase.rpc("is_ip_banned");
+      if (error) {
+        console.warn("is_ip_banned:", error);
+        return;
+      }
+      state.ipBanned = data === true;
+      if (state.ipBanned) {
+        toast("このネットワークからの書き込みは制限されています。閲覧のみ可能です。", "error");
+      }
+    } catch (error) {
+      console.warn(error);
+    }
   }
 
   /* =========================================================
@@ -261,6 +302,7 @@
       case "notifications": showPlaceholder("#notification-list", "通知はありません。"); break;
       case "private-boards": showPlaceholder("#private-board-list", "参加中の掲示板はありません。"); break;
       case "bot": showPlaceholder("#bot-list", "Botはまだありません。"); break;
+      case "admin-site-settings": loadSiteSettings().then(fillSiteSettingsForm); break;
       default:
         if (route.startsWith("admin")) loadAdminData();
     }
@@ -368,6 +410,11 @@
   }
 
   async function register(username, email, password) {
+    if (state.site.registration_enabled === false) {
+      toast("現在、新規登録を受け付けていません。", "error");
+      return;
+    }
+
     if (!username || !email || !password) {
       toast("必要な項目を入力してください。", "error");
       return;
@@ -574,17 +621,23 @@
 
   const POST_SELECT_BASE = `*, profiles:user_id (id, username, avatar_url)`;
   const POST_SELECT_WITH_LIKES = `${POST_SELECT_BASE}, likes(count)`;
+  const POST_SELECT_WITH_COUNTS = `${POST_SELECT_BASE}, likes(count), replies(count)`;
 
   function normalizePost(post) {
     const counted = post.likes?.[0]?.count;
-    return { ...post, likeCount: counted ?? post.like_count ?? 0 };
+    const replies = post.replies?.[0]?.count;
+    return {
+      ...post,
+      likeCount: counted ?? post.like_count ?? 0,
+      replyCount: replies ?? 0
+    };
   }
 
   // likes(count) の結合が使えない環境（外部キー無し等）でも動くようにフォールバックする
   async function fetchPosts(applyFilters) {
     let lastError = null;
 
-    for (const select of [POST_SELECT_WITH_LIKES, POST_SELECT_BASE]) {
+    for (const select of [POST_SELECT_WITH_COUNTS, POST_SELECT_WITH_LIKES, POST_SELECT_BASE]) {
       let query = supabase
         .from("posts")
         .select(select)
@@ -642,15 +695,22 @@
           <button type="button" class="post-action" data-like-post="${escapeHTML(post.id)}">
             いいね <span class="like-count">${post.likeCount || 0}</span>
           </button>
-          ${post.allow_replies !== false ? `
-            <button type="button" class="post-action"
-              data-reply-post="${escapeHTML(post.id)}">返信</button>` : ""}
+          ${post.allow_replies !== false || post.replyCount > 0 ? `
+            <button type="button" class="post-action" aria-expanded="false"
+              data-toggle-replies="${escapeHTML(post.id)}">
+              返信 <span class="reply-count">${post.replyCount || 0}</span>
+            </button>` : ""}
           ${post.allow_share !== false ? `
             <button type="button" class="post-action"
               data-share-post="${escapeHTML(post.id)}">共有</button>` : ""}
           <button type="button" class="post-action"
             data-report-post="${escapeHTML(post.id)}">通報</button>
         </footer>
+
+        <div class="post-replies" hidden
+          data-replies-panel="${escapeHTML(post.id)}"
+          data-allow-replies="${post.allow_replies !== false}"
+          style="display:grid;gap:12px;padding:14px 18px 18px;border-top:1px solid var(--border);"></div>
       </article>
     `;
   }
@@ -665,6 +725,7 @@
     }
 
     list.innerHTML = posts.map(postCardHTML).join("");
+    restoreOpenReplies(list);
   }
 
   async function loadPosts() {
@@ -705,6 +766,7 @@
 
     if (noPosts) noPosts.hidden = true;
     list.innerHTML = posts.map(postCardHTML).join("");
+    restoreOpenReplies(list);
   }
 
   async function loadMyPosts() {
@@ -773,7 +835,7 @@
       navigate("#board");
     } catch (error) {
       console.error(error);
-      toast(error.message || "投稿に失敗しました。", "error");
+      toast(writeErrorMessage(error, "投稿に失敗しました。"), "error");
     } finally {
       setLoading(false);
     }
@@ -843,36 +905,279 @@
 
     if (result.error) {
       console.error(result.error);
-      toast("いいねできませんでした。", "error");
+      toast(writeErrorMessage(result.error, "いいねできませんでした。"), "error");
       return;
     }
 
     refreshRoute();
   }
 
-  async function replyToPost(postId) {
+  /* ---------- 返信の表示・投稿・削除 ---------- */
+
+  function replyItemHTML(reply) {
+    const name = reply.profiles?.username || "ユーザー";
+    const canDelete =
+      state.user && (state.user.id === reply.user_id || isAdminUser());
+
+    return `
+      <div style="padding:10px 12px;background:var(--surface-soft);border-radius:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
+          <strong style="font-size:.86rem;">${escapeHTML(name)}</strong>
+          <small style="color:var(--text-muted);">${escapeHTML(formatDate(reply.created_at))}</small>
+        </div>
+        <p style="margin:4px 0 0;white-space:pre-wrap;">${escapeHTML(reply.content)}</p>
+        ${canDelete ? `
+          <button type="button" class="post-menu-button" style="margin-top:8px;"
+            data-delete-reply="${escapeHTML(reply.id)}"
+            data-reply-post-id="${escapeHTML(reply.post_id)}">削除</button>` : ""}
+      </div>
+    `;
+  }
+
+  function replyFormHTML(postId, allowReplies) {
+    if (!allowReplies) {
+      return `<p style="margin:0;color:var(--text-secondary);font-size:.86rem;">この投稿は返信できません。</p>`;
+    }
+
+    if (!state.user) {
+      return `<p style="margin:0;font-size:.86rem;">
+        <a href="#login" style="color:var(--primary);font-weight:700;">ログイン</a>すると返信できます。</p>`;
+    }
+
+    const inputId = `reply-input-${escapeHTML(postId)}`;
+
+    return `
+      <form data-reply-form="${escapeHTML(postId)}" style="display:grid;gap:8px;">
+        <label class="visually-hidden" for="${inputId}">返信を書く</label>
+        <textarea id="${inputId}" maxlength="2000" required
+          placeholder="返信を書く" style="min-height:80px;"></textarea>
+        <button type="submit" class="primary-button" style="justify-self:start;">返信する</button>
+      </form>
+    `;
+  }
+
+  async function loadReplies(postId) {
+    const panels = $$(`[data-replies-panel="${CSS.escape(String(postId))}"]`);
+    if (!panels.length) return;
+
+    panels.forEach(panel => {
+      panel.innerHTML = `<p style="margin:0;color:var(--text-secondary);">読み込み中...</p>`;
+    });
+
+    // 名前つきで取得。結合が使えない場合は名前なしで取得し直す。
+    let { data, error } = await supabase
+      .from("replies")
+      .select("*, profiles:user_id (id, username)")
+      .eq("post_id", postId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.warn("replies with profiles failed, retrying:", error);
+      ({ data, error } = await supabase
+        .from("replies")
+        .select("*")
+        .eq("post_id", postId)
+        .order("created_at", { ascending: true }));
+    }
+
+    if (error) {
+      console.error(error);
+      panels.forEach(panel => {
+        panel.innerHTML = `<p style="margin:0;color:var(--danger);">返信を読み込めませんでした。</p>`;
+      });
+      return;
+    }
+
+    const replies = data || [];
+
+    panels.forEach(panel => {
+      const allowReplies = panel.dataset.allowReplies !== "false";
+      panel.innerHTML = `
+        ${replies.length
+          ? replies.map(replyItemHTML).join("")
+          : `<p style="margin:0;color:var(--text-secondary);font-size:.86rem;">まだ返信はありません。</p>`}
+        ${replyFormHTML(postId, allowReplies)}
+      `;
+    });
+
+    // ボタンの件数も最新に
+    $$(`[data-toggle-replies="${CSS.escape(String(postId))}"] .reply-count`).forEach(el => {
+      el.textContent = replies.length;
+    });
+  }
+
+  async function toggleReplies(postId, button) {
+    const panel = button.closest(".post-card")?.querySelector("[data-replies-panel]");
+    if (!panel) return;
+
+    if (panel.hidden) {
+      panel.hidden = false;
+      button.setAttribute("aria-expanded", "true");
+      state.openReplies.add(String(postId));
+      await loadReplies(postId);
+    } else {
+      panel.hidden = true;
+      button.setAttribute("aria-expanded", "false");
+      state.openReplies.delete(String(postId));
+    }
+  }
+
+  // 一覧を描き直したあとも、開いていた返信欄を開き直す
+  function restoreOpenReplies(root) {
+    if (!root || !state.openReplies.size) return;
+
+    state.openReplies.forEach(postId => {
+      const panel = root.querySelector(`[data-replies-panel="${CSS.escape(postId)}"]`);
+      if (!panel) return;
+
+      panel.hidden = false;
+      root.querySelector(`[data-toggle-replies="${CSS.escape(postId)}"]`)
+        ?.setAttribute("aria-expanded", "true");
+      loadReplies(postId);
+    });
+  }
+
+  async function submitReply(postId, form) {
     if (!state.user) {
       toast("返信するにはログインしてください。", "error");
       navigate("#login");
       return;
     }
 
-    const content = prompt("返信内容を入力してください。");
-    if (!content?.trim()) return;
+    const textarea = form.querySelector("textarea");
+    const button = form.querySelector("button[type=submit]");
+    const content = textarea?.value.trim();
+    if (!content) return;
+
+    if (button) button.disabled = true;
 
     const { error } = await supabase.from("replies").insert({
       post_id: postId,
       user_id: state.user.id,
-      content: content.trim()
+      content
     });
+
+    if (button) button.disabled = false;
 
     if (error) {
       console.error(error);
-      toast("返信できませんでした。", "error");
+      toast(writeErrorMessage(error, "返信できませんでした。"), "error");
       return;
     }
 
     toast("返信しました。", "success");
+    await loadReplies(postId);
+  }
+
+  async function deleteReply(replyId, postId) {
+    if (!state.user) return;
+    if (!confirm("この返信を削除しますか？")) return;
+
+    const { error } = await supabase.from("replies").delete().eq("id", replyId);
+
+    if (error) {
+      console.error(error);
+      toast("返信を削除できませんでした。", "error");
+      return;
+    }
+
+    toast("返信を削除しました。", "success");
+    await loadReplies(postId);
+  }
+
+  /* ---------- サイト設定 ---------- */
+
+  function applySiteSettings() {
+    const site = state.site;
+    const name = site.site_name || "KAKIKOMI";
+
+    document.title = name;
+
+    const logo = $("#site-logo");
+    if (logo) logo.textContent = name;
+
+    const footerBrand = $(".footer-brand");
+    if (footerBrand) footerBrand.textContent = name;
+
+    const meta = $('meta[name="description"]');
+    if (meta && site.site_description) meta.setAttribute("content", site.site_description);
+  }
+
+  async function loadSiteSettings() {
+    const { data, error } = await supabase
+      .from("site_settings")
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("site_settings:", error);
+      return;
+    }
+
+    if (data) {
+      state.site = { ...state.site, ...data };
+      applySiteSettings();
+    }
+
+    if (state.site.maintenance_mode && !isAdminUser()) {
+      toast("現在メンテナンス中です。閲覧のみ可能です。", "info");
+    }
+  }
+
+  function fillSiteSettingsForm() {
+    const site = state.site;
+    const set = (id, fn) => { const el = document.getElementById(id); if (el) fn(el); };
+
+    set("site-name", el => { el.value = site.site_name || ""; });
+    set("site-description", el => { el.value = site.site_description || ""; });
+    set("site-registration-enabled", el => { el.checked = site.registration_enabled !== false; });
+    set("site-posting-enabled", el => { el.checked = site.posting_enabled !== false; });
+    set("site-maintenance-mode", el => { el.checked = Boolean(site.maintenance_mode); });
+  }
+
+  async function saveSiteSettings() {
+    if (!ensureAdmin()) return;
+
+    const payload = {
+      id: 1,
+      site_name: $("#site-name")?.value.trim() || "KAKIKOMI",
+      site_description: $("#site-description")?.value.trim() || "",
+      registration_enabled: $("#site-registration-enabled")?.checked ?? true,
+      posting_enabled: $("#site-posting-enabled")?.checked ?? true,
+      maintenance_mode: $("#site-maintenance-mode")?.checked ?? false,
+      updated_at: new Date().toISOString()
+    };
+
+    if (
+      payload.maintenance_mode &&
+      !state.site.maintenance_mode &&
+      !confirm("メンテナンスモードをONにすると、管理者以外は書き込みできなくなります。よろしいですか？")
+    ) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("site_settings")
+        .upsert(payload)
+        .select()
+        .maybeSingle();
+
+      if (error) throw error;
+
+      state.site = { ...state.site, ...(data || payload) };
+      applySiteSettings();
+
+      toast("サイト設定を保存しました。", "success");
+    } catch (error) {
+      console.error(error);
+      toast("サイト設定を保存できませんでした。", "error");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function sharePost() {
@@ -980,7 +1285,7 @@
 
     if (error) {
       console.error(error);
-      toast("通報できませんでした。", "error");
+      toast(writeErrorMessage(error, "通報できませんでした。"), "error");
       return false;
     }
 
@@ -1232,7 +1537,8 @@
 
   /* =========================================================
      IP BAN
-     ※ここは「記録」だけ。実際のアクセス拒否はサーバー側（Edge Function等）が必要。
+     BANの強制はDB側（is_ip_banned() と各テーブルの書き込みポリシー）で行う。
+     BAN中のIPからは、投稿・返信・いいね・通報ができない（閲覧はできる）。
      ========================================================= */
 
   async function addIPBan() {
@@ -1553,8 +1859,16 @@
 
     // まだ中身のない機能
     onSubmit("#join-private-board-form", () => comingSoon("限定掲示板への参加"));
-    onSubmit("#admin-site-settings-form", () => comingSoon("サイト設定の保存"));
+    onSubmit("#admin-site-settings-form", saveSiteSettings);
     onSubmit("#create-bot-form", () => comingSoon("Botの作成"));
+
+    // 返信フォーム（投稿カードの中にあとから作られるので、documentで受ける）
+    document.addEventListener("submit", event => {
+      const form = event.target.closest?.("form[data-reply-form]");
+      if (!form) return;
+      event.preventDefault();
+      submitReply(form.dataset.replyForm, form);
+    });
 
     // 入力補助
     on("#post-content", "input", updateCharacterCount);
@@ -1612,8 +1926,13 @@
       const like = closest("[data-like-post]");
       if (like) likePost(like.dataset.likePost);
 
-      const reply = closest("[data-reply-post]");
-      if (reply) replyToPost(reply.dataset.replyPost);
+      const toggle = closest("[data-toggle-replies]");
+      if (toggle) toggleReplies(toggle.dataset.toggleReplies, toggle);
+
+      const deleteReplyButton = closest("[data-delete-reply]");
+      if (deleteReplyButton) {
+        deleteReply(deleteReplyButton.dataset.deleteReply, deleteReplyButton.dataset.replyPostId);
+      }
 
       const share = closest("[data-share-post]");
       if (share) sharePost();
@@ -1705,6 +2024,8 @@
       updateCharacterCount();
 
       await loadCurrentUser();
+      await loadSiteSettings();
+      checkIpBan();
 
       renderRoute();
     } catch (error) {
