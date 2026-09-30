@@ -49,7 +49,8 @@
       posting_enabled: true,
       maintenance_mode: false
     },
-    openReplies: new Set()   // 返信欄を開いている投稿ID
+    openReplies: new Set(),  // 返信欄を開いている投稿ID
+    adminRetry: false
   };
 
   /* =========================================================
@@ -207,7 +208,7 @@
 
     const announcements = $("#announcement-list");
     if (announcements && !announcements.children.length) {
-      announcements.innerHTML = `<div class="announcement-item">サイトを公開しました！🎉2026.9/30</div>`;
+      announcements.innerHTML = `<div class="announcement-item">お知らせはありません。</div>`;
     }
   }
 
@@ -1336,12 +1337,42 @@
      ========================================================= */
 
   function ensureAdmin() {
-    if (!isAdminUser()) {
-      toast("管理者権限が必要です。", "error");
-      navigate("#home");
+    if (isAdminUser()) return true;
+
+    // ログイン済みなのにプロフィールがまだ取れていないときは、読み込み直して1回だけやり直す
+    if (state.user && !state.profile && !state.adminRetry) {
+      state.adminRetry = true;
+      loadProfile()
+        .then(() => {
+          updateAuthUI();
+          renderRoute();
+        })
+        .finally(() => {
+          state.adminRetry = false;
+        });
       return false;
     }
-    return true;
+
+    // どこで止まったかが分かるように、理由を表示してコンソールにも出す
+    let reason;
+    if (!state.user) {
+      reason = "ログインしていません。";
+    } else if (!state.profile) {
+      reason = "プロフィールを読み込めませんでした。";
+    } else {
+      reason = `このアカウントは管理者ではありません（role: ${state.profile.role}）。`;
+    }
+
+    console.warn("ensureAdmin failed:", {
+      hasUser: Boolean(state.user),
+      email: state.user?.email,
+      profileLoaded: Boolean(state.profile),
+      role: state.profile?.role
+    });
+
+    toast(`管理者権限が必要です。${reason}`, "error");
+    navigate("#home");
+    return false;
   }
 
   async function loadAdminData() {
