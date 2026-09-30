@@ -1,6 +1,6 @@
 /* =========================================================
    KAKIKOMI - script.js (修正版)
-   BUILD 2026-09-30-C  ← このファイルの先頭にこの行が見えたら最新版
+   BUILD 2026-09-30-D  ← このファイルの先頭にこの行が見えたら最新版
    Supabase + Hash Router
    ========================================================= */
 
@@ -16,7 +16,7 @@
 
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  console.info("KAKIKOMI script BUILD 2026-09-30-C");
+  console.info("KAKIKOMI script BUILD 2026-09-30-D");
 
   /* ---------------------------------------------------------
      掲示板カテゴリ（★ここを実際のカテゴリに書き換えてね）
@@ -403,6 +403,7 @@
       state.user = data.user;
       await loadProfile();
       updateAuthUI();
+      recordLoginIp(true);
 
       toast("ログインしました。", "success");
       navigate("#home");
@@ -547,6 +548,120 @@
 
     state.profile = data;
     return data;
+  }
+
+  /* ---------- IPアドレスの記録・表示 ---------- */
+
+  // ログイン中のユーザーの今のIPを、サーバーが履歴に記録する（IPはサーバーがヘッダーから読む）
+  async function recordLoginIp(force = false) {
+    if (!state.user) return;
+
+    const key = `kakikomi-ip-logged:${state.user.id}`;
+    if (!force) {
+      try {
+        if (sessionStorage.getItem(key)) return;
+      } catch { /* sessionStorage が使えない場合は毎回記録する */ }
+    }
+
+    const { error } = await supabase.rpc("record_login_ip");
+    if (error) {
+      console.warn("record_login_ip:", error);
+      return;
+    }
+
+    try {
+      sessionStorage.setItem(key, "1");
+    } catch { /* ignore */ }
+  }
+
+  // 管理者だけ：投稿・返信のIP（target_id → ip_address）
+  async function fetchContentIps(kind, ids) {
+    const map = new Map();
+    if (!isAdminUser() || !ids.length) return map;
+
+    const { data, error } = await supabase
+      .from("content_ips")
+      .select("target_id, ip_address")
+      .eq("kind", kind)
+      .in("target_id", ids);
+
+    if (error) {
+      console.warn("content_ips:", error);
+      return map;
+    }
+
+    (data || []).forEach(row => map.set(row.target_id, row.ip_address));
+    return map;
+  }
+
+  function adminIpLine(ip) {
+    if (!isAdminUser()) return "";
+    return `<small style="display:block;margin-top:8px;color:var(--text-muted);">IP: ${escapeHTML(ip || "記録なし")}</small>`;
+  }
+
+  // 管理者のユーザー詳細に、ログインIP履歴と投稿時のIPを表示する
+  async function renderAdminUserIps(userId) {
+    const form = $("#admin-user-settings-form");
+    if (!form) return;
+
+    let box = $("#admin-user-ips");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "admin-user-ips";
+      box.className = "account-panel";
+      box.style.margin = "16px 0";
+      form.parentNode.insertBefore(box, form);
+    }
+
+    box.innerHTML = `
+      <h2 style="margin:0 0 8px;font-size:1rem;">IPアドレス</h2>
+      <p style="margin:0;color:var(--text-secondary);">読み込み中...</p>
+    `;
+
+    const [loginResult, contentResult] = await Promise.all([
+      supabase.from("user_ips").select("*").eq("user_id", userId)
+        .order("last_seen", { ascending: false }).limit(50),
+      supabase.from("content_ips").select("kind, ip_address, created_at").eq("user_id", userId)
+        .order("created_at", { ascending: false }).limit(30)
+    ]);
+
+    if (loginResult.error || contentResult.error) {
+      console.warn(loginResult.error || contentResult.error);
+      box.innerHTML = `
+        <h2 style="margin:0 0 8px;font-size:1rem;">IPアドレス</h2>
+        <p style="margin:0;color:var(--danger);">IPアドレスを読み込めませんでした。</p>
+      `;
+      return;
+    }
+
+    const logins = loginResult.data || [];
+    const contents = contentResult.data || [];
+
+    const row = (left, right) => `
+      <div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid var(--border);font-size:.86rem;">
+        <span style="overflow-wrap:anywhere;">${left}</span>
+        <span style="color:var(--text-muted);white-space:nowrap;">${right}</span>
+      </div>`;
+
+    box.innerHTML = `
+      <h2 style="margin:0 0 8px;font-size:1rem;">IPアドレス</h2>
+
+      <h3 style="margin:12px 0 4px;font-size:.88rem;">ログイン履歴</h3>
+      ${logins.length
+        ? logins.map(r => row(
+            escapeHTML(r.ip_address),
+            `最終 ${escapeHTML(formatDate(r.last_seen))} ・ ${r.seen_count}回`
+          )).join("")
+        : `<p style="margin:0;color:var(--text-secondary);font-size:.86rem;">記録はまだありません。</p>`}
+
+      <h3 style="margin:16px 0 4px;font-size:.88rem;">投稿・返信したときのIP</h3>
+      ${contents.length
+        ? contents.map(r => row(
+            escapeHTML(r.ip_address || "記録なし"),
+            `${r.kind === "post" ? "投稿" : "返信"} ・ ${escapeHTML(formatDate(r.created_at))}`
+          )).join("")
+        : `<p style="margin:0;color:var(--text-secondary);font-size:.86rem;">記録はまだありません。</p>`}
+    `;
   }
 
   /* ---------- 強制ログアウト ---------- */
@@ -749,7 +864,14 @@
       const { data, error } = await query;
 
       if (!error) {
-        return { data: (data || []).map(normalizePost), error: null };
+        const posts = (data || []).map(normalizePost);
+
+        if (isAdminUser()) {
+          const ips = await fetchContentIps("post", posts.map(post => post.id));
+          posts.forEach(post => { post.adminIp = ips.get(post.id); });
+        }
+
+        return { data: posts, error: null };
       }
 
       if (isForcedLogoutError(error)) {
@@ -795,6 +917,7 @@
           <h2>${escapeHTML(post.title)}</h2>
           <p>${escapeHTML(post.content)}</p>
           ${image}
+          ${adminIpLine(post.adminIp)}
         </div>
 
         <footer class="post-card-footer">
@@ -1032,6 +1155,7 @@
           <small style="color:var(--text-muted);">${escapeHTML(formatDate(reply.created_at))}</small>
         </div>
         <p style="margin:4px 0 0;white-space:pre-wrap;">${escapeHTML(reply.content)}</p>
+        ${adminIpLine(reply.adminIp)}
         ${canDelete ? `
           <button type="button" class="post-menu-button" style="margin-top:8px;"
             data-delete-reply="${escapeHTML(reply.id)}"
@@ -1095,6 +1219,11 @@
     }
 
     const replies = data || [];
+
+    if (isAdminUser() && replies.length) {
+      const ips = await fetchContentIps("reply", replies.map(reply => reply.id));
+      replies.forEach(reply => { reply.adminIp = ips.get(reply.id); });
+    }
 
     panels.forEach(panel => {
       const allowReplies = panel.dataset.allowReplies !== "false";
@@ -1497,6 +1626,11 @@
 
     state.users = usersResult.data || [];
     state.adminPosts = postsResult.data || [];
+
+    {
+      const ips = await fetchContentIps("post", state.adminPosts.map(post => post.id));
+      state.adminPosts.forEach(post => { post.adminIp = ips.get(post.id); });
+    }
     state.reports = reportsResult.data || [];
     state.ipBans = ipBansResult.data || [];
 
@@ -1559,7 +1693,8 @@
         <div>
           <h3>${escapeHTML(post.title)}</h3>
           <p>${escapeHTML(post.content)}</p>
-          <small>${escapeHTML(formatDate(post.created_at))}</small>
+          <small>${escapeHTML(formatDate(post.created_at))}
+            ・ IP: ${escapeHTML(post.adminIp || "記録なし")}</small>
         </div>
         <button type="button" class="danger-button"
           data-admin-delete-post="${escapeHTML(post.id)}">削除</button>
@@ -1637,6 +1772,8 @@
     if (idInput) idInput.value = user.id;
     if (status) status.value = user.status || "active";
     setText("admin-target-username", user.username || "ユーザー");
+
+    renderAdminUserIps(user.id);
 
     navigate("#admin-user-detail");
   }
@@ -2163,6 +2300,7 @@
       await loadSiteSettings();
       checkIpBan();
       startSessionWatch();
+      recordLoginIp();
 
       renderRoute();
     } catch (error) {
