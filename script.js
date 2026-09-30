@@ -1,5 +1,6 @@
 /* =========================================================
    KAKIKOMI - script.js (修正版)
+   BUILD 2026-09-30-C  ← このファイルの先頭にこの行が見えたら最新版
    Supabase + Hash Router
    ========================================================= */
 
@@ -14,6 +15,8 @@
   const ADMIN_EMAIL = "ywcnbkceqon@admin-account";
 
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  console.info("KAKIKOMI script BUILD 2026-09-30-C");
 
   /* ---------------------------------------------------------
      掲示板カテゴリ（★ここを実際のカテゴリに書き換えてね）
@@ -50,7 +53,8 @@
       maintenance_mode: false
     },
     openReplies: new Set(),  // 返信欄を開いている投稿ID
-    adminRetry: false
+    adminRetry: false,
+    forcedLogoutRunning: false
   };
 
   /* =========================================================
@@ -208,7 +212,7 @@
 
     const announcements = $("#announcement-list");
     if (announcements && !announcements.children.length) {
-      announcements.innerHTML = `<div class="announcement-item">開発者が調査したところ今のところは問題ないためメンテナンスモードを終了いたします。今後の状況次第，再びメンテナンスモードに入る可能性がありますご了承ください。</div>`;
+      announcements.innerHTML = `<div class="announcement-item">お知らせはありません。</div>`;
     }
   }
 
@@ -526,13 +530,109 @@
       .maybeSingle();
 
     if (error) {
+      if (isForcedLogoutError(error)) {
+        await handleForcedLogout();
+        return null;
+      }
       console.error(error);
       state.profile = null;
       return null;
     }
 
+    // サーバー側のチェックが無い環境でも効くように、トークンの発行時刻でも確認する
+    if (data?.force_logout_at && (await isTokenOlderThan(data.force_logout_at))) {
+      await handleForcedLogout();
+      return null;
+    }
+
     state.profile = data;
     return data;
+  }
+
+  /* ---------- 強制ログアウト ---------- */
+
+  function isForcedLogoutError(error) {
+    return error?.code === "FORCED_LOGOUT";
+  }
+
+  function decodeJwtPayload(token) {
+    try {
+      const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+      const json = decodeURIComponent(
+        atob(base64).split("").map(c => "%" + c.charCodeAt(0).toString(16).padStart(2, "0")).join("")
+      );
+      return JSON.parse(json);
+    } catch {
+      return null;
+    }
+  }
+
+  async function isTokenOlderThan(isoTime) {
+    const { data } = await supabase.auth.getSession();
+    const payload = data?.session ? decodeJwtPayload(data.session.access_token) : null;
+    if (!payload?.iat) return false;
+    return payload.iat * 1000 < new Date(isoTime).getTime();
+  }
+
+  async function handleForcedLogout() {
+    if (state.forcedLogoutRunning) return;
+    state.forcedLogoutRunning = true;
+
+    try {
+      // サーバー側でセッションは削除済みなので、この端末の保存分だけ消す
+      await supabase.auth.signOut({ scope: "local" });
+    } catch (error) {
+      console.warn(error);
+    }
+
+    state.user = null;
+    state.profile = null;
+    updateAuthUI();
+
+    toast("管理者によってログアウトされました。もう一度ログインしてください。", "error");
+    navigate("#login");
+
+    state.forcedLogoutRunning = false;
+  }
+
+  // 1分ごと、またはタブに戻ってきたときに、強制ログアウトされていないか確認する
+  function startSessionWatch() {
+    const check = () => {
+      if (state.user) loadProfile();
+    };
+
+    setInterval(check, 60 * 1000);
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) check();
+    });
+  }
+
+  // 管理画面：選んだユーザーを強制ログアウトする
+  async function forceLogoutUser() {
+    if (!ensureAdmin()) return;
+
+    const userId = $("#admin-target-user-id")?.value;
+    const name = $("#admin-target-username")?.textContent || "このユーザー";
+
+    if (!userId) {
+      toast("ユーザーが選ばれていません。", "error");
+      return;
+    }
+
+    if (!confirm(`${name} を強制ログアウトしますか？\nすべての端末でログアウトされます。`)) {
+      return;
+    }
+
+    const { error } = await supabase.rpc("admin_force_logout", { target_user: userId });
+
+    if (error) {
+      console.error(error);
+      toast("強制ログアウトできませんでした。", "error");
+      return;
+    }
+
+    toast(`${name} を強制ログアウトしました。`, "success");
   }
 
   function renderAccount() {
@@ -650,6 +750,11 @@
 
       if (!error) {
         return { data: (data || []).map(normalizePost), error: null };
+      }
+
+      if (isForcedLogoutError(error)) {
+        await handleForcedLogout();
+        return { data: [], error };
       }
 
       lastError = error;
@@ -1935,7 +2040,7 @@
       if (closest("#create-bot-button") || closest("#admin-create-bot")) openModal("create-bot-dialog");
       if (closest("#create-private-board-button")) comingSoon("限定掲示板の作成");
       if (closest("#mark-notifications-read")) comingSoon("既読機能");
-      if (closest("#admin-force-logout")) comingSoon("強制ログアウト");
+      if (closest("#admin-force-logout")) forceLogoutUser();
 
       if (closest("#copy-share-url") || closest('[data-share="copy"]')) sharePost();
       if (closest('[data-share="native"]')) {
@@ -2057,6 +2162,7 @@
       await loadCurrentUser();
       await loadSiteSettings();
       checkIpBan();
+      startSessionWatch();
 
       renderRoute();
     } catch (error) {
