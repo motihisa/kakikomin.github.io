@@ -1,4 +1,3 @@
-```css
 :root {
   --bg: #f6f7f9;
   --surface: #ffffff;
@@ -575,4 +574,3 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
-```
