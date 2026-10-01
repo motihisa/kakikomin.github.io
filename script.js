@@ -49,6 +49,7 @@
     currentSort: "new",
     ipBanned: false,
     accessBlocked: false,
+    accountBlocked: false,
     site: {
       site_name: "KAKIKOMI",
       site_description: "みんなで自由に書き込める総合掲示板",
@@ -342,8 +343,9 @@
 
     closeAllModals();
 
-    if (state.accessBlocked) {
-      const blocked = document.getElementById("access-blocked");
+    if (state.accessBlocked || state.accountBlocked) {
+      const id = state.accountBlocked ? "account-blocked" : "access-blocked";
+      const blocked = document.getElementById(id);
       if (blocked) {
         blocked.hidden = false;
         blocked.classList.add("active");
@@ -432,10 +434,9 @@
       await loadProfile();
 
       if (state.profile?.status === "banned") {
-        state.accessBlocked = true;
-        const title = document.getElementById("access-blocked-title");
-        const message = document.getElementById("access-blocked-message");
-        if (title) title.textContent = "アカウントがBANされています";
+        state.accessBlocked = false;
+        state.accountBlocked = true;
+        const message = document.getElementById("account-blocked-message");
         if (message) message.textContent = state.profile?.ban_reason || "このアカウントではサイトを利用できません。";
       }
     } else {
