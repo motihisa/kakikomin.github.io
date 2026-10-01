@@ -430,6 +430,14 @@
 
     if (state.user) {
       await loadProfile();
+
+      if (state.profile?.status === "banned" && !isAdminUser()) {
+        state.accessBlocked = true;
+        const title = document.getElementById("access-blocked-title");
+        const message = document.getElementById("access-blocked-message");
+        if (title) title.textContent = "アカウントがBANされています";
+        if (message) message.textContent = "このアカウントではサイトを利用できません。";
+      }
     } else {
       state.profile = null;
     }
@@ -2513,8 +2521,17 @@
       setTimeout(async () => {
         if (state.user) {
           await loadProfile();
+
+          if (state.profile?.status === "banned" && !isAdminUser()) {
+            state.accessBlocked = true;
+            const title = document.getElementById("access-blocked-title");
+            const message = document.getElementById("access-blocked-message");
+            if (title) title.textContent = "アカウントがBANされています";
+            if (message) message.textContent = "このアカウントではサイトを利用できません。";
+          }
         } else {
           state.profile = null;
+          state.accessBlocked = false;
         }
 
         updateAuthUI();
