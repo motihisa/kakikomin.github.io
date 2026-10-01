@@ -169,7 +169,7 @@
         return false;
       }
       state.ipBanned = data === true;
-      if (state.ipBanned && !isAdminUser()) {
+      if (state.ipBanned) {
         state.accessBlocked = true;
         const title = document.getElementById("access-blocked-title");
         const message = document.getElementById("access-blocked-message");
@@ -351,7 +351,7 @@
       return;
     }
 
-    if (state.site.maintenance_mode && !isAdminUser()) {
+    if (state.site.maintenance_mode) {
       const maintenance = document.getElementById("maintenance");
       if (maintenance) {
         maintenance.hidden = false;
@@ -431,7 +431,7 @@
     if (state.user) {
       await loadProfile();
 
-      if (state.profile?.status === "banned" && !isAdminUser()) {
+      if (state.profile?.status === "banned") {
         state.accessBlocked = true;
         const title = document.getElementById("access-blocked-title");
         const message = document.getElementById("access-blocked-message");
@@ -2025,23 +2025,7 @@
   async function saveAdminUser() {
     if (!ensureAdmin()) return;
 
-    const userId = $("#admin-target-user-id")?.value;
-    const status = $("#admin-target-status")?.value;
-    if (!userId || !status) return;
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({ status })
-      .eq("id", userId);
-
-    if (error) {
-      console.error(error);
-      toast("ユーザー設定を更新できませんでした。", "error");
-      return;
-    }
-
-    toast("ユーザー設定を更新しました。", "success");
-    await loadAdminData();
+    toast("BAN・BAN解除はSupabase管理者のみ実行できます。", "error");
   }
 
   function searchAdminUsers(keyword) {
@@ -2060,43 +2044,7 @@
 
   async function addIPBan() {
     if (!ensureAdmin()) return;
-
-    const ip = $("#ban-ip")?.value.trim();
-    const reason = $("#ban-reason")?.value.trim();
-    const duration = $("#ban-duration")?.value || "permanent";
-
-    if (!ip) {
-      toast("IPアドレスを入力してください。", "error");
-      return;
-    }
-
-    // 1 / 7 / 30 → その日数後に期限切れ、permanent → 無期限(null)
-    let expiresAt = null;
-    if (duration !== "permanent" && Number(duration) > 0) {
-      expiresAt = new Date(Date.now() + Number(duration) * 24 * 60 * 60 * 1000).toISOString();
-    }
-
-    // 同じIPが既にある場合は古いレコードを消してから登録
-    const { error: deleteError } = await supabase.from("ip_bans").delete().eq("ip", ip);
-    if (deleteError) console.error("IP BAN old record:", deleteError);
-
-    const { error } = await supabase.from("ip_bans").insert({
-      ip,
-      reason: reason || "管理者によるアクセス制限",
-      duration,
-      expires_at: expiresAt
-    });
-
-    if (error) {
-      console.error("IP BAN insert:", error);
-      toast("IP BANの登録に失敗しました。", "error");
-      return;
-    }
-
-    toast("IP BANを追加しました。", "success");
-    $("#ip-ban-form")?.reset();
-
-    await loadAdminData();
+    toast("IP BANの追加・変更はSupabase管理者のみ実行できます。", "error");
   }
 
   function renderIPBans() {
@@ -2136,18 +2084,7 @@
 
   async function removeIPBan(id) {
     if (!ensureAdmin()) return;
-    if (!confirm("このIP BANを解除しますか？")) return;
-
-    const { error } = await supabase.from("ip_bans").delete().eq("id", id);
-
-    if (error) {
-      console.error("IP BAN delete:", error);
-      toast("IP BANの解除に失敗しました。", "error");
-      return;
-    }
-
-    toast("IP BANを解除しました。", "success");
-    await loadAdminData();
+    toast("IP BANの解除はSupabase管理者のみ実行できます。", "error");
   }
 
   /* =========================================================
@@ -2522,7 +2459,7 @@
         if (state.user) {
           await loadProfile();
 
-          if (state.profile?.status === "banned" && !isAdminUser()) {
+          if (state.profile?.status === "banned") {
             state.accessBlocked = true;
             const title = document.getElementById("access-blocked-title");
             const message = document.getElementById("access-blocked-message");
