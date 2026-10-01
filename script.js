@@ -124,7 +124,13 @@
   }
 
   function isAdminUser() {
-    return Boolean(state.user && state.profile?.role === "admin");
+    // DB側の is_admin() と同じ条件に合わせる。
+    // role だけでなく active 状態も確認し、停止中の管理者を管理画面へ入れない。
+    return Boolean(
+      state.user &&
+      state.profile?.role === "admin" &&
+      state.profile?.status === "active"
+    );
   }
 
   function comingSoon(name = "この機能") {
