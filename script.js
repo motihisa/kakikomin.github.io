@@ -746,6 +746,37 @@
   }
 
   // 管理画面：選んだユーザーを強制ログアウトする
+  async function forceDeleteUser() {
+    if (!ensureAdmin()) return;
+
+    const userId = $("#admin-target-user-id")?.value;
+    const name = $("#admin-target-username")?.textContent || "このユーザー";
+
+    if (!userId) {
+      toast("ユーザーが選ばれていません。", "error");
+      return;
+    }
+
+    if (userId === state.user?.id) {
+      toast("自分自身のアカウントはここから削除できません。", "error");
+      return;
+    }
+
+    if (!confirm(`${name} を完全に削除しますか？\nこの操作は元に戻せません。`)) return;
+
+    const { error } = await supabase.rpc("admin_force_delete_user", { target_user: userId });
+
+    if (error) {
+      console.error(error);
+      toast("アカウントを削除できませんでした。", "error");
+      return;
+    }
+
+    toast(`${name} のアカウントを削除しました。`, "success");
+    navigate("#admin-users");
+    loadAdminData();
+  }
+
   async function forceLogoutUser() {
     if (!ensureAdmin()) return;
 
@@ -2368,6 +2399,7 @@
       if (closest("#create-private-board-button")) comingSoon("限定掲示板の作成");
       if (closest("#mark-notifications-read")) comingSoon("既読機能");
       if (closest("#admin-force-logout")) forceLogoutUser();
+      if (closest("#admin-force-delete")) forceDeleteUser();
 
       if (closest("#copy-share-url") || closest('[data-share="copy"]')) sharePost();
       if (closest('[data-share="native"]')) {
