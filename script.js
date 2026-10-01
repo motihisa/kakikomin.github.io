@@ -59,7 +59,8 @@
     adminRetry: false,
     forcedLogoutRunning: false,
     postsHasMore: false,
-    adminCounts: null
+    adminCounts: null,
+    auditLogs: []
   };
 
   /* =========================================================
@@ -322,6 +323,7 @@
       case "private-boards": showPlaceholder("#private-board-list", "参加中の掲示板はありません。"); break;
       case "bot": showPlaceholder("#bot-list", "Botはまだありません。"); break;
       case "admin-site-settings": loadSiteSettings().then(fillSiteSettingsForm); break;
+      case "admin-logs": loadAdminLogs(); break;
       default:
         if (route.startsWith("admin")) loadAdminData();
     }
@@ -1746,6 +1748,81 @@
     renderAdmin();
   }
 
+  async function loadAdminLogs() {
+    if (!ensureAdmin()) return;
+
+    const action = $("#admin-log-action-filter")?.value || null;
+    const { data, error } = await supabase.rpc("admin_list_audit_logs", {
+      limit_count: 200,
+      action_filter: action
+    });
+
+    if (error) {
+      console.error("Audit logs:", error);
+      const body = $("#admin-logs-table-body");
+      if (body) body.innerHTML = `<tr><td colspan="6">ログを読み込めませんでした。</td></tr>`;
+      return;
+    }
+
+    state.auditLogs = data || [];
+    renderAdminLogs();
+  }
+
+  function auditActionName(log) {
+    if (log.action === "LOGIN_IP") return "ログインIP";
+    if (log.action === "INSERT") return "作成";
+    if (log.action === "UPDATE") return "変更";
+    if (log.action === "DELETE") return "削除";
+    return log.action || "記録";
+  }
+
+  function auditTargetName(log) {
+    const names = {
+      profiles: "アカウント",
+      posts: "投稿",
+      replies: "返信",
+      likes: "いいね",
+      reports: "通報",
+      ip_bans: "IP制限",
+      bots: "Bot",
+      private_boards: "掲示板",
+      site_settings: "サイト設定",
+      content_ips: "投稿/返信IP",
+      user_ips: "ログインIP"
+    };
+    return names[log.table_name] || log.table_name || "-";
+  }
+
+  function renderAdminLogs() {
+    const body = $("#admin-logs-table-body");
+    if (!body) return;
+
+    if (!state.auditLogs.length) {
+      body.innerHTML = `<tr><td colspan="6">ログはありません。</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = state.auditLogs.map(log => {
+      const detail = log.details && typeof log.details === "object"
+        ? Object.entries(log.details)
+            .filter(([key, value]) => value !== null && value !== undefined && value !== "")
+            .map(([key, value]) => `${key}: ${typeof value === "object" ? JSON.stringify(value) : String(value)}`)
+            .join(" / ")
+        : "";
+
+      return `
+        <tr>
+          <td>${escapeHTML(formatDate(log.created_at))}</td>
+          <td>${escapeHTML(auditActionName(log))}</td>
+          <td>${escapeHTML(auditTargetName(log))}<br><small>${escapeHTML(log.record_id || "-")}</small></td>
+          <td>${escapeHTML(log.target_user_id || log.actor_user_id || "-")}</td>
+          <td>${escapeHTML(log.ip_address || "-")}</td>
+          <td>${escapeHTML(detail || "-")}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
   function renderAdmin() {
     const counts = state.adminCounts || {};
     setText("admin-user-count", counts.users ?? state.users.length);
@@ -2239,6 +2316,8 @@
     onSubmit("#ip-ban-form", addIPBan);
     onSubmit("#admin-user-settings-form", saveAdminUser);
     onSubmit("#admin-user-search-form", () => searchAdminUsers($("#admin-user-search")?.value));
+    on("#admin-log-action-filter", "change", loadAdminLogs);
+    on("#admin-log-refresh", "click", loadAdminLogs);
 
     // まだ中身のない機能
     onSubmit("#join-private-board-form", () => comingSoon("限定掲示板への参加"));
