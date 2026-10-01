@@ -2208,7 +2208,27 @@
   async function loadPrivateBoardMembers(boardId) {
     const {data,error}=await supabase.from("private_board_members").select("user_id,member_role,status,can_post,can_reply,profiles:user_id(username)").eq("board_id",boardId).order("joined_at",{ascending:true});
     const list=$("#private-board-member-list");if(!list)return;if(error){list.innerHTML="<p>メンバーを読み込めませんでした。</p>";return;}
-    list.innerHTML=(data||[]).map(m=>'<div class="account-panel"><strong>'+escapeHTML(m.profiles?.username||"ユーザー")+'</strong><p>'+escapeHTML(m.member_role)+" / "+escapeHTML(m.status)+"</p></div>').join("");
+    list.innerHTML=(data||[]).map(m=>'<div class="account-panel" data-member-id="'+escapeHTML(m.user_id)+'"><strong>'+escapeHTML(m.profiles?.username||"ユーザー")+'</strong><p>'+escapeHTML(m.member_role)+" / "+escapeHTML(m.status)+'</p>'+(m.member_role!=="owner" ? '<label><input type="checkbox" data-member-post '+(m.can_post?"checked":"")+'> 投稿を許可</label><label><input type="checkbox" data-member-reply '+(m.can_reply?"checked":"")+'> 返信を許可</label><button type="button" class="secondary-button" data-save-member="'+escapeHTML(m.user_id)+'">保存</button><button type="button" class="danger-button" data-block-member="'+escapeHTML(m.user_id)+'">'+(m.status==="blocked"?"制限解除":"メンバーを制限")+'</button><button type="button" class="danger-button" data-remove-member="'+escapeHTML(m.user_id)+'">メンバーから削除</button>' : '')+'</div>').join("");
+  }
+
+  async function savePrivateBoardMember(userId) {
+    const boardId=getPrivateBoardIdFromHash(); const row=document.querySelector('[data-member-id="'+CSS.escape(userId)+'"]'); if(!boardId||!row)return;
+    const {error}=await supabase.rpc("private_board_manage_member",{p_board_id:boardId,p_user_id:userId,p_status:"active",p_can_post:Boolean(row.querySelector("[data-member-post]")?.checked),p_can_reply:Boolean(row.querySelector("[data-member-reply]")?.checked)});
+    if(error){console.error(error);toast("メンバー設定を変更できませんでした。","error");return;} toast("メンバー設定を保存しました。","success");loadPrivateBoardMembers(boardId);
+  }
+
+  async function togglePrivateBoardMemberBlock(userId) {
+    const boardId=getPrivateBoardIdFromHash(); const row=document.querySelector('[data-member-id="'+CSS.escape(userId)+'"]'); if(!boardId||!row)return;
+    const blocked=row.querySelector("p")?.textContent.includes("blocked");
+    const {error}=await supabase.rpc("private_board_manage_member",{p_board_id:boardId,p_user_id:userId,p_status:blocked?"active":"blocked",p_can_post:Boolean(row.querySelector("[data-member-post]")?.checked),p_can_reply:Boolean(row.querySelector("[data-member-reply]")?.checked)});
+    if(error){console.error(error);toast("メンバーの制限を変更できませんでした。","error");return;} toast(blocked?"メンバーの制限を解除しました。":"メンバーを制限しました。","success");loadPrivateBoardMembers(boardId);
+  }
+
+  async function removePrivateBoardMember(userId) {
+    const boardId=getPrivateBoardIdFromHash();if(!boardId)return;
+    if(!confirm("このメンバーを掲示板から削除しますか？"))return;
+    const {error}=await supabase.rpc("private_board_remove_member",{p_board_id:boardId,p_user_id:userId});
+    if(error){console.error(error);toast("メンバーを削除できませんでした。","error");return;} toast("メンバーを削除しました。","success");loadPrivateBoardMembers(boardId);loadPrivateBoardDetail();
   }
 
   async function savePrivateBoardSettings(event) {
@@ -2498,6 +2518,12 @@
       if (closest("#create-private-board-button")) createPrivateBoard();
       if (closest("#private-board-back")) navigate("#private-boards");
       if (closest("#private-board-copy-code")) copyPrivateBoardCode();
+      const saveMember=closest("[data-save-member]");
+      if(saveMember) savePrivateBoardMember(saveMember.dataset.saveMember);
+      const blockMember=closest("[data-block-member]");
+      if(blockMember) togglePrivateBoardMemberBlock(blockMember.dataset.blockMember);
+      const removeMember=closest("[data-remove-member]");
+      if(removeMember) removePrivateBoardMember(removeMember.dataset.removeMember);
       const openPrivate = closest("[data-open-private-board]");
       if (openPrivate) location.hash = `#private-board-${openPrivate.dataset.openPrivateBoard}`;
       if (closest("#mark-notifications-read")) comingSoon("既読機能");
