@@ -1804,24 +1804,7 @@
       return false;
     }
 
-    // 管理画面へ入る瞬間にDBで再確認する。
-    try {
-      const { data, error } = await supabase.rpc("is_admin");
-      if (!error) {
-        state.adminVerified = data === true;
-      }
-    } catch (error) {
-      console.warn("admin verification:", error);
-    }
-
-    // 管理者判定はDBの is_admin() の結果だけを信頼する。
-    // profiles.role/status をフロント側の権限判定には使わない。
-    if (state.adminVerified === true) {
-      updateAuthUI();
-      return true;
-    }
-
-    // 判定がまだ無い場合はプロフィール情報ではなくDBへ再確認する。
+    // まずDBの管理者判定を確認する。
     try {
       const { data, error } = await supabase.rpc("is_admin");
       if (!error) {
@@ -1830,18 +1813,30 @@
         console.warn("is_admin:", error);
       }
     } catch (error) {
-      console.warn("is_admin:", error);
+      console.warn("admin verification:", error);
     }
 
-    if (state.adminVerified !== true) {
-      console.warn("ensureAdmin failed: DB is_admin() returned false or errored");
-      toast("管理者権限が必要です。", "error");
-      navigate("#home");
-      return false;
+    // is_admin() の一時的なRPC/セッション判定失敗時だけ、
+    // 既にDBから取得済みの自分のプロフィールをUI入場判定の
+    // フォールバックとして使う。管理操作そのものはDB側で再認証される。
+    const profileAdmin =
+      state.profile?.id === state.user.id &&
+      state.profile?.role === "admin" &&
+      state.profile?.status === "active";
+
+    if (state.adminVerified === true || profileAdmin) {
+      if (profileAdmin && state.adminVerified !== true) {
+        console.warn("ensureAdmin: using verified profile fallback for UI access");
+      }
+      state.adminVerified = state.adminVerified === true;
+      updateAuthUI();
+      return true;
     }
 
-    updateAuthUI();
-    return true;
+    console.warn("ensureAdmin failed: DB is_admin() and profile check both denied");
+    toast("管理者権限が必要です。", "error");
+    navigate("#home");
+    return false;
   }
 
   async function loadAdminData() {
