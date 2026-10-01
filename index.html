@@ -509,6 +509,70 @@
     </section>
 
 
+    <!-- ================= PRIVATE BOARD DETAIL ================= -->
+    <section id="private-board" class="page-section" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <div>
+            <p class="section-label">PRIVATE BOARD</p>
+            <h1 id="private-board-title">限定掲示板</h1>
+            <p id="private-board-description"></p>
+          </div>
+          <button type="button" class="secondary-button" id="private-board-back">一覧に戻る</button>
+        </div>
+
+        <div class="private-board-security-card">
+          <span>メンバー限定・BAN/停止ユーザーはアクセス不可</span>
+          <span id="private-board-member-count"></span>
+        </div>
+
+        <div id="private-board-owner-tools" hidden>
+          <div class="account-panel">
+            <h2>掲示板設定</h2>
+            <form id="private-board-settings-form" class="settings-form">
+              <div class="form-group">
+                <label for="private-board-name-input">掲示板名</label>
+                <input id="private-board-name-input" maxlength="100" required>
+              </div>
+              <div class="form-group">
+                <label for="private-board-description-input">説明</label>
+                <textarea id="private-board-description-input" maxlength="1000"></textarea>
+              </div>
+              <button type="submit" class="primary-button">設定を保存</button>
+            </form>
+            <div class="form-group">
+              <label for="private-board-invite-code">招待コード</label>
+              <input id="private-board-invite-code" readonly>
+              <button type="button" class="secondary-button" id="private-board-copy-code">招待コードをコピー</button>
+            </div>
+          </div>
+
+          <div class="account-panel">
+            <h2>メンバー管理</h2>
+            <div id="private-board-member-list" class="board-list"></div>
+          </div>
+        </div>
+
+        <div id="private-board-post-form-wrap" class="account-panel">
+          <h2>投稿する</h2>
+          <form id="private-board-post-form" class="settings-form">
+            <div class="form-group">
+              <label for="private-board-post-title">タイトル</label>
+              <input id="private-board-post-title" maxlength="120" required>
+            </div>
+            <div class="form-group">
+              <label for="private-board-post-content">本文</label>
+              <textarea id="private-board-post-content" maxlength="5000" required></textarea>
+            </div>
+            <button type="submit" class="primary-button">投稿</button>
+          </form>
+        </div>
+
+        <div id="private-board-post-list" class="admin-post-list"></div>
+      </div>
+    </section>
+
+
     <!-- ================= ACCOUNT SETTINGS ================= -->
     <section id="account-settings" class="page-section" hidden>
       <div class="section-inner">
