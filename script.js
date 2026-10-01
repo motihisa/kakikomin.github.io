@@ -2195,7 +2195,21 @@
   async function loadPrivateBoardPosts(boardId,canReply) {
     const {data,error}=await supabase.from("private_board_posts").select("id,title,content,user_id,allow_replies,created_at,profiles:user_id(username)").eq("board_id",boardId).order("created_at",{ascending:false});
     const list=$("#private-board-post-list");if(!list)return;if(error){list.innerHTML='<div class="empty-state"><p>投稿を読み込めませんでした。</p></div>';return;}
-    list.innerHTML=(data||[]).map(p=>'<article class="home-card"><h2>'+escapeHTML(p.title)+'</h2><p>'+escapeHTML(p.content)+'</p><small>'+escapeHTML(p.profiles?.username||"ユーザー")+' ・ '+escapeHTML(formatDate(p.created_at))+'</small></article>').join("")||'<div class="empty-state"><p>投稿はありません。</p></div>';
+    list.innerHTML=(data||[]).map(p=>'<article class="home-card"><h2>'+escapeHTML(p.title)+'</h2><p>'+escapeHTML(p.content)+'</p><small>'+escapeHTML(p.profiles?.username||"ユーザー")+' ・ '+escapeHTML(formatDate(p.created_at))+'</small><div data-private-replies="'+escapeHTML(p.id)+'"></div>'+(canReply&&p.allow_replies?'<form class="settings-form" data-private-reply-form="'+escapeHTML(p.id)+'"><textarea maxlength="3000" required placeholder="返信"></textarea><button type="submit" class="secondary-button">返信</button></form>':"")+'</article>').join("")||'<div class="empty-state"><p>投稿はありません。</p></div>';
+    for(const p of (data||[])){
+      const box=document.querySelector('[data-private-replies="'+CSS.escape(p.id)+'"]');
+      if(!box)continue;
+      const {data:replies}=await supabase.from("private_board_replies").select("content,created_at,profiles:user_id(username)").eq("post_id",p.id).order("created_at",{ascending:true});
+      box.innerHTML=(replies||[]).map(x=>'<div class="account-panel"><strong>'+escapeHTML(x.profiles?.username||"ユーザー")+'</strong><p>'+escapeHTML(x.content)+'</p></div>').join("");
+    }
+  }
+
+  async function submitPrivateBoardReply(postId, form) {
+    const boardId=getPrivateBoardIdFromHash(); const content=form.querySelector("textarea")?.value.trim();
+    if(!boardId||!content)return;
+    const {error}=await supabase.from("private_board_replies").insert({post_id:postId,user_id:state.user.id,content});
+    if(error){console.error(error);toast("返信できませんでした。","error");return;}
+    form.reset();toast("返信しました。","success");loadPrivateBoardDetail();
   }
 
   async function createPrivateBoardPost(event) {
@@ -2478,9 +2492,16 @@
     // 返信フォーム（投稿カードの中にあとから作られるので、documentで受ける）
     document.addEventListener("submit", event => {
       const form = event.target.closest?.("form[data-reply-form]");
-      if (!form) return;
-      event.preventDefault();
-      submitReply(form.dataset.replyForm, form);
+      if (form) {
+        event.preventDefault();
+        submitReply(form.dataset.replyForm, form);
+        return;
+      }
+      const privateForm = event.target.closest?.("form[data-private-reply-form]");
+      if (privateForm) {
+        event.preventDefault();
+        submitPrivateBoardReply(privateForm.dataset.privateReplyForm, privateForm);
+      }
     });
 
     // 入力補助
