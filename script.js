@@ -344,6 +344,11 @@
     closeAllModals();
 
     if (state.accessBlocked || state.accountBlocked) {
+      $(".page-section").forEach(section => {
+        section.hidden = true;
+        section.classList.remove("active");
+      });
+
       const id = state.accountBlocked ? "account-blocked" : "access-blocked";
       const blocked = document.getElementById(id);
       if (blocked) {
