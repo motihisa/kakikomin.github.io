@@ -606,35 +606,44 @@
     }
 
     // 先に自分のプロフィールを取得する。管理画面の表示判定はDBの管理者判定も必ず確認する。
-    const { data, error } = await supabase
-      .rpc("get_my_profile")
-      .maybeSingle();
+    // 管理者判定をプロフィール取得に依存させない。
+    // get_my_profile がRLS/権限などで失敗しても、is_admin() が true なら管理者として扱う。
+    let data = null;
+    let profileError = null;
 
-    if (error) {
+    try {
+      const result = await supabase.rpc("get_my_profile").maybeSingle();
+      data = result.data;
+      profileError = result.error;
+    } catch (error) {
+      profileError = error;
+    }
+
+    try {
+      const { data: adminData, error: adminError } = await supabase.rpc("is_admin");
+      if (!adminError) {
+        state.adminVerified = adminData === true;
+      } else {
+        console.warn("is_admin:", adminError);
+        state.adminVerified = false;
+      }
+    } catch (error) {
+      console.warn("is_admin:", error);
       state.adminVerified = false;
-      if (isForcedLogoutError(error)) {
+    }
+
+    if (profileError) {
+      if (isForcedLogoutError(profileError)) {
         await handleForcedLogout();
         return null;
       }
-      console.error("get_my_profile:", error);
+      console.error("get_my_profile:", profileError);
+      // プロフィール取得失敗でも管理者判定は維持する。
       state.profile = null;
       return null;
     }
 
     state.profile = data;
-
-    try {
-      const { data: adminData, error: adminError } = await supabase.rpc("is_admin");
-      if (adminError) {
-        console.warn("is_admin:", adminError);
-        state.adminVerified = data?.role === "admin" && data?.status === "active";
-      } else {
-        state.adminVerified = adminData === true;
-      }
-    } catch (error) {
-      console.warn("is_admin:", error);
-      state.adminVerified = data?.role === "admin" && data?.status === "active";
-    }
 
     // サーバー側のチェックが無い環境でも効くように、トークンの発行時刻でも確認する
     if (data?.force_logout_at && (await isTokenOlderThan(data.force_logout_at))) {
