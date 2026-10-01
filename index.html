@@ -975,6 +975,16 @@
             <label for="site-maintenance-mode">メンテナンスモード</label>
           </div>
 
+          <div class="form-group">
+            <label for="maintenance-title-input">メンテナンス画面のタイトル</label>
+            <input type="text" id="maintenance-title-input" maxlength="100" placeholder="メンテナンス中">
+          </div>
+
+          <div class="form-group">
+            <label for="maintenance-message-input">メンテナンス画面のメッセージ</label>
+            <textarea id="maintenance-message-input" maxlength="500" placeholder="必要な場合だけ入力してください。"></textarea>
+          </div>
+
           <button type="submit" class="primary-button">サイト設定を保存</button>
         </form>
 
@@ -986,13 +996,12 @@
 
 
     <!-- ================= MAINTENANCE ================= -->
-    <section id="maintenance" class="page-section" hidden>
-      <div class="section-inner">
-        <div class="page-header">
-          <p class="section-label">MAINTENANCE</p>
-          <h2>メンテナンス中です</h2>
-          <p>現在サイトをメンテナンスしています。しばらくお待ちください。</p>
-        </div>
+    <section id="maintenance" class="page-section maintenance-page" hidden>
+      <div class="maintenance-inner">
+        <div class="maintenance-mark" aria-hidden="true">K</div>
+        <p class="maintenance-label">MAINTENANCE</p>
+        <h1 id="maintenance-title">メンテナンス中</h1>
+        <p id="maintenance-message"></p>
       </div>
     </section>
 
