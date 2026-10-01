@@ -277,7 +277,8 @@
     "admin-ip-ban": "admin-ip-ban",
     "admin-bots": "admin-bots",
     "admin-private-boards": "admin-private-boards",
-    "admin-site-settings": "admin-site-settings"
+    "admin-site-settings": "admin-site-settings",
+    "admin-logs": "admin-logs"
   };
 
   // ログインが必要なページ
