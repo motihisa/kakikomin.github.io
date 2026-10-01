@@ -128,9 +128,14 @@
   }
 
   function isAdminUser() {
-    // 管理者権限はDBの is_admin() の結果だけを信頼する。
-    // profiles.role/status をフロント側で権限判定には使わない。
-    return Boolean(state.user && state.adminVerified === true);
+    // サーバー側の権限は必ずRLS/RPCで保護する。
+    // ただし、is_admin() の一時的なセッション判定失敗で
+    // 正しい管理者を一般ユーザー扱いしないよう、取得済みの自分の
+    // プロフィールもUI表示のフォールバックとして確認する。
+    const profileAdmin =
+      state.profile?.role === "admin" &&
+      state.profile?.status === "active";
+    return Boolean(state.user && (state.adminVerified === true || profileAdmin));
   }
 
   function comingSoon(name = "この機能") {
