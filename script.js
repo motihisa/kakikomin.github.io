@@ -248,6 +248,7 @@
     "home": "home",
 
     "login": "login",
+    "admin-login": "admin-login",
     "Create_account": "Create_account",
     "create-account": "Create_account",
     "register": "Create_account",
@@ -2417,6 +2418,13 @@
   function setupForms() {
     onSubmit("#login-form", () => {
       login($("#login-email")?.value.trim(), $("#login-password")?.value);
+    });
+
+    onSubmit("#decoy-admin-login-form", async () => {
+      const { error } = await supabase.rpc("record_decoy_admin_attempt");
+      if (error) console.error("decoy admin attempt:", error);
+      toast("ログインできませんでした。", "error");
+      location.hash = "#login";
     });
 
     onSubmit("#register-form", () => {
