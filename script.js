@@ -2188,7 +2188,7 @@
     setText("private-board-title",board.name); setText("private-board-description",board.description||""); setText("private-board-member-count","メンバー "+Number(board.member_count||0)+"人");
     const owner=board.owner_id===state.user.id||state.profile?.role==="admin";
     $("#private-board-owner-tools").hidden=!owner; $("#private-board-post-form-wrap").hidden=!member.can_post||Boolean(state.profile.disable_posting);
-    if(owner){$("#private-board-name-input").value=board.name;$("#private-board-description-input").value=board.description||"";const {data:code}=await supabase.rpc("private_board_get_invite_code",{p_board_id:boardId});if(code)$("#private-board-invite-code").value=code;loadPrivateBoardMembers(boardId);}
+    if(owner){$("#private-board-name-input").value=board.name;$("#private-board-description-input").value=board.description||"";const {data:code,error:codeError}=await supabase.schema("private_board").rpc("get_invite_code",{p_board_id:boardId}); if(codeError){console.error(codeError);}if(code)$("#private-board-invite-code").value=code;loadPrivateBoardMembers(boardId);}
     loadPrivateBoardPosts(boardId,member.can_reply&&!state.profile.disable_replies);
   }
 
@@ -2216,7 +2216,7 @@
     event.preventDefault(); const boardId=getPrivateBoardIdFromHash();if(!boardId)return;
     const title=$("#private-board-post-title")?.value.trim(),content=$("#private-board-post-content")?.value.trim();if(!title||!content)return;
     const {error}=await supabase.from("private_board_posts").insert({board_id:boardId,user_id:state.user.id,title,content});
-    if(error){console.error(error);toast("投稿できませんでした。","error");return;} event.target.reset();toast("投稿しました。","success");loadPrivateBoardPosts(boardId,true);
+    if(error){console.error(error);toast("投稿できませんでした。","error");return;} event.target.reset();toast("投稿しました。","success");loadPrivateBoardDetail();
   }
 
   async function loadPrivateBoardMembers(boardId) {
@@ -2241,7 +2241,7 @@
   async function removePrivateBoardMember(userId) {
     const boardId=getPrivateBoardIdFromHash();if(!boardId)return;
     if(!confirm("このメンバーを掲示板から削除しますか？"))return;
-    const {error}=await supabase.rpc("private_board_remove_member",{p_board_id:boardId,p_user_id:userId});
+    const {error}=await supabase.schema("private_board").rpc("remove_member",{p_board_id:boardId,p_user_id:userId});
     if(error){console.error(error);toast("メンバーを削除できませんでした。","error");return;} toast("メンバーを削除しました。","success");loadPrivateBoardMembers(boardId);loadPrivateBoardDetail();
   }
 
