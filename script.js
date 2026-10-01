@@ -2047,7 +2047,33 @@
   async function saveAdminUser() {
     if (!ensureAdmin()) return;
 
-    toast("BAN・BAN解除はSupabase管理者のみ実行できます。", "error");
+    const userId = $("#admin-target-user-id")?.value;
+    if (!userId) {
+      toast("ユーザーが選択されていません。", "error");
+      return;
+    }
+
+    const disablePosting = Boolean($("#admin-disable-posting")?.checked);
+    const disableReplies = Boolean($("#admin-disable-replies")?.checked);
+    const forcePasswordChange = Boolean($("#admin-force-password-change")?.checked);
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        disable_posting: disablePosting,
+        disable_replies: disableReplies,
+        force_password_change: forcePasswordChange
+      })
+      .eq("id", userId);
+
+    if (error) {
+      console.error(error);
+      toast("ユーザー設定を更新できませんでした。", "error");
+      return;
+    }
+
+    await loadAdminData();
+    toast("ユーザー設定を更新しました。", "success");
   }
 
   function searchAdminUsers(keyword) {
