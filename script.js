@@ -338,6 +338,9 @@
       case "private-board": loadPrivateBoardDetail(); break;
       case "bot": showPlaceholder("#bot-list", "Botはまだありません。"); break;
       case "admin-site-settings": loadSiteSettings().then(fillSiteSettingsForm); break;
+      case "admin-sessions": loadAdminSessions(); break;
+      case "admin-security": loadAdminSecurityLogs(); break;
+      case "admin-diagnostics": loadAdminDiagnostics(); break;
       case "admin-logs": loadAdminLogs(); break;
       default:
         if (route.startsWith("admin")) loadAdminData();
@@ -1841,355 +1844,221 @@
 
   async function loadAdminData() {
     if (!(await ensureAdmin())) return;
-
     const head = table => supabase.from(table).select("id", { count: "exact", head: true });
 
-    const [
-      usersResult, postsResult, reportsResult, ipBansResult,
-      userCount, postCount, pendingReportCount
-    ] = await Promise.all([
-      // 全列を返す RPC（管理者のみ実行可）
-      supabase.rpc("admin_list_profiles", { limit_count: ADMIN_LIST_LIMIT }),
-      supabase.from("posts")
-        .select("id, user_id, category, title, content, created_at")
-        .order("created_at", { ascending: false }).limit(ADMIN_LIST_LIMIT),
-      supabase.from("reports")
-        .select("id, post_id, reporter_id, reason, detail, status, created_at")
-        .order("created_at", { ascending: false }).limit(ADMIN_LIST_LIMIT),
-      supabase.from("ip_bans")
-        .select("id, ip, reason, duration, created_at, expires_at")
-        .order("created_at", { ascending: false }).limit(ADMIN_LIST_LIMIT),
-      head("profiles"),
-      head("posts"),
-      head("reports").eq("status", "pending")
-    ]);
+    const [usersResult, postsResult, reportsResult, ipBansResult, userCount, postCount, pendingReportCount, statsResult] =
+      await Promise.all([
+        supabase.rpc("admin_list_profiles", { limit_count: ADMIN_LIST_LIMIT }),
+        supabase.from("posts").select("id,user_id,category,title,content,created_at").order("created_at",{ascending:false}).limit(ADMIN_LIST_LIMIT),
+        supabase.from("reports").select("id,post_id,reporter_id,reason,detail,status,created_at").order("created_at",{ascending:false}).limit(ADMIN_LIST_LIMIT),
+        supabase.from("ip_bans").select("id,ip,reason,duration,created_at,expires_at").order("created_at",{ascending:false}).limit(ADMIN_LIST_LIMIT),
+        head("profiles"), head("posts"), head("reports").eq("status","pending"),
+        supabase.rpc("admin_dashboard_stats")
+      ]);
 
     state.adminCounts = {
-      users: userCount.count ?? (usersResult.data || []).length,
-      posts: postCount.count ?? (postsResult.data || []).length,
-      pendingReports: pendingReportCount.count ?? 0
+      users:userCount.count ?? (usersResult.data||[]).length,
+      posts:postCount.count ?? (postsResult.data||[]).length,
+      pendingReports:pendingReportCount.count ?? 0,
+      stats:statsResult.data || {}
     };
+    state.users=usersResult.data||[];
+    state.adminPosts=postsResult.data||[];
+    state.reports=reportsResult.data||[];
+    state.ipBans=ipBansResult.data||[];
 
-    if (usersResult.error) console.error("Users:", usersResult.error);
-    if (postsResult.error) console.error("Posts:", postsResult.error);
-    if (reportsResult.error) console.error("Reports:", reportsResult.error);
-    if (ipBansResult.error) console.error("IP Bans:", ipBansResult.error);
-
-    state.users = usersResult.data || [];
-    state.adminPosts = postsResult.data || [];
-
-    {
-      const ips = await fetchContentIps("post", state.adminPosts.map(post => post.id));
-      state.adminPosts.forEach(post => { post.adminIp = ips.get(post.id); });
-    }
-    state.reports = reportsResult.data || [];
-    state.ipBans = ipBansResult.data || [];
-
+    const ips=await fetchContentIps("post",state.adminPosts.map(p=>p.id));
+    state.adminPosts.forEach(p=>p.adminIp=ips.get(p.id));
     renderAdmin();
   }
 
   async function loadAdminLogs() {
     if (!(await ensureAdmin())) return;
+    const action=$("#admin-log-action-filter")?.value||null;
+    const {data,error}=await supabase.rpc("admin_list_audit_logs",{limit_count:200,action_filter:action});
+    if(error){ console.error(error); const body=$("#admin-logs-table-body"); if(body) body.innerHTML="<tr><td colspan=\"6\">ログを読み込めませんでした。</td></tr>"; return; }
+    state.auditLogs=data||[]; renderAdminLogs();
+  }
 
-    const action = $("#admin-log-action-filter")?.value || null;
-    const { data, error } = await supabase.rpc("admin_list_audit_logs", {
-      limit_count: 200,
-      action_filter: action
-    });
+  async function loadAdminSessions() {
+    if (!(await ensureAdmin())) return;
+    const {data,error}=await supabase.rpc("admin_list_sessions",{limit_count:200});
+    const body=$("#admin-sessions-table-body");
+    if(error){console.error(error);if(body)body.innerHTML="<tr><td colspan=\"6\">セッションを読み込めませんでした。</td></tr>";return;}
+    setText("admin-session-count",`${(data||[]).length}件`);
+    if(!body)return;
+    body.innerHTML=(data||[]).map(s=>`<tr>
+      <td>${escapeHTML(s.username||"ユーザー")}</td>
+      <td>${escapeHTML(s.email||"-")}</td>
+      <td><small>${escapeHTML(s.session_id||"-")}</small></td>
+      <td>${escapeHTML(formatDate(s.updated_at))}</td>
+      <td>${escapeHTML(formatDate(s.not_after))}</td>
+      <td>${escapeHTML(s.ip_address||"-")}</td>
+    </tr>`).join("")||"<tr><td colspan=\"6\">有効なセッションはありません。</td></tr>";
+  }
 
-    if (error) {
-      console.error("Audit logs:", error);
-      const body = $("#admin-logs-table-body");
-      if (body) body.innerHTML = `<tr><td colspan="6">ログを読み込めませんでした。</td></tr>`;
-      return;
+  async function loadAdminSecurityLogs() {
+    if (!(await ensureAdmin())) return;
+    const suspicious=Boolean($("#admin-security-suspicious-only")?.checked);
+    const {data,error}=await supabase.rpc("admin_list_security_logs",{limit_count:200,suspicious_only:suspicious});
+    const body=$("#admin-security-table-body");
+    if(error){console.error(error);if(body)body.innerHTML="<tr><td colspan=\"7\">セキュリティログを読み込めませんでした。</td></tr>";return;}
+    if(!body)return;
+    body.innerHTML=(data||[]).map(l=>`<tr>
+      <td>${escapeHTML(formatDate(l.created_at||l.logged_at))}</td>
+      <td>${escapeHTML(l.source||"-")}</td>
+      <td>${escapeHTML(l.ip_address||l.execution_ip||"-")}</td>
+      <td>${escapeHTML(l.execution_result||"-")}</td>
+      <td>${l.is_suspicious?"⚠️":"-"}</td>
+      <td>${escapeHTML(l.suspicious_reason||"-")}</td>
+      <td>${escapeHTML(l.event_key||"-")}</td>
+    </tr>`).join("")||"<tr><td colspan=\"7\">ログはありません。</td></tr>";
+  }
+
+  async function loadAdminDiagnostics() {
+    if (!(await ensureAdmin())) return;
+    const {data,error}=await supabase.rpc("admin_diagnostics");
+    const grid=$("#admin-diagnostics-grid"), detail=$("#admin-diagnostics-detail");
+    if(error){console.error(error);if(detail)detail.innerHTML="<p>診断を取得できませんでした。</p>";return;}
+    if(grid){
+      const items=[
+        ["is_admin EXECUTE",data.is_admin_execute],
+        ["check_ip_ban(authenticated)",data.check_ip_ban_authenticated_execute],
+        ["check_ip_ban(anon)",data.check_ip_ban_anon_execute],
+        ["RLS有効テーブル",`${data.public_rls_tables}/${data.public_tables}`],
+        ["監査ログ24h",data.audit_logs_24h],
+        ["不審ログ24h",data.suspicious_logs_24h]
+      ];
+      grid.innerHTML=items.map(([k,v])=>`<div class="admin-stat-card"><span>${escapeHTML(k)}</span><strong>${escapeHTML(String(v))}</strong></div>`).join("");
     }
-
-    state.auditLogs = data || [];
-    renderAdminLogs();
-  }
-
-  function auditActionName(log) {
-    if (log.action === "LOGIN_IP") return "ログインIP";
-    if (log.action === "INSERT") return "作成";
-    if (log.action === "UPDATE") return "変更";
-    if (log.action === "DELETE") return "削除";
-    return log.action || "記録";
-  }
-
-  function auditTargetName(log) {
-    const names = {
-      profiles: "アカウント",
-      posts: "投稿",
-      replies: "返信",
-      likes: "いいね",
-      reports: "通報",
-      ip_bans: "IP制限",
-      bots: "Bot",
-      private_boards: "掲示板",
-      site_settings: "サイト設定",
-      content_ips: "投稿/返信IP",
-      user_ips: "ログインIP"
-    };
-    return names[log.table_name] || log.table_name || "-";
-  }
-
-  function renderAdminLogs() {
-    const body = $("#admin-logs-table-body");
-    if (!body) return;
-
-    if (!state.auditLogs.length) {
-      body.innerHTML = `<tr><td colspan="6">ログはありません。</td></tr>`;
-      return;
+    if(detail){
+      detail.innerHTML=`<pre style="white-space:pre-wrap;overflow:auto;">${escapeHTML(JSON.stringify(data,null,2))}</pre>`;
     }
-
-    body.innerHTML = state.auditLogs.map(log => {
-      const detail = log.details && typeof log.details === "object"
-        ? Object.entries(log.details)
-            .filter(([key, value]) => value !== null && value !== undefined && value !== "")
-            .map(([key, value]) => `${key}: ${typeof value === "object" ? JSON.stringify(value) : String(value)}`)
-            .join(" / ")
-        : "";
-
-      return `
-        <tr>
-          <td>${escapeHTML(formatDate(log.created_at))}</td>
-          <td>${escapeHTML(auditActionName(log))}</td>
-          <td>${escapeHTML(auditTargetName(log))}<br><small>${escapeHTML(log.record_id || "-")}</small></td>
-          <td>${escapeHTML(log.target_user_id || log.actor_user_id || "-")}</td>
-          <td>${escapeHTML(log.ip_address || "-")}</td>
-          <td>${escapeHTML(detail || "-")}</td>
-        </tr>
-      `;
-    }).join("");
   }
 
   function renderAdmin() {
-    const counts = state.adminCounts || {};
-    setText("admin-user-count", counts.users ?? state.users.length);
-    setText("admin-post-count", counts.posts ?? state.adminPosts.length);
-    setText(
-      "admin-report-count",
-      counts.pendingReports ?? state.reports.filter(r => r.status === "pending").length
-    );
-    setText("admin-ban-count", state.ipBans.filter(isBanActive).length);
-
-    renderAdminUsers();
-    renderAdminPosts();
-    renderAdminReports();
-    renderIPBans();
+    const counts=state.adminCounts||{}, s=counts.stats||{};
+    setText("admin-user-count",counts.users??state.users.length);
+    setText("admin-active-user-count",s.users_active??"-");
+    setText("admin-post-count",counts.posts??state.adminPosts.length);
+    setText("admin-reply-count",s.replies??"-");
+    setText("admin-report-count",counts.pendingReports??"-");
+    setText("admin-ban-count",s.active_ip_bans??state.ipBans.filter(isBanActive).length);
+    setText("admin-session-stat",s.active_sessions??"-");
+    setText("admin-suspicious-stat",s.suspicious_logs??"-");
+    renderAdminUsers(); renderAdminPosts(); renderAdminReports(); renderIPBans();
   }
 
-  function isBanActive(ban) {
-    return !ban.expires_at || new Date(ban.expires_at) > new Date();
+  function isBanActive(ban){return !ban.expires_at||new Date(ban.expires_at)>new Date();}
+
+  function renderAdminUsers(users=state.users){
+    const body=$("#admin-users-table-body"); if(!body)return;
+    if(!users.length){body.innerHTML="<tr><td colspan=\"5\">ユーザーが見つかりません。</td></tr>";return;}
+    body.innerHTML=users.map(u=>`<tr>
+      <td>${escapeHTML(u.username||"ユーザー")}</td><td><small>${escapeHTML(u.id)}</small></td>
+      <td>${escapeHTML(u.status||"active")} / ${escapeHTML(u.role||"user")}</td>
+      <td>${escapeHTML(formatDate(u.created_at))}</td>
+      <td><button type="button" class="secondary-button" data-admin-user="${escapeHTML(u.id)}">編集</button></td>
+    </tr>`).join("");
   }
 
-  function renderAdminUsers(users = state.users) {
-    const body = $("#admin-users-table-body");
-    if (!body) return;
-
-    if (!users.length) {
-      body.innerHTML = `<tr><td colspan="5">ユーザーが見つかりません。</td></tr>`;
-      return;
-    }
-
-    body.innerHTML = users.map(user => `
-      <tr>
-        <td>${escapeHTML(user.username || "ユーザー")}</td>
-        <td>${escapeHTML(user.id)}</td>
-        <td>${escapeHTML(user.status || "active")}</td>
-        <td>${escapeHTML(formatDate(user.created_at))}</td>
-        <td>
-          <button type="button" class="secondary-button"
-            data-admin-user="${escapeHTML(user.id)}">編集</button>
-        </td>
-      </tr>
-    `).join("");
+  function renderAdminPosts(){
+    const list=$("#admin-post-list"); if(!list)return;
+    list.innerHTML=state.adminPosts.length?state.adminPosts.map(p=>`<article class="admin-post-item"><div>
+      <h3>${escapeHTML(p.title)}</h3><p>${escapeHTML(p.content)}</p><small>${escapeHTML(formatDate(p.created_at))} ・ IP: ${escapeHTML(p.adminIp||"記録なし")}</small>
+    </div><button type="button" class="danger-button" data-admin-delete-post="${escapeHTML(p.id)}">削除</button></article>`).join(""):"<div class=\"empty-state\"><p>投稿はありません。</p></div>";
   }
 
-  function renderAdminPosts() {
-    const list = $("#admin-post-list");
-    if (!list) return;
-
-    if (!state.adminPosts.length) {
-      list.innerHTML = `<div class="empty-state"><p>投稿はありません。</p></div>`;
-      return;
-    }
-
-    list.innerHTML = state.adminPosts.map(post => `
-      <article class="admin-post-item">
-        <div>
-          <h3>${escapeHTML(post.title)}</h3>
-          <p>${escapeHTML(post.content)}</p>
-          <small>${escapeHTML(formatDate(post.created_at))}
-            ・ IP: ${escapeHTML(post.adminIp || "記録なし")}</small>
-        </div>
-        <button type="button" class="danger-button"
-          data-admin-delete-post="${escapeHTML(post.id)}">削除</button>
-      </article>
-    `).join("");
+  function renderAdminReports(){
+    const list=$("#admin-report-list"); if(!list)return;
+    list.innerHTML=state.reports.length?state.reports.map(r=>`<article class="admin-report-item"><div>
+      <strong>${escapeHTML(r.reason||"理由なし")}</strong><p>${escapeHTML(r.detail||"")}</p>
+      <small>${escapeHTML(r.status||"pending")} ・ ${escapeHTML(formatDate(r.created_at))} ・ 投稿ID: ${escapeHTML(r.post_id||"")}</small>
+    </div><button type="button" class="secondary-button" data-resolve-report="${escapeHTML(r.id)}">${r.status==="pending"?"対応済みにする":"再オープン"}</button></article>`).join(""):"<div class=\"empty-state\"><p>通報はありません。</p></div>";
   }
 
-  function renderAdminReports() {
-    const list = $("#admin-report-list");
-    if (!list) return;
-
-    if (!state.reports.length) {
-      list.innerHTML = `<div class="empty-state"><p>通報はありません。</p></div>`;
-      return;
-    }
-
-    list.innerHTML = state.reports.map(report => `
-      <article class="admin-report-item">
-        <div>
-          <strong>${escapeHTML(report.reason || "理由なし")}</strong>
-          <p>${escapeHTML(report.detail || "")}</p>
-          <small>
-            ${escapeHTML(report.status || "pending")}
-            ・ ${escapeHTML(formatDate(report.created_at))}
-            ・ 投稿ID: ${escapeHTML(report.post_id ?? "")}
-          </small>
-        </div>
-        ${report.status === "pending" ? `
-          <button type="button" class="secondary-button"
-            data-resolve-report="${escapeHTML(report.id)}">対応済みにする</button>` : ""}
-      </article>
-    `).join("");
+  function renderIPBans(){
+    const body=$("#ip-ban-table-body"); if(!body)return;
+    if(!state.ipBans.length){body.innerHTML="<tr><td colspan=\"4\">BANされているIPはありません。</td></tr>";return;}
+    body.innerHTML=state.ipBans.map(b=>`<tr><td>${escapeHTML(b.ip)}</td><td>${escapeHTML(b.reason||"")}</td><td>${escapeHTML(b.expires_at?formatDate(b.expires_at):"無期限")}</td><td><button type="button" class="danger-button" data-delete-ip-ban="${escapeHTML(b.id)}">解除</button></td></tr>`).join("");
   }
 
-  async function resolveReport(id) {
-    if (!(await ensureAdmin())) return;
-
-    const { error } = await supabase
-      .from("reports")
-      .update({ status: "resolved" })
-      .eq("id", id);
-
-    if (error) {
-      console.error(error);
-      toast("通報の状態を更新できませんでした。", "error");
-      return;
-    }
-
-    toast("対応済みにしました。", "success");
-    await loadAdminData();
+  async function searchAdminUsers(value){
+    if(!(await ensureAdmin()))return;
+    const {data,error}=await supabase.rpc("admin_list_user_details",{limit_count:200,search_text:value?.trim()||null});
+    if(error){console.error(error);toast("ユーザー検索に失敗しました。","error");return;}
+    renderAdminUsers((data||[]).map(u=>({...u,created_at:u.created_at})));
   }
 
-  async function adminDeletePost(postId) {
-    if (!(await ensureAdmin())) return;
-    if (!confirm("この投稿を管理者権限で削除しますか？")) return;
-
-    const { error } = await supabase.from("posts").delete().eq("id", postId);
-
-    if (error) {
-      console.error(error);
-      toast("投稿を削除できませんでした。", "error");
-      return;
-    }
-
-    toast("投稿を削除しました。", "success");
-    await loadAdminData();
-  }
-
-  function openAdminUserDetail(userId) {
-    const user = state.users.find(item => item.id === userId);
-    if (!user) return;
-
-    const idInput = $("#admin-target-user-id");
-    const status = $("#admin-target-status");
-    const disablePosting = $("#admin-disable-posting");
-    const disableReplies = $("#admin-disable-replies");
-    const forcePasswordChange = $("#admin-force-password-change");
-
-    if (idInput) idInput.value = user.id;
-    if (status) {
-      status.value = user.status || "active";
-      status.disabled = true;
-    }
-    if (disablePosting) disablePosting.checked = Boolean(user.disable_posting);
-    if (disableReplies) disableReplies.checked = Boolean(user.disable_replies);
-    if (forcePasswordChange) forcePasswordChange.checked = Boolean(user.force_password_change);
-    setText("admin-target-username", user.username || "ユーザー");
-
-    renderAdminUserIps(user.id);
-
+  function openAdminUserDetail(userId){
+    const user=state.users.find(x=>x.id===userId)||{};
+    $("#admin-target-user-id").value=user.id||userId;
+    $("#admin-target-status").value=user.status||"active";
+    $("#admin-target-role").value=user.role||"user";
+    $("#admin-target-ban-reason").value=user.ban_reason||"";
+    $("#admin-disable-posting").checked=Boolean(user.disable_posting);
+    $("#admin-disable-replies").checked=Boolean(user.disable_replies);
+    $("#admin-force-password-change").checked=Boolean(user.force_password_change);
+    setText("admin-target-username",user.username||"ユーザー");
+    renderAdminUserIps(user.id||userId);
     navigate("#admin-user-detail");
   }
 
-  async function saveAdminUser() {
-    if (!(await ensureAdmin())) return;
-
-    const userId = $("#admin-target-user-id")?.value;
-    if (!userId) {
-      toast("ユーザーが選択されていません。", "error");
-      return;
-    }
-
-    const disablePosting = Boolean($("#admin-disable-posting")?.checked);
-    const disableReplies = Boolean($("#admin-disable-replies")?.checked);
-    const forcePasswordChange = Boolean($("#admin-force-password-change")?.checked);
-
-    const { error } = await supabase.rpc("admin_update_user_restrictions", {
-      target_user: userId,
-      p_disable_posting: disablePosting,
-      p_disable_replies: disableReplies,
-      p_force_password_change: forcePasswordChange
+  async function saveAdminUser(){
+    if(!(await ensureAdmin()))return;
+    const userId=$("#admin-target-user-id")?.value;
+    if(!userId)return;
+    const {error}=await supabase.rpc("admin_update_user",{
+      target_user:userId,
+      p_status:$("#admin-target-status")?.value||null,
+      p_role:$("#admin-target-role")?.value||null,
+      p_disable_posting:Boolean($("#admin-disable-posting")?.checked),
+      p_disable_replies:Boolean($("#admin-disable-replies")?.checked),
+      p_force_password_change:Boolean($("#admin-force-password-change")?.checked),
+      p_ban_reason:$("#admin-target-ban-reason")?.value.trim()||null
     });
-
-    if (error) {
-      console.error("admin_update_user_restrictions:", error);
-      toast("ユーザー設定を更新できませんでした。", "error");
-      return;
-    }
-
-    toast("ユーザー設定を更新しました。", "success");
-    await loadAdminData();
-    navigate("#admin-users");
+    if(error){console.error(error);toast("ユーザー設定を更新できませんでした。","error");return;}
+    toast("ユーザー設定を更新しました。","success"); await loadAdminData(); navigate("#admin-users");
   }
 
-
-  async function addIPBan() {
-    if (!(await ensureAdmin())) return;
-    toast("IP BANの追加・変更はSupabase管理者のみ実行できます。", "error");
+  async function addIPBan(){
+    if(!(await ensureAdmin()))return;
+    const ip=$("#ban-ip")?.value.trim(), reason=$("#ban-reason")?.value.trim()||"", duration=$("#ban-duration")?.value;
+    const {error}=await supabase.rpc("admin_set_ip_ban",{p_ip:ip,p_reason:reason,p_duration:duration});
+    if(error){console.error(error);toast("IP制限を追加できませんでした。","error");return;}
+    $("#ip-ban-form")?.reset(); toast("IP制限を追加しました。","success"); await loadAdminData();
   }
 
-  function renderIPBans() {
-    const body = $("#ip-ban-table-body");
-    if (!body) return;
-
-    if (!state.ipBans.length) {
-      body.innerHTML = `
-        <tr><td colspan="4">BANされているIPはありません。</td></tr>
-      `;
-      return;
-    }
-
-    body.innerHTML = state.ipBans.map(ban => {
-      let period;
-      if (!ban.expires_at) {
-        period = "無期限";
-      } else if (!isBanActive(ban)) {
-        period = "期限切れ";
-      } else {
-        period = `～ ${formatDate(ban.expires_at)}`;
-      }
-
-      return `
-        <tr>
-          <td>${escapeHTML(ban.ip)}</td>
-          <td>${escapeHTML(ban.reason || "")}</td>
-          <td>${escapeHTML(period)}</td>
-          <td>
-            <button type="button" class="danger-button"
-              data-delete-ip-ban="${escapeHTML(ban.id)}">解除</button>
-          </td>
-        </tr>
-      `;
-    }).join("");
+  async function removeIPBan(id){
+    if(!(await ensureAdmin()))return;
+    if(!confirm("このIP制限を解除しますか？"))return;
+    const {error}=await supabase.rpc("admin_remove_ip_ban",{p_id:id});
+    if(error){console.error(error);toast("IP制限を解除できませんでした。","error");return;}
+    toast("IP制限を解除しました。","success"); await loadAdminData();
   }
 
-  async function removeIPBan(id) {
-    if (!(await ensureAdmin())) return;
-    toast("IP BANの解除はSupabase管理者のみ実行できます。", "error");
+  async function resolveReport(id){
+    if(!(await ensureAdmin()))return;
+    const report=state.reports.find(r=>r.id===id), next=report?.status==="pending"?"resolved":"pending";
+    const {error}=await supabase.rpc("admin_update_report",{p_report_id:id,p_status:next});
+    if(error){console.error(error);toast("通報の状態を更新できませんでした。","error");return;}
+    toast("通報状態を更新しました。","success"); await loadAdminData();
+  }
+
+  async function adminDeletePost(postId){
+    if(!(await ensureAdmin()))return;
+    if(!confirm("この投稿を管理者権限で削除しますか？"))return;
+    const {error}=await supabase.rpc("admin_delete_post",{p_post_id:postId});
+    if(error){console.error(error);toast("投稿を削除できませんでした。","error");return;}
+    toast("投稿を削除しました。","success"); await loadAdminData();
+  }
+
+  async function adminDeleteReply(replyId){
+    if(!(await ensureAdmin()))return;
+    if(!confirm("この返信を管理者権限で削除しますか？"))return;
+    const {error}=await supabase.rpc("admin_delete_reply",{p_reply_id:replyId});
+    if(error){console.error(error);toast("返信を削除できませんでした。","error");return;}
+    toast("返信を削除しました。","success"); await loadAdminData();
   }
 
   async function loadPrivateBoards() {
@@ -2532,6 +2401,9 @@
     onSubmit("#admin-user-search-form", () => searchAdminUsers($("#admin-user-search")?.value));
     on("#admin-log-action-filter", "change", loadAdminLogs);
     on("#admin-log-refresh", "click", loadAdminLogs);
+    on("#admin-session-refresh", "click", loadAdminSessions);
+    on("#admin-security-refresh", "click", loadAdminSecurityLogs);
+    on("#admin-security-suspicious-only", "change", loadAdminSecurityLogs);
 
     // まだ中身のない機能
     onSubmit("#join-private-board-form", joinPrivateBoard);
@@ -2586,6 +2458,10 @@
 
       if (closest("#logout-button") && !actionTarget) logout();
       if (closest("#delete-account-button")) openModal("delete-account-dialog");
+      if (closest("[data-admin-user]")) openAdminUserDetail(closest("[data-admin-user]").dataset.adminUser);
+      if (closest("[data-admin-delete-post]")) adminDeletePost(closest("[data-admin-delete-post]").dataset.adminDeletePost);
+      if (closest("[data-resolve-report]")) resolveReport(closest("[data-resolve-report]").dataset.resolveReport);
+      if (closest("[data-delete-ip-ban]")) removeIPBan(closest("[data-delete-ip-ban]").dataset.deleteIpBan);
       if (closest("#create-bot-button") || closest("#admin-create-bot")) openModal("create-bot-dialog");
       if (closest("#create-private-board-button")) createPrivateBoard();
       if (closest("#private-board-back")) navigate("#private-boards");
