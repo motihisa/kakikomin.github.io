@@ -1,6 +1,6 @@
 /* =========================================================
    KAKIKOMI - script.js (修正版)
-   BUILD 2026-10-02-G  ← このファイルの先頭にこの行が見えたら最新版
+   BUILD 2026-10-02-H  ← このファイルの先頭にこの行が見えたら最新版
    Supabase + Hash Router
    ========================================================= */
 
@@ -829,7 +829,7 @@
 
   // 管理画面：選んだユーザーを強制ログアウトする
   async function forceDeleteUser() {
-    if (!ensureAdmin()) return;
+    if (!(await ensureAdmin())) return;
 
     const userId = $("#admin-target-user-id")?.value;
     const name = $("#admin-target-username")?.textContent || "このユーザー";
@@ -860,7 +860,7 @@
   }
 
   async function forceLogoutUser() {
-    if (!ensureAdmin()) return;
+    if (!(await ensureAdmin())) return;
 
     const userId = $("#admin-target-user-id")?.value;
     const name = $("#admin-target-username")?.textContent || "このユーザー";
@@ -1577,7 +1577,7 @@
   }
 
   async function saveSiteSettings() {
-    if (!ensureAdmin()) return;
+    if (!(await ensureAdmin())) return;
 
     const payload = {
       id: 1,
@@ -1830,7 +1830,7 @@
   }
 
   async function loadAdminData() {
-    if (!ensureAdmin()) return;
+    if (!(await ensureAdmin())) return;
 
     const head = table => supabase.from(table).select("id", { count: "exact", head: true });
 
@@ -1879,7 +1879,7 @@
   }
 
   async function loadAdminLogs() {
-    if (!ensureAdmin()) return;
+    if (!(await ensureAdmin())) return;
 
     const action = $("#admin-log-action-filter")?.value || null;
     const { data, error } = await supabase.rpc("admin_list_audit_logs", {
@@ -2047,7 +2047,7 @@
   }
 
   async function resolveReport(id) {
-    if (!ensureAdmin()) return;
+    if (!(await ensureAdmin())) return;
 
     const { error } = await supabase
       .from("reports")
@@ -2065,7 +2065,7 @@
   }
 
   async function adminDeletePost(postId) {
-    if (!ensureAdmin()) return;
+    if (!(await ensureAdmin())) return;
     if (!confirm("この投稿を管理者権限で削除しますか？")) return;
 
     const { error } = await supabase.from("posts").delete().eq("id", postId);
@@ -2106,7 +2106,7 @@
   }
 
   async function saveAdminUser() {
-    if (!ensureAdmin()) return;
+    if (!(await ensureAdmin())) return;
 
     const userId = $("#admin-target-user-id")?.value;
     if (!userId) {
@@ -2152,7 +2152,7 @@
      ========================================================= */
 
   async function addIPBan() {
-    if (!ensureAdmin()) return;
+    if (!(await ensureAdmin())) return;
     toast("IP BANの追加・変更はSupabase管理者のみ実行できます。", "error");
   }
 
@@ -2192,7 +2192,7 @@
   }
 
   async function removeIPBan(id) {
-    if (!ensureAdmin()) return;
+    if (!(await ensureAdmin())) return;
     toast("IP BANの解除はSupabase管理者のみ実行できます。", "error");
   }
 
