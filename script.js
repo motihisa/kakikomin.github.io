@@ -290,7 +290,10 @@
     "admin-bots": "admin-bots",
     "admin-private-boards": "admin-private-boards",
     "admin-site-settings": "admin-site-settings",
-    "admin-logs": "admin-logs"
+    "admin-logs": "admin-logs",
+    "admin-sessions": "admin-sessions",
+    "admin-security": "admin-security",
+    "admin-diagnostics": "admin-diagnostics"
   };
 
   // ログインが必要なページ
