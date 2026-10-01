@@ -436,7 +436,7 @@
         const title = document.getElementById("access-blocked-title");
         const message = document.getElementById("access-blocked-message");
         if (title) title.textContent = "アカウントがBANされています";
-        if (message) message.textContent = "このアカウントではサイトを利用できません。";
+        if (message) message.textContent = state.profile?.ban_reason || "このアカウントではサイトを利用できません。";
       }
     } else {
       state.profile = null;
