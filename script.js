@@ -394,7 +394,18 @@
       return;
     }
 
-    if (route.startsWith("admin") && !ensureAdmin()) {
+    if (route.startsWith("admin")) {
+      ensureAdmin().then(allowed => {
+        if (allowed) {
+          const currentRoute = getRoute();
+          if (currentRoute === route) {
+            target.hidden = false;
+            target.classList.add("active");
+            runRouteLoader(route);
+            window.scrollTo({ top: 0, behavior: "instant" });
+          }
+        }
+      });
       return;
     }
 
@@ -1763,43 +1774,55 @@
      ADMIN
      ========================================================= */
 
-  function ensureAdmin() {
-    if (isAdminUser()) return true;
-
-    // ログイン済みなのにプロフィールがまだ取れていないときは、読み込み直して1回だけやり直す
-    if (state.user && !state.profile && !state.adminRetry) {
-      state.adminRetry = true;
-      loadProfile()
-        .then(() => {
-          updateAuthUI();
-          renderRoute();
-        })
-        .finally(() => {
-          state.adminRetry = false;
-        });
+  async function ensureAdmin() {
+    if (!state.user) {
+      toast("管理者権限が必要です。ログインしてください。", "error");
+      navigate("#login");
       return false;
     }
 
-    // どこで止まったかが分かるように、理由を表示してコンソールにも出す
-    let reason;
-    if (!state.user) {
-      reason = "ログインしていません。";
-    } else if (!state.profile) {
-      reason = "プロフィールを読み込めませんでした。";
-    } else {
-      reason = `このアカウントは管理者ではありません（role: ${state.profile.role}）。`;
+    // 管理画面へ入る瞬間にDBで再確認する。
+    try {
+      const { data, error } = await supabase.rpc("is_admin");
+      if (!error) {
+        state.adminVerified = data === true;
+      }
+    } catch (error) {
+      console.warn("admin verification:", error);
     }
 
-    console.warn("ensureAdmin failed:", {
-      hasUser: Boolean(state.user),
-      email: state.user?.email,
-      profileLoaded: Boolean(state.profile),
-      role: state.profile?.role
-    });
+    // RPCが一時的に失敗しても、取得済みのDBプロフィールがadmin/activeなら許可する。
+    const allowed = Boolean(
+      state.adminVerified === true ||
+      (state.profile?.role === "admin" && state.profile?.status === "active")
+    );
 
-    toast(`管理者権限が必要です。${reason}`, "error");
-    navigate("#home");
-    return false;
+    if (allowed) {
+      updateAuthUI();
+      return true;
+    }
+
+    await loadProfile();
+    const fallbackAllowed = Boolean(
+      state.adminVerified === true ||
+      (state.profile?.role === "admin" && state.profile?.status === "active")
+    );
+
+    if (!fallbackAllowed) {
+      console.warn("ensureAdmin failed:", {
+        hasUser: Boolean(state.user),
+        email: state.user?.email,
+        profileLoaded: Boolean(state.profile),
+        role: state.profile?.role,
+        status: state.profile?.status
+      });
+      toast("管理者権限が必要です。", "error");
+      navigate("#home");
+      return false;
+    }
+
+    updateAuthUI();
+    return true;
   }
 
   async function loadAdminData() {
