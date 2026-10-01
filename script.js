@@ -1,6 +1,6 @@
 /* =========================================================
    KAKIKOMI - script.js (修正版)
-   BUILD 2026-10-02-F  ← このファイルの先頭にこの行が見えたら最新版
+   BUILD 2026-10-02-G  ← このファイルの先頭にこの行が見えたら最新版
    Supabase + Hash Router
    ========================================================= */
 
@@ -128,13 +128,9 @@
   }
 
   function isAdminUser() {
-    // DB側の is_admin() を確認済みなら、それを優先する。
-    // 未確認時だけプロフィールの role/status を補助判定に使う。
-    return Boolean(
-      state.user &&
-      (state.adminVerified === true ||
-        (state.profile?.role === "admin" && state.profile?.status === "active"))
-    );
+    // 管理者権限はDBの is_admin() の結果だけを信頼する。
+    // profiles.role/status をフロント側で権限判定には使わない。
+    return Boolean(state.user && state.adminVerified === true);
   }
 
   function comingSoon(name = "この機能") {
@@ -1803,31 +1799,27 @@
       console.warn("admin verification:", error);
     }
 
-    // RPCが一時的に失敗しても、取得済みのDBプロフィールがadmin/activeなら許可する。
-    const allowed = Boolean(
-      state.adminVerified === true ||
-      (state.profile?.role === "admin" && state.profile?.status === "active")
-    );
-
-    if (allowed) {
+    // 管理者判定はDBの is_admin() の結果だけを信頼する。
+    // profiles.role/status をフロント側の権限判定には使わない。
+    if (state.adminVerified === true) {
       updateAuthUI();
       return true;
     }
 
-    await loadProfile();
-    const fallbackAllowed = Boolean(
-      state.adminVerified === true ||
-      (state.profile?.role === "admin" && state.profile?.status === "active")
-    );
+    // 判定がまだ無い場合はプロフィール情報ではなくDBへ再確認する。
+    try {
+      const { data, error } = await supabase.rpc("is_admin");
+      if (!error) {
+        state.adminVerified = data === true;
+      } else {
+        console.warn("is_admin:", error);
+      }
+    } catch (error) {
+      console.warn("is_admin:", error);
+    }
 
-    if (!fallbackAllowed) {
-      console.warn("ensureAdmin failed:", {
-        hasUser: Boolean(state.user),
-        email: state.user?.email,
-        profileLoaded: Boolean(state.profile),
-        role: state.profile?.role,
-        status: state.profile?.status
-      });
+    if (state.adminVerified !== true) {
+      console.warn("ensureAdmin failed: DB is_admin() returned false or errored");
       toast("管理者権限が必要です。", "error");
       navigate("#home");
       return false;
