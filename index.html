@@ -753,9 +753,13 @@
 
         <div class="admin-dashboard">
           <div class="admin-stat-card"><span>ユーザー</span><strong id="admin-user-count">0</strong></div>
+          <div class="admin-stat-card"><span>アクティブ</span><strong id="admin-active-user-count">0</strong></div>
           <div class="admin-stat-card"><span>投稿</span><strong id="admin-post-count">0</strong></div>
-          <div class="admin-stat-card"><span>通報</span><strong id="admin-report-count">0</strong></div>
+          <div class="admin-stat-card"><span>返信</span><strong id="admin-reply-count">0</strong></div>
+          <div class="admin-stat-card"><span>通報待ち</span><strong id="admin-report-count">0</strong></div>
           <div class="admin-stat-card"><span>BAN中</span><strong id="admin-ban-count">0</strong></div>
+          <div class="admin-stat-card"><span>有効セッション</span><strong id="admin-session-stat">0</strong></div>
+          <div class="admin-stat-card"><span>不審ログ24h</span><strong id="admin-suspicious-stat">0</strong></div>
         </div>
 
         <nav class="admin-navigation" aria-label="管理メニュー">
@@ -765,13 +769,71 @@
           <a href="#admin-ip-ban">IP制限</a>
           <a href="#admin-bots">Bot管理</a>
           <a href="#admin-private-boards">掲示板管理</a>
+          <a href="#admin-sessions">セッション</a>
+          <a href="#admin-security">セキュリティ監視</a>
+          <a href="#admin-diagnostics">システム診断</a>
           <a href="#admin-site-settings">サイト設定</a>
-          <a href="#admin-logs">ログ</a>
+          <a href="#admin-logs">監査ログ</a>
         </nav>
 
       </div>
     </section>
 
+
+    <!-- ================= ADMIN SESSIONS ================= -->
+    <section id="admin-sessions" class="page-section admin-page" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">SESSIONS</p>
+          <h1>セッション管理</h1>
+          <p>現在有効なログインセッションを確認できます。</p>
+        </div>
+        <div class="admin-section-header">
+          <span id="admin-session-count">0件</span>
+          <button type="button" class="secondary-button" id="admin-session-refresh">更新</button>
+        </div>
+        <div class="admin-table-wrapper">
+          <table class="admin-table"><thead><tr>
+            <th>ユーザー</th><th>メール</th><th>セッションID</th><th>最終更新</th><th>有効期限</th><th>IP</th>
+          </tr></thead><tbody id="admin-sessions-table-body"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ADMIN SECURITY ================= -->
+    <section id="admin-security" class="page-section admin-page" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">SECURITY MONITOR</p>
+          <h1>セキュリティ監視</h1>
+          <p>アクセス監視・不審ログ・検知イベントを確認できます。</p>
+        </div>
+        <div class="admin-section-header">
+          <label><input type="checkbox" id="admin-security-suspicious-only"> 不審なログだけ</label>
+          <button type="button" class="secondary-button" id="admin-security-refresh">更新</button>
+        </div>
+        <div class="admin-table-wrapper">
+          <table class="admin-table"><thead><tr>
+            <th>日時</th><th>発生元</th><th>IP</th><th>結果</th><th>不審</th><th>理由</th><th>イベント</th>
+          </tr></thead><tbody id="admin-security-table-body"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ADMIN DIAGNOSTICS ================= -->
+    <section id="admin-diagnostics" class="page-section admin-page" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">SYSTEM DIAGNOSTICS</p>
+          <h1>システム診断</h1>
+          <p>認証・PostgREST・権限・RLS・監査ログの状態を確認します。</p>
+        </div>
+        <div id="admin-diagnostics-grid" class="admin-dashboard"></div>
+        <div class="account-panel" id="admin-diagnostics-detail">
+          <p>診断結果を読み込んでいます...</p>
+        </div>
+      </div>
+    </section>
 
     <!-- ================= ADMIN LOGS ================= -->
     <section id="admin-logs" class="page-section admin-page" hidden>
@@ -875,6 +937,19 @@
               <option value="suspended">停止</option>
               <option value="banned">BAN</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label for="admin-target-role">権限ロール</label>
+            <select id="admin-target-role">
+              <option value="user">User</option>
+              <option value="moderator">Moderator</option>
+              <option value="admin">Admin</option>
+              <option value="super_admin">Super Admin</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="admin-target-ban-reason">BAN/停止理由</label>
+            <input id="admin-target-ban-reason" maxlength="500">
           </div>
 
           <div class="form-option">
