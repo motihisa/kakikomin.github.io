@@ -341,6 +341,8 @@
       case "admin-sessions": loadAdminSessions(); break;
       case "admin-security": loadAdminSecurityLogs(); break;
       case "admin-diagnostics": loadAdminDiagnostics(); break;
+      case "admin-private-boards": loadAdminPrivateBoards(); break;
+      case "admin-bots": loadAdminBots(); break;
       case "admin-logs": loadAdminLogs(); break;
       default:
         if (route.startsWith("admin")) loadAdminData();
@@ -2061,6 +2063,47 @@
     toast("返信を削除しました。","success"); await loadAdminData();
   }
 
+  async function loadAdminPrivateBoards(){
+    if(!(await ensureAdmin()))return;
+    const {data,error}=await supabase.rpc("admin_list_private_boards",{limit_count:200});
+    const body=$("#admin-private-board-table-body");
+    if(error){console.error(error);if(body)body.innerHTML="<tr><td colspan=\"5\">掲示板を読み込めませんでした。</td></tr>";return;}
+    if(!body)return;
+    body.innerHTML=(data||[]).map(b=>`<tr>
+      <td>${escapeHTML(b.name||"-")}</td>
+      <td>${escapeHTML(b.owner_username||b.owner_id||"-")}</td>
+      <td>${escapeHTML(b.visibility||"private")}</td>
+      <td>${escapeHTML(String(b.active_members??0))}</td>
+      <td><button type="button" class="secondary-button" data-open-admin-private-board="${escapeHTML(b.id)}">詳細</button></td>
+    </tr>`).join("")||"<tr><td colspan=\"5\">掲示板はありません。</td></tr>";
+  }
+
+  async function loadAdminBots(){
+    if(!(await ensureAdmin()))return;
+    const {data,error}=await supabase.from("bots").select("id,name,description,created_at").order("created_at",{ascending:false}).limit(200);
+    const list=$("#admin-bot-list");
+    if(error){console.error(error);if(list)list.innerHTML="<div class=\"empty-state\"><p>Botを読み込めませんでした。</p></div>";return;}
+    if(!list)return;
+    list.innerHTML=(data||[]).map(b=>`<article class="admin-post-item"><div><h3>${escapeHTML(b.name)}</h3><p>${escapeHTML(b.description||"")}</p><small>${escapeHTML(formatDate(b.created_at))}</small></div><button type="button" class="danger-button" data-delete-admin-bot="${escapeHTML(b.id)}">削除</button></article>`).join("")||"<div class=\"empty-state\"><p>Botはありません。</p></div>";
+  }
+
+  async function createAdminBot(){
+    if(!(await ensureAdmin()))return;
+    const name=$("#bot-name")?.value.trim(),description=$("#bot-description")?.value.trim()||"";
+    if(!name){toast("Bot名を入力してください。","error");return;}
+    const {error}=await supabase.from("bots").insert({name,description});
+    if(error){console.error(error);toast("Botを作成できませんでした。","error");return;}
+    $("#create-bot-form")?.reset();closeModal("create-bot-dialog");toast("Botを作成しました。","success");await loadAdminBots();
+  }
+
+  async function deleteAdminBot(id){
+    if(!(await ensureAdmin()))return;
+    if(!confirm("このBotを削除しますか？"))return;
+    const {error}=await supabase.from("bots").delete().eq("id",id);
+    if(error){console.error(error);toast("Botを削除できませんでした。","error");return;}
+    toast("Botを削除しました。","success");await loadAdminBots();
+  }
+
   async function loadPrivateBoards() {
     if (!state.user || state.profile?.status !== "active") return;
     const { data, error } = await supabase.from("private_boards").select("id,name,description,owner_id,member_count,created_at").order("created_at",{ascending:false});
@@ -2410,7 +2453,7 @@
     onSubmit("#private-board-post-form", createPrivateBoardPost);
     onSubmit("#private-board-settings-form", savePrivateBoardSettings);
     onSubmit("#admin-site-settings-form", saveSiteSettings);
-    onSubmit("#create-bot-form", () => comingSoon("Botの作成"));
+    onSubmit("#create-bot-form", createAdminBot);
 
     // 返信フォーム（投稿カードの中にあとから作られるので、documentで受ける）
     document.addEventListener("submit", event => {
@@ -2462,6 +2505,8 @@
       if (closest("[data-admin-delete-post]")) adminDeletePost(closest("[data-admin-delete-post]").dataset.adminDeletePost);
       if (closest("[data-resolve-report]")) resolveReport(closest("[data-resolve-report]").dataset.resolveReport);
       if (closest("[data-delete-ip-ban]")) removeIPBan(closest("[data-delete-ip-ban]").dataset.deleteIpBan);
+      if (closest("[data-delete-admin-bot]")) deleteAdminBot(closest("[data-delete-admin-bot]").dataset.deleteAdminBot);
+      if (closest("[data-open-admin-private-board]")) navigate("#admin-private-boards");
       if (closest("#create-bot-button") || closest("#admin-create-bot")) openModal("create-bot-dialog");
       if (closest("#create-private-board-button")) createPrivateBoard();
       if (closest("#private-board-back")) navigate("#private-boards");
