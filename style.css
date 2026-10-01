@@ -673,3 +673,18 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
   line-height: 1.8;
   opacity: .72;
 }
+
+
+/* ===== admin fixes ===== */
+.admin-security-filter { display:inline-flex; align-items:center; gap:8px; margin:0; padding:7px 10px; font-size:.9rem; line-height:1.3; white-space:nowrap; cursor:pointer; }
+.admin-security-filter input[type="checkbox"] { width:16px; height:16px; min-width:16px; min-height:16px; margin:0; padding:0; }
+.admin-diagnostic-card { min-height:112px; display:flex; flex-direction:column; justify-content:center; gap:4px; }
+.admin-diagnostic-card strong { font-size:1.05rem; }
+.admin-diagnostic-card small { color:var(--text-secondary); font-size:.78rem; }
+.admin-diagnostic-card.diagnostic-ok strong { color:var(--success); }
+.admin-diagnostic-card.diagnostic-warn strong { color:var(--warning); }
+.admin-diagnostic-status { padding:16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); display:grid; gap:4px; }
+.diagnostic-error { border-color:var(--danger); }
+.diagnostic-detail-list { display:grid; gap:10px; margin-top:14px; }
+.diagnostic-detail-list div { display:flex; justify-content:space-between; gap:16px; padding:10px 12px; background:var(--surface-soft); border-radius:var(--radius-sm); }
+@media (max-width:640px) { .diagnostic-detail-list div { display:block; } }
