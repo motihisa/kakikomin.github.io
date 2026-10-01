@@ -2160,7 +2160,7 @@
     event.preventDefault();
     if(!state.user||state.profile?.status!=="active"){toast("ログインしてください。","error");return;}
     const code=$("#private-board-code")?.value.trim(); if(!code)return;
-    const {data,error}=await supabase.rpc("private_board_join",{p_code:code});
+    const {data,error}=await supabase.schema("private_board").rpc("join",{p_code:code});
     if(error){console.error(error);toast("招待コードが正しくないか、参加できません。","error");return;}
     event.target.reset(); toast("掲示板に参加しました。","success"); location.hash="#private-board-"+data;
   }
