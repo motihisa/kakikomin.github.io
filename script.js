@@ -2227,14 +2227,14 @@
 
   async function savePrivateBoardMember(userId) {
     const boardId=getPrivateBoardIdFromHash(); const row=document.querySelector('[data-member-id="'+CSS.escape(userId)+'"]'); if(!boardId||!row)return;
-    const {error}=await supabase.rpc("private_board_manage_member",{p_board_id:boardId,p_user_id:userId,p_status:"active",p_can_post:Boolean(row.querySelector("[data-member-post]")?.checked),p_can_reply:Boolean(row.querySelector("[data-member-reply]")?.checked)});
+    const {error}=await supabase.schema("private_board").rpc("manage_member",{p_board_id:boardId,p_user_id:userId,p_status:"active",p_can_post:Boolean(row.querySelector("[data-member-post]")?.checked),p_can_reply:Boolean(row.querySelector("[data-member-reply]")?.checked)});
     if(error){console.error(error);toast("メンバー設定を変更できませんでした。","error");return;} toast("メンバー設定を保存しました。","success");loadPrivateBoardMembers(boardId);
   }
 
   async function togglePrivateBoardMemberBlock(userId) {
     const boardId=getPrivateBoardIdFromHash(); const row=document.querySelector('[data-member-id="'+CSS.escape(userId)+'"]'); if(!boardId||!row)return;
     const blocked=row.querySelector("p")?.textContent.includes("blocked");
-    const {error}=await supabase.rpc("private_board_manage_member",{p_board_id:boardId,p_user_id:userId,p_status:blocked?"active":"blocked",p_can_post:Boolean(row.querySelector("[data-member-post]")?.checked),p_can_reply:Boolean(row.querySelector("[data-member-reply]")?.checked)});
+    const {error}=await supabase.schema("private_board").rpc("manage_member",{p_board_id:boardId,p_user_id:userId,p_status:blocked?"active":"blocked",p_can_post:Boolean(row.querySelector("[data-member-post]")?.checked),p_can_reply:Boolean(row.querySelector("[data-member-reply]")?.checked)});
     if(error){console.error(error);toast("メンバーの制限を変更できませんでした。","error");return;} toast(blocked?"メンバーの制限を解除しました。":"メンバーを制限しました。","success");loadPrivateBoardMembers(boardId);
   }
 
