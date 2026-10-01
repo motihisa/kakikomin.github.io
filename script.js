@@ -59,6 +59,7 @@
     },
     openReplies: new Set(),  // 返信欄を開いている投稿ID
     adminRetry: false,
+    adminVerified: false,
     forcedLogoutRunning: false,
     postsHasMore: false,
     adminCounts: null,
@@ -127,12 +128,12 @@
   }
 
   function isAdminUser() {
-    // DB側の is_admin() と同じ条件に合わせる。
-    // role だけでなく active 状態も確認し、停止中の管理者を管理画面へ入れない。
+    // DB側の is_admin() を確認済みなら、それを優先する。
+    // 未確認時だけプロフィールの role/status を補助判定に使う。
     return Boolean(
       state.user &&
-      state.profile?.role === "admin" &&
-      state.profile?.status === "active"
+      (state.adminVerified === true ||
+        (state.profile?.role === "admin" && state.profile?.status === "active"))
     );
   }
 
@@ -450,6 +451,7 @@
       }
     } else {
       state.profile = null;
+      state.adminVerified = false;
     }
 
     updateAuthUI();
@@ -588,7 +590,17 @@
   async function loadProfile() {
     if (!state.user) {
       state.profile = null;
+      state.adminVerified = false;
       return null;
+    }
+
+    // DB側の is_admin() を確認し、管理者権限の判定をプロフィール表示値だけに依存させない。
+    try {
+      const { data: adminData, error: adminError } = await supabase.rpc("is_admin");
+      state.adminVerified = !adminError && adminData === true;
+    } catch (error) {
+      console.warn("is_admin:", error);
+      state.adminVerified = false;
     }
 
     const { data, error } = await supabase
@@ -596,6 +608,7 @@
       .maybeSingle();
 
     if (error) {
+      state.adminVerified = false;
       if (isForcedLogoutError(error)) {
         await handleForcedLogout();
         return null;
