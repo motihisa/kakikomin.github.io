@@ -2035,8 +2035,18 @@
 
     const idInput = $("#admin-target-user-id");
     const status = $("#admin-target-status");
+    const disablePosting = $("#admin-disable-posting");
+    const disableReplies = $("#admin-disable-replies");
+    const forcePasswordChange = $("#admin-force-password-change");
+
     if (idInput) idInput.value = user.id;
-    if (status) status.value = user.status || "active";
+    if (status) {
+      status.value = user.status || "active";
+      status.disabled = true;
+    }
+    if (disablePosting) disablePosting.checked = Boolean(user.disable_posting);
+    if (disableReplies) disableReplies.checked = Boolean(user.disable_replies);
+    if (forcePasswordChange) forcePasswordChange.checked = Boolean(user.force_password_change);
     setText("admin-target-username", user.username || "ユーザー");
 
     renderAdminUserIps(user.id);
