@@ -595,7 +595,9 @@
      ========================================================= */
 
   async function loadProfile() {
-    if (!state.user) {
+    const userAtStart = state.user;
+
+    if (!userAtStart) {
       state.profile = null;
       state.adminVerified = false;
       return null;
@@ -614,18 +616,26 @@
       profileError = error;
     }
 
+    // 認証状態が取得途中で切り替わった場合、古いリクエストの結果で
+    // 新しいログイン状態を上書きしない。
+    if (state.user?.id !== userAtStart.id) {
+      return null;
+    }
+
     // 管理者判定はプロフィール取得とは独立してDB側でも確認する。
     try {
       const { data: adminData, error: adminError } = await supabase.rpc("is_admin");
-      if (!adminError) {
+      if (!adminError && state.user?.id === userAtStart.id) {
         state.adminVerified = adminData === true;
-      } else {
+      } else if (state.user?.id === userAtStart.id) {
         console.warn("is_admin:", adminError);
         state.adminVerified = false;
       }
     } catch (error) {
-      console.warn("is_admin:", error);
-      state.adminVerified = false;
+      if (state.user?.id === userAtStart.id) {
+        console.warn("is_admin:", error);
+        state.adminVerified = false;
+      }
     }
 
     if (profileError) {
@@ -2682,11 +2692,16 @@
     // コールバック内で直接 await supabase を呼ぶとハングすることがあるので、
     // setTimeout で外に逃がしている。
     supabase.auth.onAuthStateChange((event, session) => {
+      const eventUserId = session?.user?.id || null;
       state.user = session?.user || null;
 
       setTimeout(async () => {
+        if ((state.user?.id || null) !== eventUserId) return;
+
         if (state.user) {
           await loadProfile();
+
+          if ((state.user?.id || null) !== eventUserId) return;
 
           if (state.profile?.status === "banned") {
             state.accessBlocked = false;
@@ -2696,10 +2711,13 @@
           }
         } else {
           state.profile = null;
+          state.adminVerified = false;
           state.accessBlocked = false;
         }
 
-        updateAuthUI();
+        if ((state.user?.id || null) === eventUserId) {
+          updateAuthUI();
+        }
 
         if (event === "SIGNED_OUT" && location.hash !== "#login") {
           navigate("#login");
