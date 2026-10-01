@@ -574,3 +574,53 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+
+/* Maintenance page */
+.maintenance-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.maintenance-inner {
+  width: min(680px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.maintenance-mark {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 24px;
+  display: grid;
+  place-items: center;
+  border: 2px solid currentColor;
+  border-radius: 18px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.maintenance-label {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  opacity: .65;
+}
+
+.maintenance-inner h1 {
+  margin: 0;
+  font-size: clamp(32px, 7vw, 56px);
+  line-height: 1.15;
+}
+
+.maintenance-inner > p:last-child {
+  max-width: 520px;
+  margin: 18px auto 0;
+  line-height: 1.8;
+  opacity: .72;
+}
