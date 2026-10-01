@@ -677,8 +677,50 @@
           <a href="#admin-bots">Bot管理</a>
           <a href="#admin-private-boards">掲示板管理</a>
           <a href="#admin-site-settings">サイト設定</a>
+          <a href="#admin-logs">ログ</a>
         </nav>
 
+      </div>
+    </section>
+
+
+    <!-- ================= ADMIN LOGS ================= -->
+    <section id="admin-logs" class="page-section admin-page" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">AUDIT LOG</p>
+          <h1>ログ</h1>
+          <p>アカウント・投稿・通報・IP・管理操作などの履歴を確認できます。</p>
+        </div>
+
+        <div class="admin-section-header">
+          <div>
+            <label for="admin-log-action-filter">種類</label>
+            <select id="admin-log-action-filter">
+              <option value="">すべて</option>
+              <option value="INSERT">作成</option>
+              <option value="UPDATE">変更</option>
+              <option value="DELETE">削除</option>
+            </select>
+          </div>
+          <button type="button" class="secondary-button" id="admin-log-refresh">更新</button>
+        </div>
+
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>日時</th>
+                <th>種類</th>
+                <th>対象</th>
+                <th>ユーザーID</th>
+                <th>IP</th>
+                <th>詳細</th>
+              </tr>
+            </thead>
+            <tbody id="admin-logs-table-body"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
@@ -1122,4 +1164,3 @@
 
 </body>
 </html>
-```
