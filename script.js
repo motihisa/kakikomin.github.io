@@ -2477,11 +2477,10 @@
           await loadProfile();
 
           if (state.profile?.status === "banned") {
-            state.accessBlocked = true;
-            const title = document.getElementById("access-blocked-title");
-            const message = document.getElementById("access-blocked-message");
-            if (title) title.textContent = "アカウントがBANされています";
-            if (message) message.textContent = "このアカウントではサイトを利用できません。";
+            state.accessBlocked = false;
+            state.accountBlocked = true;
+            const message = document.getElementById("account-blocked-message");
+            if (message) message.textContent = state.profile?.ban_reason || "このアカウントではサイトを利用できません。";
           }
         } else {
           state.profile = null;
