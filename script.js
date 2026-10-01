@@ -2169,8 +2169,8 @@
     if(!state.user||state.profile?.status!=="active"){toast("ログインしてください。","error");return;}
     const name=prompt("掲示板名を入力してください。"); if(!name?.trim())return;
     const description=prompt("掲示板の説明を入力してください。")||"";
-    const {data,error}=await supabase.rpc("private_board_create",{p_name:name.trim(),p_description:description.trim()});
-    if(error){console.error(error);toast("掲示板を作成できませんでした。","error");return;}
+    const {data,error}=await supabase.schema("private_board").rpc("create_board",{p_name:name.trim(),p_description:description.trim()});
+    if(error){console.error("private board create error:",error);toast(error.message||"掲示板を作成できませんでした。","error");return;}
     toast("限定掲示板を作成しました。","success"); location.hash="#private-board-"+data;
   }
 
