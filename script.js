@@ -1,6 +1,6 @@
 /* =========================================================
    KAKIKOMI - script.js (修正版)
-   BUILD 2026-10-01-E  ← このファイルの先頭にこの行が見えたら最新版
+   BUILD 2026-10-02-F  ← このファイルの先頭にこの行が見えたら最新版
    Supabase + Hash Router
    ========================================================= */
 
@@ -605,20 +605,20 @@
       return null;
     }
 
-    // 先に自分のプロフィールを取得する。管理画面の表示判定はDBの管理者判定も必ず確認する。
-    // 管理者判定をプロフィール取得に依存させない。
-    // get_my_profile がRLS/権限などで失敗しても、is_admin() が true なら管理者として扱う。
+    // 自分自身のアカウント状態は専用RPCから取得する。
+    // profilesテーブルの直接SELECTやSETOF profilesの戻り値に依存しない。
     let data = null;
     let profileError = null;
 
     try {
-      const result = await supabase.rpc("get_my_profile").maybeSingle();
+      const result = await supabase.rpc("get_my_account_state");
       data = result.data;
       profileError = result.error;
     } catch (error) {
       profileError = error;
     }
 
+    // 管理者判定はプロフィール取得とは独立してDB側でも確認する。
     try {
       const { data: adminData, error: adminError } = await supabase.rpc("is_admin");
       if (!adminError) {
@@ -637,21 +637,24 @@
         await handleForcedLogout();
         return null;
       }
-      console.error("get_my_profile:", profileError);
-      // プロフィール取得失敗でも管理者判定は維持する。
+      console.error("get_my_account_state:", profileError);
+      state.profile = null;
+      return null;
+    }
+
+    if (!data || !data.id) {
+      console.error("get_my_account_state: empty account state");
       state.profile = null;
       return null;
     }
 
     state.profile = data;
 
-    // サーバー側のチェックが無い環境でも効くように、トークンの発行時刻でも確認する
-    if (data?.force_logout_at && (await isTokenOlderThan(data.force_logout_at))) {
+    if (data.force_logout_at && (await isTokenOlderThan(data.force_logout_at))) {
       await handleForcedLogout();
       return null;
     }
 
-    state.profile = data;
     return data;
   }
 
