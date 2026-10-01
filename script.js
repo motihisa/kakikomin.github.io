@@ -272,6 +272,7 @@
     "security-settings": "security-settings",
 
     "private-boards": "private-boards",
+    "private-board": "private-board",
     "rules": "rules",
     "privacy": "privacy",
     "contact": "contact",
@@ -292,11 +293,12 @@
   // ログインが必要なページ
   const AUTH_ROUTES = new Set([
     "create-post", "my-posts", "bookmarks", "notifications", "profile",
-    "account-settings", "security-settings"
+    "account-settings", "security-settings", "private-boards", "private-board"
   ]);
 
   function getRoute() {
     const hash = location.hash.replace(/^#/, "");
+    if (hash.startsWith("private-board-")) return "private-board";
     return ROUTES[hash] || null;
   }
 
@@ -329,7 +331,8 @@
       case "consultations": loadCategoryPosts(CONSULTATION_CATEGORY, "#consultation-list"); break;
       case "bookmarks": showPlaceholder("#bookmark-list", "ブックマーク機能は準備中です。"); break;
       case "notifications": showPlaceholder("#notification-list", "通知はありません。"); break;
-      case "private-boards": showPlaceholder("#private-board-list", "参加中の掲示板はありません。"); break;
+      case "private-boards": loadPrivateBoards(); break;
+      case "private-board": loadPrivateBoardDetail(); break;
       case "bot": showPlaceholder("#bot-list", "Botはまだありません。"); break;
       case "admin-site-settings": loadSiteSettings().then(fillSiteSettingsForm); break;
       case "admin-logs": loadAdminLogs(); break;
@@ -2145,6 +2148,80 @@
     toast("IP BANの解除はSupabase管理者のみ実行できます。", "error");
   }
 
+  async function loadPrivateBoards() {
+    if (!state.user || state.profile?.status !== "active") return;
+    const { data, error } = await supabase.from("private_boards").select("id,name,description,owner_id,member_count,created_at").order("created_at",{ascending:false});
+    const list=$("#private-board-list"); if(!list)return;
+    if(error){list.innerHTML='<div class="empty-state"><p>限定掲示板を読み込めませんでした。</p></div>';return;}
+    list.innerHTML=(data||[]).map(b=>'<article class="home-card"><h2>'+escapeHTML(b.name)+'</h2><p>'+escapeHTML(b.description||"")+'</p><small>メンバー '+Number(b.member_count||0)+'人</small><button type="button" class="primary-button" data-open-private-board="'+escapeHTML(b.id)+'">開く</button></article>').join("")||'<div class="empty-state"><p>参加中の掲示板はありません。</p></div>';
+  }
+
+  async function joinPrivateBoard(event) {
+    event.preventDefault();
+    if(!state.user||state.profile?.status!=="active"){toast("ログインしてください。","error");return;}
+    const code=$("#private-board-code")?.value.trim(); if(!code)return;
+    const {data,error}=await supabase.rpc("private_board_join",{p_code:code});
+    if(error){console.error(error);toast("招待コードが正しくないか、参加できません。","error");return;}
+    event.target.reset(); toast("掲示板に参加しました。","success"); location.hash="#private-board-"+data;
+  }
+
+  async function createPrivateBoard() {
+    if(!state.user||state.profile?.status!=="active"){toast("ログインしてください。","error");return;}
+    const name=prompt("掲示板名を入力してください。"); if(!name?.trim())return;
+    const description=prompt("掲示板の説明を入力してください。")||"";
+    const {data,error}=await supabase.rpc("private_board_create",{p_name:name.trim(),p_description:description.trim()});
+    if(error){console.error(error);toast("掲示板を作成できませんでした。","error");return;}
+    toast("限定掲示板を作成しました。","success"); location.hash="#private-board-"+data;
+  }
+
+  function getPrivateBoardIdFromHash() {
+    const hash=location.hash.replace(/^#private-board-/,""); return hash!==location.hash?hash:null;
+  }
+
+  async function loadPrivateBoardDetail() {
+    const boardId=getPrivateBoardIdFromHash();
+    if(!boardId||!state.user||state.profile?.status!=="active"){navigate("#private-boards");return;}
+    const {data:board,error}=await supabase.from("private_boards").select("id,name,description,owner_id,member_count").eq("id",boardId).maybeSingle();
+    if(error||!board){toast("掲示板が見つからないか、アクセス権がありません。","error");navigate("#private-boards");return;}
+    const {data:member}=await supabase.from("private_board_members").select("member_role,status,can_post,can_reply").eq("board_id",boardId).eq("user_id",state.user.id).maybeSingle();
+    if(!member||member.status!=="active"){toast("この掲示板へのアクセス権がありません。","error");navigate("#private-boards");return;}
+    setText("private-board-title",board.name); setText("private-board-description",board.description||""); setText("private-board-member-count","メンバー "+Number(board.member_count||0)+"人");
+    const owner=board.owner_id===state.user.id||state.profile?.role==="admin";
+    $("#private-board-owner-tools").hidden=!owner; $("#private-board-post-form-wrap").hidden=!member.can_post||Boolean(state.profile.disable_posting);
+    if(owner){$("#private-board-name-input").value=board.name;$("#private-board-description-input").value=board.description||"";const {data:code}=await supabase.rpc("private_board_get_invite_code",{p_board_id:boardId});if(code)$("#private-board-invite-code").value=code;loadPrivateBoardMembers(boardId);}
+    loadPrivateBoardPosts(boardId,member.can_reply&&!state.profile.disable_replies);
+  }
+
+  async function loadPrivateBoardPosts(boardId,canReply) {
+    const {data,error}=await supabase.from("private_board_posts").select("id,title,content,user_id,allow_replies,created_at,profiles:user_id(username)").eq("board_id",boardId).order("created_at",{ascending:false});
+    const list=$("#private-board-post-list");if(!list)return;if(error){list.innerHTML='<div class="empty-state"><p>投稿を読み込めませんでした。</p></div>';return;}
+    list.innerHTML=(data||[]).map(p=>'<article class="home-card"><h2>'+escapeHTML(p.title)+'</h2><p>'+escapeHTML(p.content)+'</p><small>'+escapeHTML(p.profiles?.username||"ユーザー")+' ・ '+escapeHTML(formatDate(p.created_at))+'</small></article>').join("")||'<div class="empty-state"><p>投稿はありません。</p></div>';
+  }
+
+  async function createPrivateBoardPost(event) {
+    event.preventDefault(); const boardId=getPrivateBoardIdFromHash();if(!boardId)return;
+    const title=$("#private-board-post-title")?.value.trim(),content=$("#private-board-post-content")?.value.trim();if(!title||!content)return;
+    const {error}=await supabase.from("private_board_posts").insert({board_id:boardId,user_id:state.user.id,title,content});
+    if(error){console.error(error);toast("投稿できませんでした。","error");return;} event.target.reset();toast("投稿しました。","success");loadPrivateBoardPosts(boardId,true);
+  }
+
+  async function loadPrivateBoardMembers(boardId) {
+    const {data,error}=await supabase.from("private_board_members").select("user_id,member_role,status,can_post,can_reply,profiles:user_id(username)").eq("board_id",boardId).order("joined_at",{ascending:true});
+    const list=$("#private-board-member-list");if(!list)return;if(error){list.innerHTML="<p>メンバーを読み込めませんでした。</p>";return;}
+    list.innerHTML=(data||[]).map(m=>'<div class="account-panel"><strong>'+escapeHTML(m.profiles?.username||"ユーザー")+'</strong><p>'+escapeHTML(m.member_role)+" / "+escapeHTML(m.status)+"</p></div>').join("");
+  }
+
+  async function savePrivateBoardSettings(event) {
+    event.preventDefault();const boardId=getPrivateBoardIdFromHash();if(!boardId)return;
+    const {error}=await supabase.from("private_boards").update({name:$("#private-board-name-input").value.trim(),description:$("#private-board-description-input").value.trim()}).eq("id",boardId);
+    if(error){console.error(error);toast("設定を保存できませんでした。","error");return;}toast("設定を保存しました。","success");loadPrivateBoardDetail();
+  }
+
+  async function copyPrivateBoardCode() {
+    const code=$("#private-board-invite-code")?.value;if(!code)return;
+    try{await navigator.clipboard.writeText(code);toast("招待コードをコピーしました。","success");}catch{toast("コピーできませんでした。","error");}
+  }
+
   /* =========================================================
      PASSWORD / DELETE ACCOUNT
      ========================================================= */
@@ -2372,7 +2449,9 @@
     on("#admin-log-refresh", "click", loadAdminLogs);
 
     // まだ中身のない機能
-    onSubmit("#join-private-board-form", () => comingSoon("限定掲示板への参加"));
+    onSubmit("#join-private-board-form", joinPrivateBoard);
+    onSubmit("#private-board-post-form", createPrivateBoardPost);
+    onSubmit("#private-board-settings-form", savePrivateBoardSettings);
     onSubmit("#admin-site-settings-form", saveSiteSettings);
     onSubmit("#create-bot-form", () => comingSoon("Botの作成"));
 
@@ -2416,7 +2495,11 @@
       if (closest("#logout-button") && !actionTarget) logout();
       if (closest("#delete-account-button")) openModal("delete-account-dialog");
       if (closest("#create-bot-button") || closest("#admin-create-bot")) openModal("create-bot-dialog");
-      if (closest("#create-private-board-button")) comingSoon("限定掲示板の作成");
+      if (closest("#create-private-board-button")) createPrivateBoard();
+      if (closest("#private-board-back")) navigate("#private-boards");
+      if (closest("#private-board-copy-code")) copyPrivateBoardCode();
+      const openPrivate = closest("[data-open-private-board]");
+      if (openPrivate) location.hash = `#private-board-${openPrivate.dataset.openPrivateBoard}`;
       if (closest("#mark-notifications-read")) comingSoon("既読機能");
       if (closest("#admin-force-logout")) forceLogoutUser();
       if (closest("#admin-force-delete")) forceDeleteUser();
