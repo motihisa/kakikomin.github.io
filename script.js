@@ -1,6 +1,6 @@
 /* =========================================================
    KAKIKOMI - script.js (修正版)
-   BUILD 2026-09-30-D  ← このファイルの先頭にこの行が見えたら最新版
+   BUILD 2026-10-01-E  ← このファイルの先頭にこの行が見えたら最新版
    Supabase + Hash Router
    ========================================================= */
 
@@ -11,12 +11,11 @@
   const SUPABASE_KEY = "sb_publishable_Mk4N_TF_cynZ53R7nmUyjQ_JeXsZ_Cs";
 
   // ※ブラウザ側の管理者チェックは見た目の制御だけ。
-  //   本当の権限チェックはSupabaseのRLSポリシーでやること。
-  const ADMIN_EMAIL = "ywcnbkceqon@admin-account";
+  //   本当の権限チェックは Supabase の RLS ポリシー / RPC（is_admin()）で行っている。
 
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  console.info("KAKIKOMI script BUILD 2026-09-30-D");
+  console.info("KAKIKOMI script BUILD 2026-10-01-E");
 
   /* ---------------------------------------------------------
      掲示板カテゴリ（★ここを実際のカテゴリに書き換えてね）
@@ -28,6 +27,10 @@
     { id: "consultation", name: "相談", icon: "🤝", description: "悩みごとの相談" },
     { id: "news",         name: "ニュース", icon: "📰", description: "話題・情報共有" }
   ];
+  const POSTS_PAGE_SIZE = 30;      // 掲示板：1回に読み込む件数
+  const LIST_LIMIT = 100;          // マイ投稿・質問・相談・検索などの最大件数
+  const REPLIES_LIMIT = 200;       // 1投稿あたりの返信の最大件数
+  const ADMIN_LIST_LIMIT = 200;    // 管理画面の一覧の最大件数
   const QUESTION_CATEGORY = "question";
   const CONSULTATION_CATEGORY = "consultation";
 
@@ -54,7 +57,9 @@
     },
     openReplies: new Set(),  // 返信欄を開いている投稿ID
     adminRetry: false,
-    forcedLogoutRunning: false
+    forcedLogoutRunning: false,
+    postsHasMore: false,
+    adminCounts: null
   };
 
   /* =========================================================
@@ -119,10 +124,7 @@
   }
 
   function isAdminUser() {
-    return Boolean(
-      state.user &&
-      (state.profile?.role === "admin" || state.user.email === ADMIN_EMAIL)
-    );
+    return Boolean(state.user && state.profile?.role === "admin");
   }
 
   function comingSoon(name = "この機能") {
@@ -137,6 +139,12 @@
     if (!isAdminUser()) {
       if (state.site.maintenance_mode) return "現在メンテナンス中のため、書き込みできません。";
       if (state.site.posting_enabled === false) return "現在、投稿は停止されています。";
+    }
+    if (error?.code === "PT429" || error?.message === "rate_limited") {
+      return "短時間に送信しすぎです。しばらく待ってからもう一度お試しください。";
+    }
+    if (error?.code === "23505") {
+      return "すでに実行済みです。";
     }
     if (error?.code === "42501") {
       return "書き込みが制限されています。アカウントの状態を確認してください。";
@@ -212,7 +220,7 @@
 
     const announcements = $("#announcement-list");
     if (announcements && !announcements.children.length) {
-      announcements.innerHTML = `<div class="announcement-item">現在サイトに脆弱性が発見されたため修正対応中です。今しばらくお待ちください</div>`;
+      announcements.innerHTML = `<div class="announcement-item">お知らせはありません。</div>`;
     }
   }
 
@@ -354,7 +362,14 @@
 
   function refreshRoute() {
     const route = getRoute();
-    if (route) runRouteLoader(route);
+    if (!route) return;
+
+    if (route === "board") {
+      loadPosts(true);
+      return;
+    }
+
+    runRouteLoader(route);
   }
 
   function showPlaceholder(selector, message) {
@@ -525,9 +540,7 @@
     }
 
     const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", state.user.id)
+      .rpc("get_my_profile")
       .maybeSingle();
 
     if (error) {
@@ -788,7 +801,7 @@
     const follow = $("#follow-button");
     if (follow) follow.hidden = true;
 
-    const { data } = await fetchPosts(q => q.eq("user_id", state.user.id));
+    const { data } = await fetchPosts(q => q.eq("user_id", state.user.id).limit(LIST_LIMIT));
     setText("profile-post-count", data.length);
     renderPostList("#profile-posts", data);
   }
@@ -957,15 +970,23 @@
     restoreOpenReplies(list);
   }
 
-  async function loadPosts() {
+  async function loadPosts(keepLoaded = false) {
     const list = $("#post-list");
     if (!list) return;
 
-    list.innerHTML = `<div class="empty-state"><p>読み込み中...</p></div>`;
+    // keepLoaded: 「もっと見る」で読み込んだ分を保ったまま更新する（いいね・削除のあと用）
+    const size = keepLoaded
+      ? Math.max(state.posts.length, POSTS_PAGE_SIZE)
+      : POSTS_PAGE_SIZE;
 
-    const { data, error } = await fetchPosts(q =>
-      state.currentCategory ? q.eq("category", state.currentCategory) : q
-    );
+    if (!keepLoaded) {
+      list.innerHTML = `<div class="empty-state"><p>読み込み中...</p></div>`;
+    }
+
+    const { data, error } = await fetchPosts(q => {
+      if (state.currentCategory) q = q.eq("category", state.currentCategory);
+      return q.range(0, size - 1);
+    });
 
     if (error) {
       list.innerHTML = `<div class="empty-state"><p>投稿を読み込めませんでした。</p></div>`;
@@ -973,7 +994,51 @@
     }
 
     state.posts = data;
+    state.postsHasMore = data.length === size;
     renderPosts();
+  }
+
+  async function loadMorePosts() {
+    const offset = state.posts.length;
+
+    const { data, error } = await fetchPosts(q => {
+      if (state.currentCategory) q = q.eq("category", state.currentCategory);
+      return q.range(offset, offset + POSTS_PAGE_SIZE - 1);
+    });
+
+    if (error) {
+      toast("投稿を読み込めませんでした。", "error");
+      return;
+    }
+
+    const known = new Set(state.posts.map(post => String(post.id)));
+    state.posts = [...state.posts, ...data.filter(post => !known.has(String(post.id)))];
+    state.postsHasMore = data.length === POSTS_PAGE_SIZE;
+    renderPosts();
+  }
+
+  // 「もっと見る」ボタン（HTMLを変えずに、一覧のすぐ下に作る）
+  function updateLoadMoreButton() {
+    const list = $("#post-list");
+    if (!list) return;
+
+    let button = $("#load-more-posts");
+
+    if (!state.postsHasMore) {
+      button?.remove();
+      return;
+    }
+
+    if (!button) {
+      button = document.createElement("button");
+      button.type = "button";
+      button.id = "load-more-posts";
+      button.className = "secondary-button";
+      button.textContent = "もっと見る";
+      button.style.margin = "16px auto 0";
+      button.style.display = "flex";
+      list.insertAdjacentElement("afterend", button);
+    }
   }
 
   function renderPosts() {
@@ -990,17 +1055,19 @@
     if (!posts.length) {
       list.innerHTML = "";
       if (noPosts) noPosts.hidden = false;
+      updateLoadMoreButton();
       return;
     }
 
     if (noPosts) noPosts.hidden = true;
     list.innerHTML = posts.map(postCardHTML).join("");
     restoreOpenReplies(list);
+    updateLoadMoreButton();
   }
 
   async function loadMyPosts() {
     if (!state.user) return;
-    const { data, error } = await fetchPosts(q => q.eq("user_id", state.user.id));
+    const { data, error } = await fetchPosts(q => q.eq("user_id", state.user.id).limit(LIST_LIMIT));
     if (error) {
       showPlaceholder("#my-post-list", "投稿を読み込めませんでした。");
       return;
@@ -1009,7 +1076,7 @@
   }
 
   async function loadCategoryPosts(category, selector) {
-    const { data, error } = await fetchPosts(q => q.eq("category", category));
+    const { data, error } = await fetchPosts(q => q.eq("category", category).limit(LIST_LIMIT));
     if (error) {
       showPlaceholder(selector, "投稿を読み込めませんでした。");
       return;
@@ -1159,6 +1226,7 @@
         ${canDelete ? `
           <button type="button" class="post-menu-button" style="margin-top:8px;"
             data-delete-reply="${escapeHTML(reply.id)}"
+            data-reply-user-id="${escapeHTML(reply.user_id)}"
             data-reply-post-id="${escapeHTML(reply.post_id)}">削除</button>` : ""}
       </div>
     `;
@@ -1199,7 +1267,8 @@
       .from("replies")
       .select("*, profiles:user_id (id, username)")
       .eq("post_id", postId)
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: true })
+      .limit(REPLIES_LIMIT);
 
     if (error) {
       console.warn("replies with profiles failed, retrying:", error);
@@ -1207,7 +1276,8 @@
         .from("replies")
         .select("*")
         .eq("post_id", postId)
-        .order("created_at", { ascending: true }));
+        .order("created_at", { ascending: true })
+        .limit(REPLIES_LIMIT));
     }
 
     if (error) {
@@ -1304,8 +1374,15 @@
     await loadReplies(postId);
   }
 
-  async function deleteReply(replyId, postId) {
+  async function deleteReply(replyId, postId, ownerId) {
     if (!state.user) return;
+
+    // 本当の権限チェックはRLS（本人か管理者のみ）。ここは無駄なリクエストを避けるための確認。
+    if (ownerId && ownerId !== state.user.id && !isAdminUser()) {
+      toast("この返信を削除する権限がありません。", "error");
+      return;
+    }
+
     if (!confirm("この返信を削除しますか？")) return;
 
     const { error } = await supabase.from("replies").delete().eq("id", replyId);
@@ -1450,7 +1527,7 @@
     result.innerHTML = `<div class="empty-state"><p>検索中...</p></div>`;
 
     const { data, error } = await fetchPosts(q =>
-      q.or(`title.ilike.%${keyword}%,content.ilike.%${keyword}%`)
+      q.or(`title.ilike.%${keyword}%,content.ilike.%${keyword}%`).limit(LIST_LIMIT)
     );
 
     if (error) {
@@ -1520,7 +1597,12 @@
 
     if (error) {
       console.error(error);
-      toast(writeErrorMessage(error, "通報できませんでした。"), "error");
+      toast(
+        error.code === "23505"
+          ? "すでにこの投稿を通報しています。"
+          : writeErrorMessage(error, "通報できませんでした。"),
+        "error"
+      );
       return false;
     }
 
@@ -1612,12 +1694,33 @@
   async function loadAdminData() {
     if (!ensureAdmin()) return;
 
-    const [usersResult, postsResult, reportsResult, ipBansResult] = await Promise.all([
-      supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-      supabase.from("posts").select("*").order("created_at", { ascending: false }),
-      supabase.from("reports").select("*").order("created_at", { ascending: false }),
-      supabase.from("ip_bans").select("*").order("created_at", { ascending: false })
+    const head = table => supabase.from(table).select("id", { count: "exact", head: true });
+
+    const [
+      usersResult, postsResult, reportsResult, ipBansResult,
+      userCount, postCount, pendingReportCount
+    ] = await Promise.all([
+      // 全列を返す RPC（管理者のみ実行可）
+      supabase.rpc("admin_list_profiles", { limit_count: ADMIN_LIST_LIMIT }),
+      supabase.from("posts")
+        .select("id, user_id, category, title, content, created_at")
+        .order("created_at", { ascending: false }).limit(ADMIN_LIST_LIMIT),
+      supabase.from("reports")
+        .select("id, post_id, reporter_id, reason, detail, status, created_at")
+        .order("created_at", { ascending: false }).limit(ADMIN_LIST_LIMIT),
+      supabase.from("ip_bans")
+        .select("id, ip, reason, duration, created_at, expires_at")
+        .order("created_at", { ascending: false }).limit(ADMIN_LIST_LIMIT),
+      head("profiles"),
+      head("posts"),
+      head("reports").eq("status", "pending")
     ]);
+
+    state.adminCounts = {
+      users: userCount.count ?? (usersResult.data || []).length,
+      posts: postCount.count ?? (postsResult.data || []).length,
+      pendingReports: pendingReportCount.count ?? 0
+    };
 
     if (usersResult.error) console.error("Users:", usersResult.error);
     if (postsResult.error) console.error("Posts:", postsResult.error);
@@ -1638,11 +1741,12 @@
   }
 
   function renderAdmin() {
-    setText("admin-user-count", state.users.length);
-    setText("admin-post-count", state.adminPosts.length);
+    const counts = state.adminCounts || {};
+    setText("admin-user-count", counts.users ?? state.users.length);
+    setText("admin-post-count", counts.posts ?? state.adminPosts.length);
     setText(
       "admin-report-count",
-      state.reports.filter(r => r.status === "pending").length
+      counts.pendingReports ?? state.reports.filter(r => r.status === "pending").length
     );
     setText("admin-ban-count", state.ipBans.filter(isBanActive).length);
 
@@ -2204,7 +2308,11 @@
 
       const deleteReplyButton = closest("[data-delete-reply]");
       if (deleteReplyButton) {
-        deleteReply(deleteReplyButton.dataset.deleteReply, deleteReplyButton.dataset.replyPostId);
+        deleteReply(
+          deleteReplyButton.dataset.deleteReply,
+          deleteReplyButton.dataset.replyPostId,
+          deleteReplyButton.dataset.replyUserId
+        );
       }
 
       const share = closest("[data-share-post]");
@@ -2212,6 +2320,8 @@
 
       const report = closest("[data-report-post]");
       if (report) openReportModal(report.dataset.reportPost);
+
+      if (closest("#load-more-posts")) loadMorePosts();
 
       const deleteButton = closest("[data-delete-post]");
       if (deleteButton) openDeletePostModal(deleteButton.dataset.deletePost);
