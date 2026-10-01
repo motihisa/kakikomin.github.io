@@ -1486,6 +1486,18 @@
 
     const meta = $('meta[name="description"]');
     if (meta && site.site_description) meta.setAttribute("content", site.site_description);
+
+    const maintenanceTitle = document.getElementById("maintenance-title");
+    if (maintenanceTitle) {
+      maintenanceTitle.textContent = site.maintenance_title || "メンテナンス中";
+    }
+
+    const maintenanceMessage = document.getElementById("maintenance-message");
+    if (maintenanceMessage) {
+      const message = site.maintenance_message || "";
+      maintenanceMessage.textContent = message;
+      maintenanceMessage.hidden = !message;
+    }
   }
 
   async function loadSiteSettings() {
@@ -1511,6 +1523,8 @@
     set("site-registration-enabled", el => { el.checked = site.registration_enabled !== false; });
     set("site-posting-enabled", el => { el.checked = site.posting_enabled !== false; });
     set("site-maintenance-mode", el => { el.checked = Boolean(site.maintenance_mode); });
+    set("maintenance-title-input", el => { el.value = site.maintenance_title || "メンテナンス中"; });
+    set("maintenance-message-input", el => { el.value = site.maintenance_message || ""; });
   }
 
   async function saveSiteSettings() {
@@ -1523,6 +1537,8 @@
       registration_enabled: $("#site-registration-enabled")?.checked ?? true,
       posting_enabled: $("#site-posting-enabled")?.checked ?? true,
       maintenance_mode: $("#site-maintenance-mode")?.checked ?? false,
+      maintenance_title: $("#maintenance-title-input")?.value.trim() || "メンテナンス中",
+      maintenance_message: $("#maintenance-message-input")?.value.trim() || "",
       updated_at: new Date().toISOString()
     };
 
