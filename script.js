@@ -1924,20 +1924,41 @@
     if (!(await ensureAdmin())) return;
     const {data,error}=await supabase.rpc("admin_diagnostics");
     const grid=$("#admin-diagnostics-grid"), detail=$("#admin-diagnostics-detail");
-    if(error){console.error(error);if(detail)detail.innerHTML="<p>診断を取得できませんでした。</p>";return;}
+    if(error){
+      console.error(error);
+      if(grid) grid.innerHTML='<div class="admin-diagnostic-status diagnostic-error"><strong>診断を取得できません</strong><span>管理用APIから診断結果を受け取れませんでした。</span></div>';
+      if(detail) detail.innerHTML='<p>更新ボタンから再試行してください。解決しない場合はPostgRESTと管理RPCの状態を確認してください。</p>';
+      return;
+    }
+    const rlsOk = Number(data.public_rls_tables) === Number(data.public_tables);
+    const preRequestOk = Array.isArray(data.pre_request_config) && data.pre_request_config.some(v => String(v).includes("pgrst.db_pre_request=public.check_ip_ban"));
+    const exposedSchemas = String(data.exposed_schemas || "");
+    const schemasOk = exposedSchemas.split(",").map(v=>v.trim()).includes("public");
+    const items=[
+      ["管理者権限API","正常",Boolean(data.is_admin_execute)],
+      ["アクセスチェック(authenticated)","正常",Boolean(data.check_ip_ban_authenticated_execute)],
+      ["アクセスチェック(anon)","正常",Boolean(data.check_ip_ban_anon_execute)],
+      ["RLS","正常",rlsOk],
+      ["PostgREST設定","正常",preRequestOk && schemasOk],
+      ["監査ログ(24時間)",String(data.audit_logs_24h ?? 0),true],
+      ["不審ログ(24時間)",String(data.suspicious_logs_24h ?? 0),Number(data.suspicious_logs_24h || 0)===0]
+    ];
     if(grid){
-      const items=[
-        ["is_admin EXECUTE",data.is_admin_execute],
-        ["check_ip_ban(authenticated)",data.check_ip_ban_authenticated_execute],
-        ["check_ip_ban(anon)",data.check_ip_ban_anon_execute],
-        ["RLS有効テーブル",`${data.public_rls_tables}/${data.public_tables}`],
-        ["監査ログ24h",data.audit_logs_24h],
-        ["不審ログ24h",data.suspicious_logs_24h]
-      ];
-      grid.innerHTML=items.map(([k,v])=>`<div class="admin-stat-card"><span>${escapeHTML(k)}</span><strong>${escapeHTML(String(v))}</strong></div>`).join("");
+      grid.innerHTML=items.map(([label,value,ok])=>`<div class="admin-stat-card admin-diagnostic-card ${ok?'diagnostic-ok':'diagnostic-warn'}">
+        <span>${escapeHTML(label)}</span><strong>${escapeHTML(value)}</strong><small>${ok?'問題なし':'確認が必要'}</small>
+      </div>`).join("");
     }
     if(detail){
-      detail.innerHTML=`<pre style="white-space:pre-wrap;overflow:auto;">${escapeHTML(JSON.stringify(data,null,2))}</pre>`;
+      detail.innerHTML=`
+        <h2>診断結果の見方</h2>
+        <p>「正常」は、管理画面から確認できる範囲で必要な設定が確認できている状態です。</p>
+        <div class="diagnostic-detail-list">
+          <div><strong>RLS</strong><span>${escapeHTML(data.public_rls_tables)} / ${escapeHTML(data.public_tables)} テーブルで有効</span></div>
+          <div><strong>PostgREST</strong><span>公開スキーマ: ${escapeHTML(exposedSchemas || '未取得')}</span></div>
+          <div><strong>監査ログ</strong><span>過去24時間: ${escapeHTML(String(data.audit_logs_24h ?? 0))}件</span></div>
+          <div><strong>不審ログ</strong><span>過去24時間: ${escapeHTML(String(data.suspicious_logs_24h ?? 0))}件</span></div>
+        </div>
+      `;
     }
   }
 
