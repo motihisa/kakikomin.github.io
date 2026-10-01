@@ -212,7 +212,7 @@
 
     const announcements = $("#announcement-list");
     if (announcements && !announcements.children.length) {
-      announcements.innerHTML = `<div class="announcement-item">お知らせはありません。</div>`;
+      announcements.innerHTML = `<div class="announcement-item">現在サイトに脆弱性が発見されたため修正対応中です。今しばらくお待ちください</div>`;
     }
   }
 
