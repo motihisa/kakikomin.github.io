@@ -1,6 +1,6 @@
 /* =========================================================
    KAKIKOMI - script.js (修正版)
-   BUILD 2026-10-02-H  ← このファイルの先頭にこの行が見えたら最新版
+   BUILD 2026-10-02-I  ← このファイルの先頭にこの行が見えたら最新版
    Supabase + Hash Router
    ========================================================= */
 
@@ -2118,38 +2118,24 @@
     const disableReplies = Boolean($("#admin-disable-replies")?.checked);
     const forcePasswordChange = Boolean($("#admin-force-password-change")?.checked);
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        disable_posting: disablePosting,
-        disable_replies: disableReplies,
-        force_password_change: forcePasswordChange
-      })
-      .eq("id", userId);
+    const { error } = await supabase.rpc("admin_update_user_restrictions", {
+      target_user: userId,
+      p_disable_posting: disablePosting,
+      p_disable_replies: disableReplies,
+      p_force_password_change: forcePasswordChange
+    });
 
     if (error) {
-      console.error(error);
+      console.error("admin_update_user_restrictions:", error);
       toast("ユーザー設定を更新できませんでした。", "error");
       return;
     }
 
-    await loadAdminData();
     toast("ユーザー設定を更新しました。", "success");
+    await loadAdminData();
+    navigate("#admin-users");
   }
 
-  function searchAdminUsers(keyword) {
-    const word = (keyword || "").trim().toLowerCase();
-    const users = word
-      ? state.users.filter(u => (u.username || "").toLowerCase().includes(word))
-      : state.users;
-    renderAdminUsers(users);
-  }
-
-  /* =========================================================
-     IP BAN
-     BANの強制はDB側（is_ip_banned() と各テーブルの書き込みポリシー）で行う。
-     BAN中のIPからは、投稿・返信・いいね・通報ができない（閲覧はできる）。
-     ========================================================= */
 
   async function addIPBan() {
     if (!(await ensureAdmin())) return;
