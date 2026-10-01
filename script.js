@@ -48,6 +48,7 @@
     currentCategory: "",   // "" = すべて（HTMLの「すべて」の value と揃えた）
     currentSort: "new",
     ipBanned: false,
+    accessBlocked: false,
     site: {
       site_name: "KAKIKOMI",
       site_description: "みんなで自由に書き込める総合掲示板",
@@ -165,14 +166,20 @@
       const { data, error } = await supabase.rpc("is_ip_banned");
       if (error) {
         console.warn("is_ip_banned:", error);
-        return;
+        return false;
       }
       state.ipBanned = data === true;
-      if (state.ipBanned) {
-        toast("このネットワークからの書き込みは制限されています。閲覧のみ可能です。", "error");
+      if (state.ipBanned && !isAdminUser()) {
+        state.accessBlocked = true;
+        const title = document.getElementById("access-blocked-title");
+        const message = document.getElementById("access-blocked-message");
+        if (title) title.textContent = "アクセスが制限されています";
+        if (message) message.textContent = "このネットワークからはサイトを利用できません。";
       }
+      return state.ipBanned;
     } catch (error) {
       console.warn(error);
+      return false;
     }
   }
 
@@ -334,6 +341,24 @@
     const route = getRoute();
 
     closeAllModals();
+
+    if (state.accessBlocked) {
+      const blocked = document.getElementById("access-blocked");
+      if (blocked) {
+        blocked.hidden = false;
+        blocked.classList.add("active");
+      }
+      return;
+    }
+
+    if (state.site.maintenance_mode && !isAdminUser()) {
+      const maintenance = document.getElementById("maintenance");
+      if (maintenance) {
+        maintenance.hidden = false;
+        maintenance.classList.add("active");
+      }
+      return;
+    }
 
     $$(".page-section").forEach(section => {
       section.hidden = true;
@@ -1456,24 +1481,16 @@
   }
 
   async function loadSiteSettings() {
-    const { data, error } = await supabase
-      .from("site_settings")
-      .select("*")
-      .eq("id", 1)
-      .maybeSingle();
+    const { data, error } = await supabase.rpc("get_public_site_settings");
 
     if (error) {
-      console.warn("site_settings:", error);
+      console.warn("get_public_site_settings:", error);
       return;
     }
 
     if (data) {
       state.site = { ...state.site, ...data };
       applySiteSettings();
-    }
-
-    if (state.site.maintenance_mode && !isAdminUser()) {
-      toast("現在メンテナンス中です。閲覧のみ可能です。", "info");
     }
   }
 
@@ -2526,7 +2543,7 @@
 
       await loadCurrentUser();
       await loadSiteSettings();
-      checkIpBan();
+      await checkIpBan();
       startSessionWatch();
       recordLoginIp();
 
