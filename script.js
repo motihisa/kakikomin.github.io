@@ -594,15 +594,7 @@
       return null;
     }
 
-    // DB側の is_admin() を確認し、管理者権限の判定をプロフィール表示値だけに依存させない。
-    try {
-      const { data: adminData, error: adminError } = await supabase.rpc("is_admin");
-      state.adminVerified = !adminError && adminData === true;
-    } catch (error) {
-      console.warn("is_admin:", error);
-      state.adminVerified = false;
-    }
-
+    // 先に自分のプロフィールを取得する。管理画面の表示判定はDBの管理者判定も必ず確認する。
     const { data, error } = await supabase
       .rpc("get_my_profile")
       .maybeSingle();
@@ -613,9 +605,24 @@
         await handleForcedLogout();
         return null;
       }
-      console.error(error);
+      console.error("get_my_profile:", error);
       state.profile = null;
       return null;
+    }
+
+    state.profile = data;
+
+    try {
+      const { data: adminData, error: adminError } = await supabase.rpc("is_admin");
+      if (adminError) {
+        console.warn("is_admin:", adminError);
+        state.adminVerified = data?.role === "admin" && data?.status === "active";
+      } else {
+        state.adminVerified = adminData === true;
+      }
+    } catch (error) {
+      console.warn("is_admin:", error);
+      state.adminVerified = data?.role === "admin" && data?.status === "active";
     }
 
     // サーバー側のチェックが無い環境でも効くように、トークンの発行時刻でも確認する
