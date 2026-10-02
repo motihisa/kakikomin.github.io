@@ -171,6 +171,19 @@
     return error?.message || fallback;
   }
 
+  // ログイン状態に関係なく、サイトへアクセスしたIPをサーバー側へ記録する。
+  // 未ログインでも記録できるよう、公開Edge FunctionでIPを取得する。
+  async function recordSiteAccessIp() {
+    try {
+      const { error } = await supabase.functions.invoke("record-site-access-ip", {
+        body: {}
+      });
+      if (error) console.warn("record-site-access-ip:", error);
+    } catch (error) {
+      console.warn("record-site-access-ip:", error);
+    }
+  }
+
   // このリクエスト元IPがBAN中か（サーバー側の is_ip_banned() を呼ぶ）
   async function checkIpBan() {
     try {
@@ -655,6 +668,8 @@
       // メール確認がONだとここではセッションがない。
       // その場合のプロフィール作成はDBトリガー（auth.users → profiles）に任せる。
       if (!data.session) {
+        // メール確認前でも「アカウント作成時のアクセスIP」を記録する。
+        await recordSiteAccessIp();
         toast("確認メールを送信しました。メール内のリンクを開いてからログインしてください。", "success");
         navigate("#login");
         return;
@@ -3552,10 +3567,13 @@
       await loadSiteSettings();
       await loadUserPreferences();
       await checkIpBan();
+
+      // ログイン状態に関係なく、サイトへアクセスしたIPを記録する。
+      await recordSiteAccessIp();
+
       startSessionWatch();
 
-      // サイトへアクセスした時点で、ログイン済みユーザーのIPを記録する。
-      // 既存のrecord_login_ip()だけを使用し、DBの既存データは変更・削除しない。
+      // ログイン済みユーザーは従来どおりuser_ipsにも記録する。
       await recordLoginIp(true);
 
       renderRoute();
