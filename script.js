@@ -389,10 +389,26 @@
   function renderRoute() {
     const route = getRoute();
 
-    // ルート描画直前にもDBから取得したアカウント状態を再確認し、
-    // BAN中にハッシュ変更などで通常ページへ戻らないようにする。
-    if (state.profile?.status && String(state.profile.status).toLowerCase() === "banned") {
+    // BAN状態なら専用ハッシュへ固定し、通常ページを描画しない。
+    const accountStatus = String(state.profile?.status || "").trim().toLowerCase();
+    if (accountStatus === "banned" || accountStatus === "ban") {
       state.accountBlocked = true;
+    }
+
+    if (state.accountBlocked) {
+      if (location.hash !== "#banpage") {
+        history.replaceState(null, "", "#banpage");
+      }
+      const blocked = document.getElementById("account-blocked");
+      $(".page-section").forEach(section => {
+        section.hidden = true;
+        section.classList.remove("active");
+      });
+      if (blocked) {
+        blocked.hidden = false;
+        blocked.classList.add("active");
+      }
+      return;
     }
 
     closeAllModals();
