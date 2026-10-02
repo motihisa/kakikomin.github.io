@@ -293,7 +293,8 @@
     "admin-logs": "admin-logs",
     "admin-sessions": "admin-sessions",
     "admin-security": "admin-security",
-    "admin-diagnostics": "admin-diagnostics"
+    "admin-diagnostics": "admin-diagnostics",
+    "admin-advanced": "admin-advanced"
   };
 
   // ログインが必要なページ
@@ -344,6 +345,7 @@
       case "admin-sessions": loadAdminSessions(); break;
       case "admin-security": loadAdminSecurityLogs(); break;
       case "admin-diagnostics": loadAdminDiagnostics(); break;
+      case "admin-advanced": loadAdminAdvanced(); break;
       case "admin-private-boards": loadAdminPrivateBoards(); break;
       case "admin-bots": loadAdminBots(); break;
       case "admin-logs": loadAdminLogs(); break;
@@ -1962,6 +1964,75 @@
     }
   }
 
+  async function loadAdminAdvanced() {
+    if (!(await ensureAdmin())) return;
+    const [summary, alerts, consistency, history, boards, accessLogs] = await Promise.all([
+      supabase.rpc("admin_security_summary"),
+      supabase.rpc("admin_list_alerts", { limit_count: 100, only_open: false }),
+      supabase.rpc("admin_auth_profile_consistency"),
+      supabase.rpc("admin_list_ip_ban_history", { limit_count: 100, search_ip: null }),
+      supabase.rpc("admin_list_private_boards", { limit_count: 200 }),
+      supabase.rpc("admin_list_private_board_access_logs", { p_board_id: null, limit_count: 200 })
+    ]);
+    const grid = $("#admin-security-summary-grid");
+    if (grid) {
+      const s = summary.data || {};
+      const items = [
+        ["不審ログ24h", s.suspicious_24h ?? 0],
+        ["セキュリティイベント24h", s.security_events_24h ?? 0],
+        ["監査イベント24h", s.audit_events_24h ?? 0],
+        ["ログイン観測24h", s.login_observations_24h ?? 0],
+        ["有効IP BAN", s.active_ip_bans ?? 0],
+        ["未確認アラート", s.open_alerts ?? 0]
+      ];
+      grid.innerHTML = items.map(([k,v]) => `<div class="admin-stat-card"><span>${escapeHTML(k)}</span><strong>${escapeHTML(String(v))}</strong></div>`).join("");
+    }
+    const consistencyList=$("#admin-consistency-list");
+    if(consistencyList) consistencyList.innerHTML=(consistency.data||[]).map(x=>`<article class="admin-post-item"><div><strong>${escapeHTML(x.email||x.user_id)}</strong><p>プロフィール: ${x.profile_exists?"あり":"なし"} / role: ${escapeHTML(x.role||"-")} / status: ${escapeHTML(x.status||"-")}</p></div></article>`).join("")||'<div class="empty-state"><p>Authとプロフィールの不整合はありません。</p></div>';
+    const alertBody=$("#admin-alert-table-body");
+    if(alertBody) alertBody.innerHTML=(alerts.data||[]).map(a=>`<tr><td>${escapeHTML(formatDate(a.created_at))}</td><td>${escapeHTML(a.severity)}</td><td>${escapeHTML(a.alert_type)}</td><td>${escapeHTML(a.message)}</td><td>${a.acknowledged?"確認済み":`<button type="button" class="secondary-button" data-ack-alert="${escapeHTML(a.id)}">確認</button>`}</td></tr>`).join("")||'<tr><td colspan="5">アラートはありません。</td></tr>';
+    const histBody=$("#admin-ip-history-table-body");
+    if(histBody) histBody.innerHTML=(history.data||[]).map(h=>`<tr><td>${escapeHTML(formatDate(h.created_at))}</td><td>${escapeHTML(h.ip)}</td><td>${escapeHTML(h.action)}</td><td>${escapeHTML(h.reason||"-")}</td></tr>`).join("")||'<tr><td colspan="4">履歴はありません。</td></tr>';
+    const boardBody=$("#admin-advanced-board-table-body");
+    if(boardBody) boardBody.innerHTML=(boards.data||[]).map(b=>`<tr><td>${escapeHTML(b.name)}</td><td>${escapeHTML(b.status||"active")}</td><td>${escapeHTML(String(b.active_members??0))}</td><td><button type="button" class="secondary-button" data-advanced-board-action="${escapeHTML(b.id)}" data-board-status="${escapeHTML(b.status||"active")}">${b.status==="suspended"?"復旧":"停止"}</button><button type="button" class="secondary-button" data-regenerate-board-invite="${escapeHTML(b.id)}">招待コード再発行</button></td></tr>`).join("")||'<tr><td colspan="4">掲示板はありません。</td></tr>';
+    const accessBody=$("#admin-board-access-table-body");
+    if(accessBody) accessBody.innerHTML=(accessLogs.data||[]).map(l=>`<tr><td>${escapeHTML(formatDate(l.created_at))}</td><td>${escapeHTML(l.board_id)}</td><td>${escapeHTML(l.username||l.user_id||"-")}</td><td>${escapeHTML(l.ip_address||"-")}</td><td>${l.allowed?"許可":"拒否"}</td><td>${escapeHTML(l.reason||"-")}</td></tr>`).join("")||'<tr><td colspan="6">アクセスログはありません。</td></tr>';
+  }
+
+  async function adminAcknowledgeAlert(id) {
+    if (!(await ensureAdmin())) return;
+    const {error}=await supabase.rpc("admin_ack_alert",{p_id:Number(id)});
+    if(error){console.error(error);toast("アラートを確認済みにできませんでした。","error");return;}
+    loadAdminAdvanced();
+  }
+
+  async function adminGenerateAlerts() {
+    if (!(await ensureAdmin())) return;
+    const {data,error}=await supabase.rpc("admin_generate_alerts");
+    if(error){console.error(error);toast("アラート検知に失敗しました。","error");return;}
+    toast(`${data||0}件のアラートを検知しました。`,"success");
+    loadAdminAdvanced();
+  }
+
+  async function adminSetPrivateBoardStatus(boardId,status) {
+    if (!(await ensureAdmin())) return;
+    const reason=status==="suspended" ? prompt("停止理由を入力してください。") : null;
+    if(status==="suspended" && reason===null)return;
+    const {error}=await supabase.rpc("admin_set_private_board_status",{p_board_id:boardId,p_status:status,p_reason:reason});
+    if(error){console.error(error);toast("掲示板状態を変更できませんでした。","error");return;}
+    toast(status==="suspended"?"掲示板を停止しました。":"掲示板を復旧しました。","success");
+    loadAdminAdvanced();
+  }
+
+  async function adminRegeneratePrivateBoardInvite(boardId) {
+    if (!(await ensureAdmin())) return;
+    if(!confirm("この掲示板の招待コードを再発行しますか？旧コードは無効になります。"))return;
+    const {data,error}=await supabase.rpc("admin_regenerate_private_board_invite",{p_board_id:boardId});
+    if(error){console.error(error);toast("招待コードを再発行できませんでした。","error");return;}
+    prompt("新しい招待コードです。必要ならコピーしてください。",data||"");
+    loadAdminAdvanced();
+  }
+
   function renderAdmin() {
     const counts=state.adminCounts||{}, s=counts.stats||{};
     setText("admin-user-count",counts.users??state.users.length);
@@ -2471,6 +2542,9 @@
     on("#admin-session-refresh", "click", loadAdminSessions);
     on("#admin-security-refresh", "click", loadAdminSecurityLogs);
     on("#admin-security-suspicious-only", "change", loadAdminSecurityLogs);
+    on("#admin-advanced-refresh","click",loadAdminAdvanced);
+    on("#admin-generate-alerts","click",adminGenerateAlerts);
+    onSubmit("#admin-ip-history-search-form",()=>loadAdminAdvanced());
 
     // まだ中身のない機能
     onSubmit("#join-private-board-form", joinPrivateBoard);
@@ -2546,6 +2620,9 @@
       if (closest("#mark-notifications-read")) comingSoon("既読機能");
       if (closest("#admin-force-logout")) forceLogoutUser();
       if (closest("#admin-force-delete")) forceDeleteUser();
+      const ackAlert=closest("[data-ack-alert]"); if(ackAlert) adminAcknowledgeAlert(ackAlert.dataset.ackAlert);
+      const advBoard=closest("[data-advanced-board-action]"); if(advBoard) adminSetPrivateBoardStatus(advBoard.dataset.advancedBoardAction,advBoard.dataset.boardStatus==="suspended"?"active":"suspended");
+      const regenBoard=closest("[data-regenerate-board-invite]"); if(regenBoard) adminRegeneratePrivateBoardInvite(regenBoard.dataset.regenerateBoardInvite);
 
       if (closest("#copy-share-url") || closest('[data-share="copy"]')) sharePost();
       if (closest('[data-share="native"]')) {
