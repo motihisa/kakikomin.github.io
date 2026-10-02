@@ -2753,7 +2753,15 @@
       supabase.rpc("admin_list_sessions", { limit_count: 200 })
     ]);
 
-    const user = (detailResult.data || []).find(u => String(u.id) === String(userId));
+    const detailUser = (detailResult.data || []).find(u => String(u.id) === String(userId));
+    const cachedUser = state.users.find(u => String(u.id) === String(userId));
+    const user = detailUser || cachedUser;
+
+    // 詳細RPCが一時的に空/エラーでも、一覧で取得済みの対象ユーザーを使って詳細画面を表示する。
+    // 既存データの変更や削除は行わない。
+    if(detailResult.error){
+      console.warn("admin_list_user_details:", detailResult.error);
+    }
     if(!user){
       toast("ユーザー情報を取得できませんでした。","error");
       navigate("#admin-users");
