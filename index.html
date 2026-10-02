@@ -1497,12 +1497,17 @@
       </div>
     </section>
 
-    <section id="account-blocked" class="page-section access-blocked-page" hidden>
-      <div class="access-blocked-inner">
-        <div class="access-blocked-mark" aria-hidden="true">!</div>
-        <p class="access-blocked-label">ACCOUNT RESTRICTED</p>
-        <h1>アカウントが制限されています</h1>
-        <p id="account-blocked-message">このアカウントではサイトを利用できません。</p>
+    <section id="account-blocked" class="page-section account-blocked-page" hidden aria-live="polite">
+      <div class="account-blocked-inner">
+        <div class="account-blocked-mark" aria-hidden="true">!</div>
+        <p class="account-blocked-label">ACCOUNT BANNED</p>
+        <h1>アカウントが利用停止されています</h1>
+        <p class="account-blocked-lead">このアカウントは管理者によって利用を制限されています。</p>
+        <div class="account-blocked-reason">
+          <span>制限理由</span>
+          <p id="account-blocked-message">理由は登録されていません。</p>
+        </div>
+        <p class="account-blocked-note">制限中は、投稿・閲覧などサイトの機能を利用できません。</p>
       </div>
     </section>
 
