@@ -920,3 +920,19 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
     grid-template-columns: 1fr;
   }
 }
+
+/* ================= ADMIN USER CONTROL CENTER ================= */
+.admin-user-hero{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:18px;padding:22px;border:1px solid var(--border);border-radius:18px;background:var(--surface);box-shadow:var(--shadow-sm);margin-bottom:18px}
+.admin-user-avatar{width:72px;height:72px;border-radius:20px;display:grid;place-items:center;background:var(--surface-soft);font-size:1.7rem;font-weight:800}
+.admin-user-hero-main h2{margin:0 0 4px}.admin-user-hero-main p{margin:0 0 4px;color:var(--text-secondary)}.admin-user-hero-main small{color:var(--text-muted);overflow-wrap:anywhere}
+.admin-user-badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.admin-user-badge{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:var(--surface-soft);font-size:.8rem;font-weight:700}
+.admin-user-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.admin-user-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:18px}
+.admin-user-detail-list{display:grid;gap:8px}
+.admin-user-detail-row{padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-soft)}
+.admin-user-detail-row strong{display:block;margin-bottom:3px}.admin-user-detail-row small{color:var(--text-muted)}
+.admin-danger-zone{margin-top:18px;padding:14px;border:1px solid var(--danger);border-radius:12px;background:color-mix(in srgb,var(--danger) 6%,transparent)}
+.admin-danger-zone strong{display:block}.admin-danger-zone p{margin:4px 0 10px;color:var(--text-secondary);font-size:.86rem}
+@media (max-width:900px){.admin-user-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-user-grid{grid-template-columns:1fr}.admin-user-hero{grid-template-columns:auto 1fr}.admin-user-badges{grid-column:1/-1;justify-content:flex-start}}
+@media (max-width:560px){.admin-user-hero{grid-template-columns:1fr;text-align:center}.admin-user-avatar{margin:auto}.admin-user-badges{justify-content:center}.admin-user-stat-grid{grid-template-columns:1fr}.admin-danger-zone .form-actions{display:grid;grid-template-columns:1fr}}
