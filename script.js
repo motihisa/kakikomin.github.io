@@ -2578,9 +2578,9 @@
       login($("#login-email")?.value.trim(), $("#login-password")?.value);
     });
 
-    onSubmit("#decoy-admin-login-form", async () => {
-      const { error } = await supabase.rpc("record_decoy_admin_attempt");
-      if (error) console.error("decoy admin attempt:", error);
+    onSubmit("#decoy-admin-login-form", () => {
+      // デコイ画面から特権RPCを直接呼び出さない。
+      // 管理権限の判定・監査はサーバー側の認証経路でのみ行う。
       toast("ログインできませんでした。", "error");
       location.hash = "#login";
     });
