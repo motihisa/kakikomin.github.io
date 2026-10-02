@@ -399,7 +399,7 @@
       if (location.hash !== "#banpage") {
         history.replaceState(null, "", "#banpage");
       }
-      const blocked = document.getElementById("account-blocked");
+      const blocked = document.getElementById("banpage");
       $(".page-section").forEach(section => {
         section.hidden = true;
         section.classList.remove("active");
@@ -407,6 +407,9 @@
       if (blocked) {
         blocked.hidden = false;
         blocked.classList.add("active");
+        const message = document.getElementById("banpage-message");
+        const reason = String(state.profile?.ban_reason || "").trim();
+        if (message) message.textContent = reason || "理由は登録されていません。";
       }
       return;
     }
