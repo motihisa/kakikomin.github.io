@@ -350,7 +350,7 @@
       case "private-boards": loadPrivateBoards(); break;
       case "private-board": loadPrivateBoardDetail(); break;
       case "bot": showPlaceholder("#bot-list", "Botはまだありません。"); break;
-      case "admin-site-settings": loadSiteSettings().then(fillSiteSettingsForm); break;
+      case "admin-site-settings": loadSiteSettings().then(async () => { fillSiteSettingsForm(); await loadAdminAnnouncements(); }); break;
       case "admin-sessions": loadAdminSessions(); break;
       case "admin-security": loadAdminSecurityLogs(); break;
       case "admin-diagnostics": loadAdminDiagnostics(); break;
@@ -1717,6 +1717,155 @@
     set("maintenance-message-input", el => { el.value = site.maintenance_message || ""; });
   }
 
+  function toLocalDateTimeValue(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const pad = n => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  function clearAdminAnnouncementForm() {
+    const form = document.getElementById("admin-announcement-form");
+    if (form) form.reset();
+    const id = document.getElementById("admin-announcement-id");
+    if (id) id.value = "";
+    const published = document.getElementById("admin-announcement-published");
+    if (published) published.checked = true;
+  }
+
+  async function loadAdminAnnouncements() {
+    if (!(await ensureAdmin())) return;
+
+    const list = document.getElementById("admin-announcement-list");
+    if (!list) return;
+    list.innerHTML = '<div class="empty-state"><p>読み込み中...</p></div>';
+
+    const { data, error } = await supabase
+      .from("site_announcements")
+      .select("id,title,message,published,starts_at,ends_at,created_at,updated_at")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error("loadAdminAnnouncements:", error);
+      list.innerHTML = '<div class="empty-state"><p>お知らせを読み込めませんでした。</p></div>';
+      return;
+    }
+
+    if (!data?.length) {
+      list.innerHTML = '<div class="empty-state"><p>お知らせはありません。</p></div>';
+      return;
+    }
+
+    list.innerHTML = data.map(item => `
+      <article class="account-panel admin-announcement-row">
+        <div>
+          <strong>${escapeHTML(item.title)}</strong>
+          <span class="admin-announcement-status">${item.published ? "公開中" : "非公開"}</span>
+        </div>
+        <p>${escapeHTML(item.message)}</p>
+        <small>表示期間: ${item.starts_at ? escapeHTML(formatDate(item.starts_at)) : "指定なし"} ～ ${item.ends_at ? escapeHTML(formatDate(item.ends_at)) : "指定なし"}</small>
+        <div class="form-actions">
+          <button type="button" class="secondary-button" data-edit-announcement="${escapeHTML(item.id)}">編集</button>
+          <button type="button" class="danger-button" data-delete-announcement="${escapeHTML(item.id)}">削除</button>
+        </div>
+      </article>
+    `).join("");
+  }
+
+  async function saveAdminAnnouncement() {
+    if (!(await ensureAdmin())) return;
+
+    const id = document.getElementById("admin-announcement-id")?.value || "";
+    const title = document.getElementById("admin-announcement-title")?.value.trim() || "";
+    const message = document.getElementById("admin-announcement-message")?.value.trim() || "";
+    const published = document.getElementById("admin-announcement-published")?.checked ?? true;
+    const starts = document.getElementById("admin-announcement-starts")?.value || "";
+    const ends = document.getElementById("admin-announcement-ends")?.value || "";
+
+    if (!title || !message) {
+      toast("タイトルと本文を入力してください。", "error");
+      return;
+    }
+
+    const payload = {
+      title,
+      message,
+      published,
+      starts_at: starts ? new Date(starts).toISOString() : null,
+      ends_at: ends ? new Date(ends).toISOString() : null,
+      updated_at: new Date().toISOString()
+    };
+
+    if (payload.starts_at && payload.ends_at && new Date(payload.starts_at) >= new Date(payload.ends_at)) {
+      toast("終了日時は開始日時より後にしてください。", "error");
+      return;
+    }
+
+    if (!id) {
+      payload.created_by = state.user.id;
+    }
+
+    const query = id
+      ? supabase.from("site_announcements").update(payload).eq("id", id)
+      : supabase.from("site_announcements").insert(payload);
+
+    const { error } = await query;
+    if (error) {
+      console.error("saveAdminAnnouncement:", error);
+      toast("お知らせを保存できませんでした。", "error");
+      return;
+    }
+
+    clearAdminAnnouncementForm();
+    await loadAdminAnnouncements();
+    await loadPublicAnnouncements();
+    toast("お知らせを保存しました。", "success");
+  }
+
+  async function editAdminAnnouncement(id) {
+    if (!(await ensureAdmin())) return;
+    const { data, error } = await supabase
+      .from("site_announcements")
+      .select("id,title,message,published,starts_at,ends_at")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error || !data) {
+      toast("お知らせを読み込めませんでした。", "error");
+      return;
+    }
+
+    document.getElementById("admin-announcement-id").value = data.id;
+    document.getElementById("admin-announcement-title").value = data.title || "";
+    document.getElementById("admin-announcement-message").value = data.message || "";
+    document.getElementById("admin-announcement-published").checked = data.published !== false;
+    document.getElementById("admin-announcement-starts").value = toLocalDateTimeValue(data.starts_at);
+    document.getElementById("admin-announcement-ends").value = toLocalDateTimeValue(data.ends_at);
+    document.getElementById("admin-announcement-title").focus();
+  }
+
+  async function deleteAdminAnnouncement(id) {
+    if (!(await ensureAdmin())) return;
+    if (!confirm("このお知らせを削除しますか？")) return;
+
+    const { error } = await supabase
+      .from("site_announcements")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("deleteAdminAnnouncement:", error);
+      toast("お知らせを削除できませんでした。", "error");
+      return;
+    }
+
+    await loadAdminAnnouncements();
+    await loadPublicAnnouncements();
+    toast("お知らせを削除しました。", "success");
+  }
+
   async function saveSiteSettings() {
     if (!(await ensureAdmin())) return;
 
@@ -2970,6 +3119,8 @@
     onSubmit("#private-board-post-form", createPrivateBoardPost);
     onSubmit("#private-board-settings-form", savePrivateBoardSettings);
     onSubmit("#admin-site-settings-form", saveSiteSettings);
+    onSubmit("#admin-announcement-form", saveAdminAnnouncement);
+    on("#admin-announcement-clear", "click", clearAdminAnnouncementForm);
     onSubmit("#create-bot-form", createAdminBot);
 
     // 返信フォーム（投稿カードの中にあとから作られるので、documentで受ける）
@@ -3023,6 +3174,8 @@
       if (closest("[data-resolve-report]")) resolveReport(closest("[data-resolve-report]").dataset.resolveReport);
       if (closest("[data-delete-ip-ban]")) removeIPBan(closest("[data-delete-ip-ban]").dataset.deleteIpBan);
       if (closest("[data-delete-admin-bot]")) deleteAdminBot(closest("[data-delete-admin-bot]").dataset.deleteAdminBot);
+      if (closest("[data-edit-announcement]")) editAdminAnnouncement(closest("[data-edit-announcement]").dataset.editAnnouncement);
+      if (closest("[data-delete-announcement]")) deleteAdminAnnouncement(closest("[data-delete-announcement]").dataset.deleteAnnouncement);
       if (closest("[data-open-admin-private-board]")) navigate("#admin-private-boards");
       if (closest("#create-bot-button") || closest("#admin-create-bot")) openModal("create-bot-dialog");
       if (closest("#create-private-board-button")) createPrivateBoard();
