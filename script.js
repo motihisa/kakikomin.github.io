@@ -2947,6 +2947,7 @@
     on("#report-post-select", "change", onReportPostChange);
     on("#user-dark-mode", "change", event => saveDarkMode(event.target.checked));
     on("#mark-notifications-read", "click", markAllNotificationsRead);
+    onSubmit("#admin-notification-form", sendBroadcastNotification);
 
 
     // 管理画面
@@ -3143,6 +3144,7 @@
 
         if (state.user) {
           await loadProfile();
+          await loadUserPreferences();
 
           if ((state.user?.id || null) !== eventUserId) return;
 
@@ -3156,6 +3158,8 @@
           state.profile = null;
           state.adminVerified = false;
           state.accessBlocked = false;
+          state.preferences.dark_mode = false;
+          applyDarkMode();
         }
 
         if ((state.user?.id || null) === eventUserId) {
