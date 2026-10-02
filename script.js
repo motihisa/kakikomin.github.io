@@ -60,6 +60,8 @@
     openReplies: new Set(),  // 返信欄を開いている投稿ID
     adminRetry: false,
     adminVerified: false,
+    adminSecondFactorVerified: false,
+    adminSecondFactorPromise: null,
     emergencyAuthenticated: false,
     forcedLogoutRunning: false,
     postsHasMore: false,
@@ -683,6 +685,7 @@
     } finally {
       state.user = null;
       state.profile = null;
+      state.adminSecondFactorVerified = false;
       updateAuthUI();
       setLoading(false);
       navigate("#login");
@@ -1915,6 +1918,61 @@
      ADMIN
      ========================================================= */
 
+  function requestAdminSecondFactor() {
+    if (state.adminSecondFactorVerified) return Promise.resolve(true);
+    if (state.adminSecondFactorPromise) return state.adminSecondFactorPromise;
+
+    state.adminSecondFactorPromise = new Promise(resolve => {
+      const overlay = document.createElement("div");
+      overlay.id = "admin-second-factor-overlay";
+      overlay.style.cssText = "position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px;";
+      overlay.innerHTML = `
+        <form id="admin-second-factor-form" style="width:min(420px,100%);background:#fff;border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+          <h2 style="margin-top:0">管理者追加認証</h2>
+          <p>管理画面を開くには、管理者用の追加パスワードが必要です。</p>
+          <label for="admin-second-factor-password">追加パスワード</label>
+          <input id="admin-second-factor-password" type="password" autocomplete="current-password" required style="width:100%;box-sizing:border-box;margin:10px 0 16px;padding:12px">
+          <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button type="button" id="admin-second-factor-cancel" class="secondary-button">キャンセル</button>
+            <button type="submit" class="primary-button">認証</button>
+          </div>
+          <p id="admin-second-factor-error" style="min-height:1.4em;color:#b42318;margin-bottom:0"></p>
+        </form>`;
+      document.body.appendChild(overlay);
+
+      const finish = value => {
+        overlay.remove();
+        state.adminSecondFactorPromise = null;
+        resolve(value);
+      };
+
+      $("#admin-second-factor-cancel", overlay)?.addEventListener("click", () => finish(false));
+      $("#admin-second-factor-form", overlay)?.addEventListener("submit", async event => {
+        event.preventDefault();
+        const password = $("#admin-second-factor-password", overlay)?.value || "";
+        const errorEl = $("#admin-second-factor-error", overlay);
+        const button = $("button[type='submit']", overlay);
+        if (button) button.disabled = true;
+
+        const { data, error } = await supabase.rpc("verify_admin_second_factor", { p_password: password });
+        if (!error && data === true) {
+          state.adminSecondFactorVerified = true;
+          finish(true);
+          return;
+        }
+
+        if (error) console.warn("admin second factor:", error);
+        if (errorEl) errorEl.textContent = "追加パスワードが正しくありません。";
+        if (button) button.disabled = false;
+        $("#admin-second-factor-password", overlay)?.select();
+      });
+
+      setTimeout(() => $("#admin-second-factor-password", overlay)?.focus(), 0);
+    });
+
+    return state.adminSecondFactorPromise;
+  }
+
   async function ensureAdmin() {
     if (!state.user) {
       toast("管理者権限が必要です。ログインしてください。", "error");
@@ -1922,7 +1980,6 @@
       return false;
     }
 
-    // まずDBの管理者判定を確認する。
     try {
       const { data, error } = await supabase.rpc("is_admin");
       if (!error) {
@@ -1934,27 +1991,32 @@
       console.warn("admin verification:", error);
     }
 
-    // is_admin() の一時的なRPC/セッション判定失敗時だけ、
-    // 既にDBから取得済みの自分のプロフィールをUI入場判定の
-    // フォールバックとして使う。管理操作そのものはDB側で再認証される。
     const profileAdmin =
       state.profile?.id === state.user.id &&
       state.profile?.role === "admin" &&
       state.profile?.status === "active";
 
-    if (state.adminVerified === true || profileAdmin) {
-      if (profileAdmin && state.adminVerified !== true) {
-        console.warn("ensureAdmin: using verified profile fallback for UI access");
-      }
-      state.adminVerified = state.adminVerified === true;
-      updateAuthUI();
-      return true;
+    if (!(state.adminVerified === true || profileAdmin)) {
+      console.warn("ensureAdmin failed: DB is_admin() and profile check both denied");
+      toast("管理者権限が必要です。", "error");
+      navigate("#home");
+      return false;
     }
 
-    console.warn("ensureAdmin failed: DB is_admin() and profile check both denied");
-    toast("管理者権限が必要です。", "error");
-    navigate("#home");
-    return false;
+    if (state.adminVerified !== true && profileAdmin) {
+      console.warn("ensureAdmin: using verified profile fallback for UI access");
+    }
+
+    const secondFactorOk = await requestAdminSecondFactor();
+    if (!secondFactorOk) {
+      toast("追加認証が必要です。", "error");
+      navigate("#home");
+      return false;
+    }
+
+    state.adminVerified = state.adminVerified === true;
+    updateAuthUI();
+    return true;
   }
 
   async function loadAdminData() {
