@@ -845,15 +845,15 @@
           <div class="admin-nav-category">
             <h2>🔔 通知・お知らせ</h2>
             <div class="admin-nav-links">
-              <a href="#admin-site-settings">お知らせ管理</a>
-              <a href="#admin-site-settings">通知・サイト設定</a>
+              <a href="#admin-announcements">お知らせ管理</a>
+              <a href="#admin-notifications">全員にメッセージ送信</a>
             </div>
           </div>
           <div class="admin-nav-category">
             <h2>🔧 管理者設定</h2>
             <div class="admin-nav-links">
               <a href="#admin-users">管理者・権限</a>
-              <a href="#admin-security">管理者追加認証</a>
+              <a href="#admin-second-factor">管理者追加認証</a>
               <a href="#admin-emergency">緊急プロトコル</a>
             </div>
           </div>
@@ -1250,11 +1250,11 @@
     <!-- ================= ADMIN SITE SETTINGS ================= -->
     <section id="admin-site-settings" class="page-section admin-page" hidden>
       <div class="section-inner narrow-section">
-
         <div class="admin-section-header">
           <div>
             <p class="section-label">SITE SETTINGS</p>
             <h1>サイト設定</h1>
+            <p>サイト全体の基本設定とメンテナンス設定を管理します。</p>
           </div>
         </div>
 
@@ -1263,39 +1263,34 @@
             <label for="site-name">サイト名</label>
             <input type="text" id="site-name" value="KAKIKOMI" maxlength="100">
           </div>
-
           <div class="form-group">
             <label for="site-description">サイト説明</label>
             <textarea id="site-description" maxlength="1000">みんなで自由に書き込める総合掲示板</textarea>
           </div>
-
           <div class="form-option">
             <input type="checkbox" id="site-registration-enabled" checked>
             <label for="site-registration-enabled">新規アカウント登録を許可</label>
           </div>
-
           <div class="form-option">
             <input type="checkbox" id="site-posting-enabled" checked>
             <label for="site-posting-enabled">投稿を許可</label>
           </div>
-
           <div class="form-option">
             <input type="checkbox" id="site-maintenance-mode">
             <label for="site-maintenance-mode">メンテナンスモード</label>
           </div>
-
           <div class="form-group">
             <label for="maintenance-title-input">メンテナンス画面のタイトル</label>
             <input type="text" id="maintenance-title-input" maxlength="100" placeholder="メンテナンス中">
           </div>
-
           <div class="form-group">
             <label for="maintenance-message-input">メンテナンス画面のメッセージ</label>
             <textarea id="maintenance-message-input" maxlength="500" placeholder="必要な場合だけ入力してください。"></textarea>
           </div>
-
           <button type="submit" class="primary-button">サイト設定を保存</button>
         </form>
+      </div>
+    </section>
 
         <div class="admin-section-divider"></div>
 
@@ -1375,6 +1370,99 @@
         </div>
         <div id="admin-notification-history" class="admin-list"></div>
 
+      </div>
+    </section>
+
+    <!-- ================= ADMIN ANNOUNCEMENTS ================= -->
+    <section id="admin-announcements" class="page-section admin-page" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">ANNOUNCEMENTS</p>
+          <h1>お知らせ管理</h1>
+          <p>ホームに表示するお知らせだけを管理します。</p>
+        </div>
+        <form id="admin-announcement-form" class="settings-form">
+          <input type="hidden" id="admin-announcement-id">
+          <div class="form-group">
+            <label for="admin-announcement-title">お知らせタイトル</label>
+            <input type="text" id="admin-announcement-title" maxlength="100" required>
+          </div>
+          <div class="form-group">
+            <label for="admin-announcement-message">お知らせ本文</label>
+            <textarea id="admin-announcement-message" maxlength="2000" required></textarea>
+          </div>
+          <div class="form-option">
+            <input type="checkbox" id="admin-announcement-published" checked>
+            <label for="admin-announcement-published">公開する</label>
+          </div>
+          <div class="form-group">
+            <label for="admin-announcement-starts">表示開始日時（任意）</label>
+            <input type="datetime-local" id="admin-announcement-starts">
+          </div>
+          <div class="form-group">
+            <label for="admin-announcement-ends">表示終了日時（任意）</label>
+            <input type="datetime-local" id="admin-announcement-ends">
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="primary-button">お知らせを保存</button>
+            <button type="button" class="secondary-button" id="admin-announcement-clear">入力をクリア</button>
+          </div>
+        </form>
+        <div id="admin-announcement-list" class="admin-list"></div>
+      </div>
+    </section>
+
+    <!-- ================= ADMIN NOTIFICATIONS ================= -->
+    <section id="admin-notifications" class="page-section admin-page" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">NOTIFICATIONS</p>
+          <h1>全員にメッセージ送信</h1>
+          <p>全ユーザーへの通知送信と送信履歴だけを管理します。</p>
+        </div>
+        <form id="admin-notification-form" class="settings-form">
+          <div class="form-group">
+            <label for="admin-notification-title">メッセージタイトル</label>
+            <input type="text" id="admin-notification-title" maxlength="100" placeholder="例：重要なお知らせ" required>
+          </div>
+          <div class="form-group">
+            <label for="admin-notification-message">全員に送るメッセージ</label>
+            <textarea id="admin-notification-message" maxlength="2000" placeholder="全ユーザーに表示するメッセージを入力してください。" required></textarea>
+          </div>
+          <div class="account-panel">
+            <strong>送信先：全ユーザー</strong>
+            <p>送信後の取り消しはできません。</p>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="primary-button">全員にメッセージを送信</button>
+            <button type="button" class="secondary-button" id="admin-notification-clear">入力をクリア</button>
+          </div>
+        </form>
+        <div class="admin-section-header">
+          <div>
+            <h2>送信履歴</h2>
+            <p>最近送信した全員向けメッセージを確認できます。</p>
+          </div>
+          <button type="button" class="secondary-button" id="admin-notification-refresh">履歴を更新</button>
+        </div>
+        <div id="admin-notification-history" class="admin-list"></div>
+      </div>
+    </section>
+
+    <!-- ================= ADMIN SECOND FACTOR ================= -->
+    <section id="admin-second-factor" class="page-section admin-page" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">ADMIN SECURITY</p>
+          <h1>管理者追加認証</h1>
+          <p>管理画面へ入るための追加認証を確認します。</p>
+        </div>
+        <div class="account-panel">
+          <h2>追加認証</h2>
+          <p>管理者アカウントとは別に、管理者用の追加パスワードで認証します。</p>
+          <button type="button" class="primary-button" id="admin-second-factor-open">追加認証を開始</button>
+          <p id="admin-second-factor-page-status" role="status">未認証</p>
+        </div>
       </div>
     </section>
 
@@ -1625,7 +1713,7 @@
 
   <!-- ================= SCRIPTS ================= -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="script.js?v=20261002-5"></script>
+  <script src="script.js?v=20261002-6"></script>
 
 </body>
 </html>
