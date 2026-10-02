@@ -751,6 +751,22 @@
           <span class="admin-badge">ADMIN</span>
         </div>
 
+        <div class="home-card admin-command-center">
+          <h2>管理コントロールセンター</h2>
+          <p>主要な監視・管理画面へすぐ移動できます。危険な操作は各画面で確認を要求します。</p>
+          <div class="hero-actions">
+            <a href="#admin-security" class="secondary-button">セキュリティ監視</a>
+            <a href="#admin-logs" class="secondary-button">全ログ</a>
+            <a href="#admin-advanced" class="secondary-button">アラート</a>
+            <a href="#admin-diagnostics" class="secondary-button">システム診断</a>
+            <button type="button" class="secondary-button" id="admin-refresh-all">全管理情報を更新</button>
+          </div>
+          <div class="form-option">
+            <input type="checkbox" id="admin-auto-refresh">
+            <label for="admin-auto-refresh">セキュリティ情報を30秒ごとに自動更新</label>
+          </div>
+        </div>
+
         <div class="admin-dashboard">
           <div class="admin-stat-card"><span>ユーザー</span><strong id="admin-user-count">0</strong></div>
           <div class="admin-stat-card"><span>アクティブ</span><strong id="admin-active-user-count">0</strong></div>
