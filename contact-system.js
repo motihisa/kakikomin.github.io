@@ -9,8 +9,8 @@
   const cat=v=>CATS.find(([x])=>x===v)?.[1]||v;
   function renderContact(){
     const s=document.getElementById("contact"),i=s?.querySelector(".section-inner"); if(!i)return;
-    i.innerHTML='<div class="page-header"><p class="section-label">CONTACT</p><h1>お問い合わせ</h1><p>KAKIKOMINへのお問い合わせを送信できます。</p></div><form id="contact-inquiry-form" class="settings-form"><div class="form-group"><label for="contact-category">お問い合わせの種類</label><select id="contact-category" required><option value="">選択してください</option>'+CATS.map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join("")+'</select></div><div class="form-group"><label for="contact-subject">件名</label><input id="contact-subject" maxlength="120" required></div><div class="form-group"><label for="contact-email">メールアドレス（任意）</label><input type="email" id="contact-email" maxlength="320"></div><div class="form-group"><label for="contact-message">お問い合わせ内容</label><textarea id="contact-message" maxlength="5000" required></textarea></div><div class="form-group"><label for="contact-reference">参考情報（任意）</label><textarea id="contact-reference" maxlength="2000"></textarea></div><button type="submit" class="primary-button">お問い合わせを送信</button></form><div id="contact-submit-result" class="account-panel" hidden></div><div id="contact-admin-panel"></div>';
-    document.getElementById("contact-inquiry-form")?.addEventListener("submit",submitInquiry); loadAdminContactPanel();
+    i.innerHTML='<div class="page-header"><p class="section-label">CONTACT</p><h1>お問い合わせ</h1><p>KAKIKOMINへのお問い合わせを送信できます。</p></div><div id="my-contact-history"></div><form id="contact-inquiry-form" class="settings-form"><div class="form-group"><label for="contact-category">お問い合わせの種類</label><select id="contact-category" required><option value="">選択してください</option>'+CATS.map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join("")+'</select></div><div class="form-group"><label for="contact-subject">件名</label><input id="contact-subject" maxlength="120" required></div><div class="form-group"><label for="contact-email">メールアドレス（任意）</label><input type="email" id="contact-email" maxlength="320"></div><div class="form-group"><label for="contact-message">お問い合わせ内容</label><textarea id="contact-message" maxlength="5000" required></textarea></div><div class="form-group"><label for="contact-reference">参考情報（任意）</label><textarea id="contact-reference" maxlength="2000"></textarea></div><button type="submit" class="primary-button">お問い合わせを送信</button></form><div id="contact-submit-result" class="account-panel" hidden></div><div id="contact-admin-panel"></div>';
+    document.getElementById("contact-inquiry-form")?.addEventListener("submit",submitInquiry); loadMyContactHistory(); loadAdminContactPanel();
   }
   async function submitInquiry(e){
     e.preventDefault(); const {data:{user}}=await client.auth.getUser();
@@ -22,6 +22,16 @@
   function show(m,err){const b=document.getElementById("contact-submit-result");if(!b)return;b.hidden=false;b.innerHTML="<p>"+esc(m)+"</p>";b.classList.toggle("settings-danger-zone",!!err);}
   async function isAdmin(){const {data,error}=await client.rpc("is_admin");return !error&&data===true;}
   async function loadAdminContactPanel(){const p=document.getElementById("contact-admin-panel");if(!p||!(await isAdmin()))return;p.innerHTML='<hr><div class="page-header"><p class="section-label">ADMIN</p><h2>お問い合わせ管理</h2></div><a href="#admin-contact" class="primary-button">問い合わせ管理を開く</a>';}
+  async function loadMyContactHistory(){
+    const box=document.getElementById("my-contact-history"); if(!box)return;
+    const {data:{user}}=await client.auth.getUser(); if(!user)return;
+    const {data:items,error}=await client.from("contact_inquiries").select("id,subject,status,created_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(20);
+    if(error||!items?.length)return;
+    const ids=items.map(x=>x.id);
+    const {data:replies}=await client.from("contact_inquiry_replies").select("inquiry_id,message,created_at").in("inquiry_id",ids).order("created_at",{ascending:true});
+    box.innerHTML='<div class="account-panel"><h2>お問い合わせ履歴</h2>'+items.map(x=>'<div class="account-panel"><p><strong>#'+x.id+' '+esc(x.subject)+'</strong>（'+esc(x.status==="resolved"?"対応済み":x.status==="in_progress"?"対応中":"未対応")+'）</p>'+((replies||[]).filter(r=>r.inquiry_id===x.id).map(r=>'<p><strong>管理者からの返信：</strong>'+esc(r.message).replaceAll("\\n","<br>")+'</p>').join(""))+'</div>').join("")+'</div>';
+  }
+
   async function loadAdminContactList(){
     const l=document.getElementById("admin-contact-list");if(!l)return;l.innerHTML='<div class="empty-state"><p>読み込み中...</p></div>';if(!(await isAdmin())){l.innerHTML='<div class="empty-state"><p>管理者権限が必要です。</p></div>';return;}
     const {data,error}=await client.from("contact_inquiries").select("id,user_id,category,subject,contact_email,message,reference_info,status,admin_note,created_at,updated_at").neq("status","resolved").order("created_at",{ascending:false}).limit(200);
@@ -30,8 +40,16 @@
     l.innerHTML=data.map(x=>'<article class="admin-list-item"><div class="admin-list-item-header"><strong>#'+x.id+' '+esc(x.subject)+'</strong><span>'+esc(date(x.created_at))+'</span></div><p><strong>種類：</strong>'+esc(cat(x.category))+'</p><p><strong>送信者：</strong>'+esc(x.user_id)+'</p><p><strong>メール：</strong>'+esc(x.contact_email||"未入力")+'</p><div class="account-panel"><p><strong>内容</strong></p><p>'+esc(x.message).replaceAll("\\n","<br>")+'</p></div><div class="form-group"><label>対応状況</label><select id="contact-status-'+x.id+'"><option value="pending" '+(x.status==="pending"?"selected":"")+'>未対応</option><option value="in_progress" '+(x.status==="in_progress"?"selected":"")+'>対応中</option><option value="resolved" '+(x.status==="resolved"?"selected":"")+'>対応済み</option></select></div><div class="form-group"><label>管理者メモ</label><textarea id="contact-note-'+x.id+'" maxlength="3000">'+esc(x.admin_note||"")+'</textarea></div><button type="button" class="primary-button" data-save="'+x.id+'">保存</button></article>').join("");
     l.querySelectorAll("[data-save]").forEach(b=>b.addEventListener("click",()=>updateInquiry(b.dataset.save)));
   }
+  async function sendInquiryReply(id,userId){const ta=document.getElementById("contact-reply-"+id);const message=ta?.value.trim();if(!message)return;const {data:{user}}=await client.auth.getUser();if(!user)return;const {error}=await client.from("contact_inquiry_replies").insert({inquiry_id:Number(id),sender_user_id:user.id,recipient_user_id:userId,message});if(error){alert("返信を送信できませんでした。");return;}ta.value="";alert("送信者に返信しました。");}
+  async function loadResolvedContactList(){
+    const box=document.getElementById("admin-contact-resolved");if(!box)return;
+    const {data,error}=await client.from("contact_inquiries").select("id,user_id,subject,status,created_at").eq("status","resolved").order("updated_at",{ascending:false}).limit(200);
+    if(error||!data?.length){box.innerHTML='<div class="empty-state"><p>対応済みのお問い合わせはありません。</p></div>';return;}
+    box.innerHTML=data.map(x=>'<article class="admin-list-item"><strong>#'+x.id+' '+esc(x.subject)+'</strong><p>'+esc(date(x.created_at))+'</p><textarea id="contact-reply-'+x.id+'" maxlength="5000" placeholder="送信者だけに返信"></textarea><button type="button" class="secondary-button" data-reply="'+x.id+'" data-user="'+x.user_id+'">送信者に返信</button></article>').join("");
+    box.querySelectorAll("[data-reply]").forEach(b=>b.addEventListener("click",()=>sendInquiryReply(b.dataset.reply,b.dataset.user)));
+  }
   async function updateInquiry(id){const status=document.getElementById("contact-status-"+id)?.value,admin_note=document.getElementById("contact-note-"+id)?.value.trim()||null;const {error}=await client.from("contact_inquiries").update({status,admin_note}).eq("id",id);if(error){alert("お問い合わせを更新できませんでした。");return;}await loadAdminContactList();}
-  async function initAdmin(){if(location.hash==="#admin-contact")await loadAdminContactList();}
+  async function initAdmin(){if(location.hash!=="#admin-contact")return;await loadAdminContactList();const root=document.getElementById("admin-contact-list")?.parentElement;if(root&&!document.getElementById("admin-contact-resolved")){root.insertAdjacentHTML("beforeend",'<hr><div class="page-header"><h2>対応済み履歴・返信</h2><p>対応済みのお問い合わせは通常一覧から消えますが、ここから送信者本人へ返信できます。</p></div><div id="admin-contact-resolved" class="admin-list"></div>');}await loadResolvedContactList();}
   function init(){renderContact();window.addEventListener("hashchange",()=>{if(location.hash==="#contact")setTimeout(renderContact,0);if(location.hash==="#admin-contact")setTimeout(initAdmin,0);});if(location.hash==="#admin-contact")setTimeout(initAdmin,0);}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
