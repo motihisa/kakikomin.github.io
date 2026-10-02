@@ -2141,6 +2141,40 @@
     loadAdminAdvanced();
   }
 
+  let adminAutoRefreshTimer = null;
+
+  async function refreshAllAdminData() {
+    if (!(await ensureAdmin())) return;
+    const tasks = [
+      loadAdminData(),
+      loadAdminSessions(),
+      loadAdminSecurityLogs(),
+      loadAdminDiagnostics(),
+      loadAdminAdvanced(),
+      loadAdminLogs()
+    ];
+    await Promise.allSettled(tasks);
+    toast("管理情報を更新しました。", "success");
+  }
+
+  function setupAdminAutoRefresh() {
+    const checkbox = $("#admin-auto-refresh");
+    if (!checkbox) return;
+    checkbox.addEventListener("change", () => {
+      if (adminAutoRefreshTimer) {
+        clearInterval(adminAutoRefreshTimer);
+        adminAutoRefreshTimer = null;
+      }
+      if (checkbox.checked) {
+        adminAutoRefreshTimer = setInterval(() => {
+          const route = getRoute();
+          if (route.startsWith("admin")) refreshAllAdminData();
+        }, 30000);
+        toast("30秒ごとの自動更新を有効にしました。", "success");
+      }
+    });
+  }
+
   function renderAdmin() {
     const counts=state.adminCounts||{}, s=counts.stats||{};
     setText("admin-user-count",counts.users??state.users.length);
@@ -2642,6 +2676,7 @@
     on("#report-post-select", "change", onReportPostChange);
 
     // 管理画面
+    setupAdminAutoRefresh();
     onSubmit("#ip-ban-form", addIPBan);
     onSubmit("#admin-user-settings-form", saveAdminUser);
     onSubmit("#admin-user-search-form", () => searchAdminUsers($("#admin-user-search")?.value));
@@ -2649,6 +2684,7 @@
     on("#admin-log-refresh", "click", loadAdminLogs);
     on("#admin-session-refresh", "click", loadAdminSessions);
     on("#admin-security-refresh", "click", loadAdminSecurityLogs);
+    on("#admin-refresh-all", "click", refreshAllAdminData);
     on("#admin-security-suspicious-only", "change", loadAdminSecurityLogs);
     on("#admin-advanced-refresh","click",loadAdminAdvanced);
     on("#admin-generate-alerts","click",adminGenerateAlerts);
