@@ -1042,8 +1042,11 @@
               <tr>
                 <!-- JSが出力する5列に合わせた -->
                 <th>ユーザー名</th>
-                <th>ID</th>
+                <th>メール</th>
+                <th>権限</th>
                 <th>状態</th>
+                <th>セッション</th>
+                <th>記録IP</th>
                 <th>作成日</th>
                 <th>操作</th>
               </tr>
@@ -1198,55 +1201,3 @@
         <div class="report-list" id="admin-report-list"></div>
       </div>
     </section>
-
-
-    <!-- ================= ADMIN IP BAN ================= -->
-    <section id="admin-ip-ban" class="page-section admin-page" hidden>
-      <div class="section-inner">
-        <div class="page-header">
-          <p class="section-label">IP BAN</p>
-          <h1>IP制限</h1>
-        </div>
-
-        <form id="ip-ban-form" class="settings-form">
-          <div class="form-group">
-            <label for="ban-ip">IPアドレス</label>
-            <input type="text" id="ban-ip" required>
-          </div>
-
-          <div class="form-group">
-            <label for="ban-reason">理由</label>
-            <input type="text" id="ban-reason" maxlength="500">
-          </div>
-
-          <div class="form-group">
-            <label for="ban-duration">期間</label>
-            <select id="ban-duration">
-              <option value="1">1日</option>
-              <option value="7">7日</option>
-              <option value="30">30日</option>
-              <option value="permanent">無期限</option>
-            </select>
-          </div>
-
-          <button type="submit" class="danger-button">アクセス制限を追加</button>
-        </form>
-
-        <div id="ip-ban-list" class="admin-table-wrapper">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>IP</th>
-                <th>理由</th>
-                <th>期間</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody id="ip-ban-table-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-
-    <!-- ================= ADMIN BOTS ================= -->
