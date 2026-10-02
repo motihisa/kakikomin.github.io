@@ -337,6 +337,12 @@
 
   function navigate(route) {
     if (!route.startsWith("#")) route = `#${route}`;
+
+    // BAN中は、ホームなどへの遷移をすべて拒否してBANページへ固定する。
+    if (state.accountBlocked && route !== "#banpage") {
+      route = "#banpage";
+    }
+
     if (location.hash === route) {
       renderRoute();
     } else {
@@ -3699,6 +3705,13 @@
     }
   }
 
-  window.addEventListener("hashchange", renderRoute);
+  window.addEventListener("hashchange", () => {
+    // BAN中にURLを直接変更されても、通常ページへ移動させない。
+    if (state.accountBlocked && location.hash !== "#banpage") {
+      location.hash = "#banpage";
+      return;
+    }
+    renderRoute();
+  });
   document.addEventListener("DOMContentLoaded", init);
 })();
