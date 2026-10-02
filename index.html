@@ -1254,10 +1254,9 @@
           <div>
             <p class="section-label">SITE SETTINGS</p>
             <h1>サイト設定</h1>
-            <p>サイト全体の基本設定とメンテナンス設定を管理します。</p>
+            <p>サイト全体の基本設定とメンテナンス設定だけを管理します。</p>
           </div>
         </div>
-
         <form id="admin-site-settings-form" class="settings-form">
           <div class="form-group">
             <label for="site-name">サイト名</label>
@@ -1289,87 +1288,6 @@
           </div>
           <button type="submit" class="primary-button">サイト設定を保存</button>
         </form>
-      </div>
-    </section>
-
-        <div class="admin-section-divider"></div>
-
-        <div class="admin-section-header">
-          <div>
-            <p class="section-label">ANNOUNCEMENTS</p>
-            <h2>サイトのお知らせ</h2>
-            <p>ホームに表示するお知らせを管理できます。</p>
-          </div>
-        </div>
-
-        <form id="admin-announcement-form" class="settings-form">
-          <input type="hidden" id="admin-announcement-id">
-          <div class="form-group">
-            <label for="admin-announcement-title">お知らせタイトル</label>
-            <input type="text" id="admin-announcement-title" maxlength="100" required>
-          </div>
-          <div class="form-group">
-            <label for="admin-announcement-message">お知らせ本文</label>
-            <textarea id="admin-announcement-message" maxlength="2000" required></textarea>
-          </div>
-          <div class="form-option">
-            <input type="checkbox" id="admin-announcement-published" checked>
-            <label for="admin-announcement-published">公開する</label>
-          </div>
-          <div class="form-group">
-            <label for="admin-announcement-starts">表示開始日時（任意）</label>
-            <input type="datetime-local" id="admin-announcement-starts">
-          </div>
-          <div class="form-group">
-            <label for="admin-announcement-ends">表示終了日時（任意）</label>
-            <input type="datetime-local" id="admin-announcement-ends">
-          </div>
-          <div class="form-actions">
-            <button type="submit" class="primary-button">お知らせを保存</button>
-            <button type="button" class="secondary-button" id="admin-announcement-clear">入力をクリア</button>
-          </div>
-        </form>
-
-        <div id="admin-announcement-list" class="admin-list"></div>
-
-        <div class="admin-section-divider"></div>
-
-        <div class="admin-section-header">
-          <div>
-            <p class="section-label">NOTIFICATION</p>
-            <h2>全員への通知</h2>
-            <p>管理者だけが全ユーザーへ通知を送信できます。</p>
-          </div>
-        </div>
-
-        <form id="admin-notification-form" class="settings-form">
-          <div class="form-group">
-            <label for="admin-notification-title">メッセージタイトル</label>
-            <input type="text" id="admin-notification-title" maxlength="100" placeholder="例：重要なお知らせ" required>
-          </div>
-          <div class="form-group">
-            <label for="admin-notification-message">全員に送るメッセージ</label>
-            <textarea id="admin-notification-message" maxlength="2000" placeholder="全ユーザーに表示するメッセージを入力してください。" required></textarea>
-          </div>
-          <div class="account-panel">
-            <strong>送信先：全ユーザー</strong>
-            <p>送信すると、通知ページに全員向けメッセージとして表示されます。送信後の取り消しはできません。</p>
-          </div>
-          <div class="form-actions">
-            <button type="submit" class="primary-button">全員にメッセージを送信</button>
-            <button type="button" class="secondary-button" id="admin-notification-clear">入力をクリア</button>
-          </div>
-        </form>
-
-        <div class="admin-section-header">
-          <div>
-            <h3>送信履歴</h3>
-            <p>最近送信した全員向けメッセージを確認できます。</p>
-          </div>
-          <button type="button" class="secondary-button" id="admin-notification-refresh">履歴を更新</button>
-        </div>
-        <div id="admin-notification-history" class="admin-list"></div>
-
       </div>
     </section>
 
@@ -1455,7 +1373,7 @@
         <div class="page-header">
           <p class="section-label">ADMIN SECURITY</p>
           <h1>管理者追加認証</h1>
-          <p>管理画面へ入るための追加認証を確認します。</p>
+          <p>管理画面とは独立した追加認証画面です。</p>
         </div>
         <div class="account-panel">
           <h2>追加認証</h2>
@@ -1465,7 +1383,6 @@
         </div>
       </div>
     </section>
-
 
     <!-- ================= ADMIN EMERGENCY PROTOCOL ================= -->
     <section id="admin-emergency" class="page-section admin-page" hidden>
