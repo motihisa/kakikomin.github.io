@@ -18,3 +18,1186 @@
 
   <!-- ================= HEADER ================= -->
   <header class="site-header" id="site-header">
+    <div class="header-inner">
+      <a href="#home" class="site-logo" id="site-logo">KAKIKOMI</a>
+
+      <nav class="main-navigation" id="main-navigation" aria-label="メインメニュー">
+        <a href="#home">ホーム</a>
+        <a href="#board">掲示板</a>
+        <a href="#questions">質問</a>
+        <a href="#consultations">相談</a>
+        <a href="#search">検索</a>
+        <a href="#private-boards">限定掲示板</a>
+        <a href="#account">アカウント</a>
+      </nav>
+
+      <div class="header-actions">
+        <a href="#notifications" class="secondary-button" id="notification-button">通知</a>
+      </div>
+    </div>
+  </header>
+
+
+  <main id="main-content">
+
+    <!-- ================= HOME ================= -->
+    <section id="home" class="page-section">
+      <div class="section-inner">
+
+        <div class="hero">
+          <p class="section-label">KAKIKOMI</p>
+          <h1>みんなで自由に<br>書き込める掲示板</h1>
+          <p>気軽に投稿したり、質問したり、相談したりできます。</p>
+
+          <div class="hero-actions">
+            <a href="#board" class="primary-button">掲示板を見る</a>
+            <a href="#Create_account" class="secondary-button">アカウントを作成</a>
+          </div>
+        </div>
+
+        <div class="home-sections">
+          <div class="home-card">
+            <h2>人気の掲示板</h2>
+            <!-- CSSに合わせて category-list → category-grid -->
+            <div id="popular-categories" class="category-grid"></div>
+          </div>
+
+          <div class="home-card">
+            <h2>お知らせ</h2>
+            <div id="announcement-list" class="announcement-list"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= DECOY ADMIN LOGIN ================= -->
+    <section id="admin-login" class="page-section" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">ADMIN ACCESS</p>
+          <h1>管理者ログイン</h1>
+        </div>
+        <form id="decoy-admin-login-form" class="settings-form">
+          <div class="form-group">
+            <label for="decoy-admin-email">メールアドレス</label>
+            <input type="email" id="decoy-admin-email" autocomplete="username" required>
+          </div>
+          <div class="form-group">
+            <label for="decoy-admin-password">パスワード</label>
+            <input type="password" id="decoy-admin-password" autocomplete="current-password" required>
+          </div>
+          <button type="submit" class="primary-button">ログイン</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ================= LOGIN ================= -->
+    <section id="login" class="page-section" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">LOGIN</p>
+          <h1>ログイン</h1>
+        </div>
+
+        <form id="login-form" class="settings-form">
+          <div class="form-group">
+            <label for="login-email">メールアドレス</label>
+            <input type="email" id="login-email" name="email" autocomplete="username" required>
+          </div>
+
+          <div class="form-group">
+            <label for="login-password">パスワード</label>
+            <input type="password" id="login-password" name="password" autocomplete="current-password" required>
+          </div>
+
+          <div class="form-option">
+            <input type="checkbox" id="remember-login">
+            <label for="remember-login">ログイン状態を保持する</label>
+          </div>
+
+          <button type="submit" class="primary-button">ログイン</button>
+        </form>
+
+        <div class="page-links">
+          <a href="#forgot-password">パスワードを忘れた場合</a>
+          <a href="#Create_account">アカウントを作成する</a>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ================= CREATE ACCOUNT ================= -->
+    <section id="Create_account" class="page-section" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">CREATE ACCOUNT</p>
+          <h1>アカウント作成</h1>
+        </div>
+
+        <form id="register-form" class="settings-form">
+          <div class="form-group">
+            <label for="register-username">ユーザー名</label>
+            <input type="text" id="register-username" name="username" maxlength="30" autocomplete="username" required>
+          </div>
+
+          <div class="form-group">
+            <label for="register-email">メールアドレス</label>
+            <input type="email" id="register-email" name="email" autocomplete="email" required>
+          </div>
+
+          <div class="form-group">
+            <label for="register-password">パスワード</label>
+            <input type="password" id="register-password" name="password" minlength="8" autocomplete="new-password" required>
+          </div>
+
+          <div class="form-group">
+            <label for="register-password-confirm">パスワード（確認）</label>
+            <input type="password" id="register-password-confirm" name="password-confirm" minlength="8" autocomplete="new-password" required>
+          </div>
+
+          <div class="form-option">
+            <input type="checkbox" id="agree-rules" required>
+            <label for="agree-rules">利用ルールに同意します</label>
+          </div>
+
+          <button type="submit" class="primary-button">アカウントを作成</button>
+        </form>
+      </div>
+    </section>
+
+
+    <!-- ================= FORGOT PASSWORD ================= -->
+    <section id="forgot-password" class="page-section" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">PASSWORD</p>
+          <h1>パスワードを忘れた場合</h1>
+        </div>
+
+        <p>登録したメールアドレスを入力してください。</p>
+
+        <form id="forgot-password-form" class="settings-form">
+          <div class="form-group">
+            <label for="forgot-password-email">メールアドレス</label>
+            <input type="email" id="forgot-password-email" name="email" autocomplete="email" required>
+          </div>
+
+          <button type="submit" class="primary-button">リセットメールを送信</button>
+        </form>
+      </div>
+    </section>
+
+
+    <!-- ================= ACCOUNT ================= -->
+    <section id="account" class="page-section" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">ACCOUNT</p>
+          <h1>アカウント</h1>
+        </div>
+
+        <!-- 未ログイン -->
+        <div class="account-panel" id="guest-account">
+          <h2>KAKIKOMIアカウント</h2>
+          <p>アカウントを作成すると、投稿や設定を管理できます。</p>
+
+          <div class="account-actions">
+            <a href="#login" class="primary-button">ログイン</a>
+            <a href="#Create_account" class="secondary-button">アカウント作成</a>
+          </div>
+        </div>
+
+        <!-- ログイン後 -->
+        <div class="account-panel" id="logged-in-account" hidden>
+          <div class="profile-header">
+            <div class="large-avatar">?</div>
+            <div>
+              <h2 id="account-username">ユーザー名</h2>
+              <p id="account-user-id">-</p>
+            </div>
+          </div>
+
+          <div class="account-actions">
+            <a href="#profile" class="secondary-button">プロフィール</a>
+            <a href="#my-posts" class="secondary-button">自分の投稿</a>
+            <a href="#bookmarks" class="secondary-button">ブックマーク</a>
+            <a href="#account-settings" class="secondary-button">アカウント設定</a>
+            <a href="#security-settings" class="secondary-button">セキュリティ</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ================= BOARD ================= -->
+    <section id="board" class="page-section" hidden>
+      <div class="section-inner">
+
+        <div class="page-header">
+          <div>
+            <p class="section-label">BOARD</p>
+            <h1>掲示板</h1>
+          </div>
+
+          <div class="page-header-actions">
+            <a href="#report" class="danger-button">通報する</a>
+            <a href="#create-post" class="primary-button">投稿する</a>
+          </div>
+        </div>
+
+        <!-- CSSに合わせて board-toolbar → filter-area -->
+        <div class="filter-area">
+          <label for="board-category-filter">掲示板</label>
+          <select id="board-category-filter">
+            <option value="">すべて</option>
+          </select>
+        </div>
+
+        <div class="post-list" id="post-list"></div>
+
+        <div id="no-posts" class="empty-state" hidden>
+          <p>まだ投稿がありません。</p>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= CREATE POST ================= -->
+    <section id="create-post" class="page-section" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">CREATE POST</p>
+          <h1>投稿を作成</h1>
+        </div>
+
+        <form id="post-form" class="settings-form">
+          <div class="form-group">
+            <label for="post-category">掲示板</label>
+            <select id="post-category" required>
+              <option value="">掲示板を選択</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="post-title">タイトル</label>
+            <input type="text" id="post-title" maxlength="100" required>
+          </div>
+
+          <div class="form-group">
+            <label for="post-content">本文</label>
+            <textarea id="post-content" maxlength="5000" required></textarea>
+            <div id="post-character-count" class="character-counter">0 / 5000</div>
+          </div>
+
+          <div class="form-group">
+            <label for="post-image">画像URL</label>
+            <input type="url" id="post-image" placeholder="https://...">
+          </div>
+
+          <div id="image-preview" class="image-preview" hidden></div>
+
+          <div class="form-option">
+            <input type="checkbox" id="allow-replies" checked>
+            <label for="allow-replies">返信を許可する</label>
+          </div>
+
+          <div class="form-option">
+            <input type="checkbox" id="allow-share" checked>
+            <label for="allow-share">共有を許可する</label>
+          </div>
+
+          <button type="submit" class="primary-button">投稿する</button>
+        </form>
+      </div>
+    </section>
+
+
+    <!-- ================= QUESTIONS ================= -->
+    <section id="questions" class="page-section" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">QUESTIONS</p>
+          <h1>質問</h1>
+        </div>
+        <div id="question-list" class="post-list"></div>
+      </div>
+    </section>
+
+
+    <!-- ================= CONSULTATIONS ================= -->
+    <section id="consultations" class="page-section" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">CONSULTATIONS</p>
+          <h1>相談</h1>
+        </div>
+        <div id="consultation-list" class="post-list"></div>
+      </div>
+    </section>
+
+
+    <!-- ================= SEARCH ================= -->
+    <section id="search" class="page-section" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">SEARCH</p>
+          <h1>検索</h1>
+        </div>
+
+        <form id="search-form" class="search-form">
+          <label for="search-input" class="visually-hidden">投稿を検索</label>
+          <input type="search" id="search-input" placeholder="投稿を検索">
+          <button type="submit" class="primary-button">検索</button>
+        </form>
+
+        <div id="search-results" class="post-list"></div>
+      </div>
+    </section>
+
+
+    <!-- ================= PROFILE ================= -->
+    <section id="profile" class="page-section" hidden>
+      <div class="section-inner">
+
+        <div class="profile-header" id="profile-header">
+          <div class="large-avatar">?</div>
+          <div>
+            <h1 id="profile-name">ユーザー</h1>
+            <p id="profile-description"></p>
+          </div>
+        </div>
+
+        <div class="profile-stats">
+          <div><strong id="profile-post-count">0</strong> <span>投稿</span></div>
+          <div><strong id="profile-followers">0</strong> <span>フォロワー</span></div>
+          <div><strong id="profile-following">0</strong> <span>フォロー中</span></div>
+        </div>
+
+        <button type="button" class="secondary-button" id="follow-button">フォロー</button>
+
+        <div class="post-list" id="profile-posts"></div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= MY POSTS ================= -->
+    <section id="my-posts" class="page-section" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">MY POSTS</p>
+          <h1>自分の投稿</h1>
+        </div>
+        <div id="my-post-list" class="post-list"></div>
+      </div>
+    </section>
+
+
+    <!-- ================= BOOKMARKS ================= -->
+    <section id="bookmarks" class="page-section" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">BOOKMARKS</p>
+          <h1>ブックマーク</h1>
+        </div>
+        <div id="bookmark-list" class="post-list"></div>
+      </div>
+    </section>
+
+
+    <!-- ================= NOTIFICATIONS ================= -->
+    <section id="notifications" class="page-section" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <div>
+            <p class="section-label">NOTIFICATIONS</p>
+            <h1>通知</h1>
+          </div>
+          <button type="button" class="secondary-button" id="mark-notifications-read">すべて既読</button>
+        </div>
+        <div class="notification-list" id="notification-list"></div>
+      </div>
+    </section>
+
+
+    <!-- ================= REPORT ================= -->
+    <section id="report" class="page-section" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">REPORT</p>
+          <h1>通報</h1>
+          <p>ルール違反などの投稿を通報できます。</p>
+        </div>
+
+        <form id="report-form" class="report-form">
+          <input type="hidden" id="report-post-id" name="postId">
+
+          <div class="form-group">
+            <label for="report-board-select">掲示板</label>
+            <select id="report-board-select" name="board" required>
+              <option value="">掲示板を選択してください</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="report-post-select">通報する投稿</label>
+            <select id="report-post-select" name="post" required>
+              <option value="">投稿を選択してください</option>
+            </select>
+          </div>
+
+          <div class="report-post-preview" id="report-post-preview" hidden>
+            <h2>選択した投稿</h2>
+            <p id="report-post-preview-text"></p>
+          </div>
+
+          <div class="form-group">
+            <label for="report-reason">通報理由</label>
+            <select id="report-reason" name="reason" required>
+              <option value="">選択してください</option>
+              <option value="spam">スパム・迷惑行為</option>
+              <option value="harassment">嫌がらせ</option>
+              <option value="illegal">不適切な内容</option>
+              <option value="copyright">著作権に関する問題</option>
+              <option value="impersonation">なりすまし</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="report-detail">詳細</label>
+            <textarea id="report-detail" name="detail" maxlength="2000" placeholder="問題の内容を入力してください"></textarea>
+          </div>
+
+          <button type="submit" class="danger-button">通報する</button>
+        </form>
+      </div>
+    </section>
+
+
+    <!-- ================= SHARE ================= -->
+    <section id="share" class="page-section" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">SHARE</p>
+          <h1>共有</h1>
+        </div>
+
+        <div class="share-panel">
+          <p>この投稿を共有できます。</p>
+
+          <div class="share-url-area">
+            <label for="share-url" class="visually-hidden">共有URL</label>
+            <input type="text" id="share-url" readonly>
+            <button type="button" class="primary-button" id="copy-share-url">URLをコピー</button>
+          </div>
+
+          <div class="share-options">
+            <button type="button" class="secondary-button" data-share="native">端末の共有機能</button>
+            <button type="button" class="secondary-button" data-share="copy">URLをコピー</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ================= PRIVATE BOARDS ================= -->
+    <section id="private-boards" class="page-section" hidden>
+      <div class="section-inner">
+
+        <div class="page-header">
+          <div>
+            <p class="section-label">PRIVATE BOARDS</p>
+            <h1>プライベート掲示板</h1>
+          </div>
+          <button type="button" class="primary-button" id="create-private-board-button">掲示板を作成</button>
+        </div>
+
+        <div class="board-list" id="private-board-list"></div>
+
+        <div class="private-board-join" id="private-board-join">
+          <h2>招待コードで参加</h2>
+
+          <form id="join-private-board-form" class="settings-form">
+            <div class="form-group">
+              <label for="private-board-code">招待コード</label>
+              <input type="text" id="private-board-code" maxlength="100" placeholder="招待コードを入力" required>
+            </div>
+            <button type="submit" class="primary-button">参加</button>
+          </form>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= PRIVATE BOARD DETAIL ================= -->
+    <section id="private-board" class="page-section" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <div>
+            <p class="section-label">PRIVATE BOARD</p>
+            <h1 id="private-board-title">限定掲示板</h1>
+            <p id="private-board-description"></p>
+          </div>
+          <button type="button" class="secondary-button" id="private-board-back">一覧に戻る</button>
+        </div>
+
+        <div class="private-board-security-card">
+          <span>メンバー限定・BAN/停止ユーザーはアクセス不可</span>
+          <span id="private-board-member-count"></span>
+        </div>
+
+        <div id="private-board-owner-tools" hidden>
+          <div class="account-panel">
+            <h2>掲示板設定</h2>
+            <form id="private-board-settings-form" class="settings-form">
+              <div class="form-group">
+                <label for="private-board-name-input">掲示板名</label>
+                <input id="private-board-name-input" maxlength="100" required>
+              </div>
+              <div class="form-group">
+                <label for="private-board-description-input">説明</label>
+                <textarea id="private-board-description-input" maxlength="1000"></textarea>
+              </div>
+              <button type="submit" class="primary-button">設定を保存</button>
+            </form>
+            <div class="form-group">
+              <label for="private-board-invite-code">招待コード</label>
+              <input id="private-board-invite-code" readonly>
+              <button type="button" class="secondary-button" id="private-board-copy-code">招待コードをコピー</button>
+            </div>
+          </div>
+
+          <div class="account-panel">
+            <h2>メンバー管理</h2>
+            <div id="private-board-member-list" class="board-list"></div>
+          </div>
+        </div>
+
+        <div id="private-board-post-form-wrap" class="account-panel">
+          <h2>投稿する</h2>
+          <form id="private-board-post-form" class="settings-form">
+            <div class="form-group">
+              <label for="private-board-post-title">タイトル</label>
+              <input id="private-board-post-title" maxlength="120" required>
+            </div>
+            <div class="form-group">
+              <label for="private-board-post-content">本文</label>
+              <textarea id="private-board-post-content" maxlength="5000" required></textarea>
+            </div>
+            <button type="submit" class="primary-button">投稿</button>
+          </form>
+        </div>
+
+        <div id="private-board-post-list" class="admin-post-list"></div>
+      </div>
+    </section>
+
+
+    <!-- ================= ACCOUNT SETTINGS ================= -->
+    <section id="account-settings" class="page-section" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">SETTINGS</p>
+          <h1>アカウント設定</h1>
+        </div>
+
+        <form id="profile-settings-form" class="settings-form">
+          <div class="form-group">
+            <label for="profile-username-input">ユーザー名</label>
+            <!-- JSが #profile-username-input を読むのでIDを合わせた -->
+            <input type="text" id="profile-username-input" maxlength="30">
+          </div>
+
+          <div class="form-group">
+            <label for="profile-bio-input">自己紹介</label>
+            <!-- JSが #profile-bio-input を読むのでIDを合わせた -->
+            <textarea id="profile-bio-input" maxlength="500"></textarea>
+          </div>
+
+          <button type="submit" class="primary-button">保存</button>
+        </form>
+
+        <div class="account-panel user-display-settings">
+          <h2>表示設定</h2>
+          <div class="form-option">
+            <input type="checkbox" id="user-dark-mode">
+            <label for="user-dark-mode">ダークモード</label>
+          </div>
+          <p class="settings-help">この設定は自分のアカウントだけに保存されます。</p>
+        </div>
+
+        <hr>
+
+        <div class="settings-danger-zone">
+          <h2>アカウント</h2>
+
+          <!-- data-action="logout" を追加（JSが見ているのはこれ） -->
+          <button type="button" class="secondary-button" id="logout-button" data-action="logout">ログアウト</button>
+          <button type="button" class="danger-button" id="delete-account-button">アカウントを削除</button>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ================= SECURITY SETTINGS ================= -->
+    <section id="security-settings" class="page-section" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">SECURITY</p>
+          <h1>セキュリティ</h1>
+        </div>
+
+        <form id="change-password-form" class="settings-form">
+          <label for="change-password-username" class="visually-hidden">メールアドレス</label>
+          <input type="email" id="change-password-username" name="username" autocomplete="username" class="visually-hidden" tabindex="-1">
+
+          <div class="form-group">
+            <label for="current-password">現在のパスワード</label>
+            <input type="password" id="current-password" name="current-password" autocomplete="current-password" required>
+          </div>
+
+          <div class="form-group">
+            <label for="new-password">新しいパスワード</label>
+            <input type="password" id="new-password" name="new-password" minlength="8" autocomplete="new-password" required>
+          </div>
+
+          <div class="form-group">
+            <label for="new-password-confirm">新しいパスワード（確認）</label>
+            <input type="password" id="new-password-confirm" name="new-password-confirm" minlength="8" autocomplete="new-password" required>
+          </div>
+
+          <button type="submit" class="primary-button">パスワードを変更</button>
+        </form>
+
+        <div class="security-notice" id="forced-password-change" hidden>
+          <h2>パスワードの変更が必要です</h2>
+          <p>管理者によってパスワード変更が必要に設定されています。</p>
+          <a href="#security-settings" class="primary-button">パスワードを変更する</a>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ================= BOT ================= -->
+    <section id="bot" class="page-section" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <div>
+            <p class="section-label">BOT</p>
+            <h1>Bot</h1>
+            <p>KAKIKOMIのBot一覧です。</p>
+          </div>
+        </div>
+
+        <div id="bot-list" class="bot-list"></div>
+
+        <div id="bot-management" class="bot-management" hidden>
+          <h2>Bot管理</h2>
+          <button type="button" class="primary-button" id="create-bot-button">Botを作成</button>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ================= RULES ================= -->
+    <section id="rules" class="page-section" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">RULES</p>
+          <h1>利用ルール</h1>
+        </div>
+
+        <ol class="rules-list">
+          <li>他の利用者を傷つける投稿は禁止です。</li>
+          <li>法律に違反する投稿は禁止です。</li>
+          <li>個人情報を無断で公開しないでください。</li>
+          <li>スパムや迷惑行為は禁止です。</li>
+          <li>他の利用者が安心して利用できるようにしてください。</li>
+        </ol>
+      </div>
+    </section>
+
+
+    <!-- ================= PRIVACY ================= -->
+    <section id="privacy" class="page-section" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">PRIVACY</p>
+          <h1>プライバシー</h1>
+        </div>
+        <p>KAKIKOMIでは、サービス提供に必要な情報を適切に取り扱います。</p>
+      </div>
+    </section>
+
+
+    <!-- ================= CONTACT ================= -->
+    <section id="contact" class="page-section" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">CONTACT</p>
+          <h1>お問い合わせ</h1>
+        </div>
+        <p>KAKIKOMIに関するお問い合わせはこちらから行えます。</p>
+      </div>
+    </section>
+
+
+    <!-- ================= ADMIN DASHBOARD ================= -->
+    <section id="admin" class="page-section admin-page" hidden>
+      <div class="section-inner">
+
+        <div class="admin-header">
+          <div>
+            <p class="section-label">ADMINISTRATION</p>
+            <h1>ADMINPAGE</h1>
+            <p>KAKIKOMI管理者用ページ</p>
+          </div>
+          <span class="admin-badge">ADMIN</span>
+        </div>
+
+        <div class="home-card admin-command-center">
+          <h2>管理コントロールセンター</h2>
+          <p>主要な監視・管理画面へすぐ移動できます。危険な操作は各画面で確認を要求します。</p>
+          <div class="hero-actions">
+            <a href="#admin-security" class="secondary-button">セキュリティ監視</a>
+            <a href="#admin-logs" class="secondary-button">全ログ</a>
+            <a href="#admin-advanced" class="secondary-button">アラート</a>
+            <a href="#admin-diagnostics" class="secondary-button">システム診断</a>
+            <button type="button" class="secondary-button" id="admin-refresh-all">全管理情報を更新</button>
+          </div>
+          <div class="form-option">
+            <input type="checkbox" id="admin-auto-refresh">
+            <label for="admin-auto-refresh">セキュリティ情報を30秒ごとに自動更新</label>
+          </div>
+        </div>
+
+        <div class="admin-dashboard">
+          <div class="admin-stat-card"><span>ユーザー</span><strong id="admin-user-count">0</strong></div>
+          <div class="admin-stat-card"><span>アクティブ</span><strong id="admin-active-user-count">0</strong></div>
+          <div class="admin-stat-card"><span>投稿</span><strong id="admin-post-count">0</strong></div>
+          <div class="admin-stat-card"><span>返信</span><strong id="admin-reply-count">0</strong></div>
+          <div class="admin-stat-card"><span>通報待ち</span><strong id="admin-report-count">0</strong></div>
+          <div class="admin-stat-card"><span>BAN中</span><strong id="admin-ban-count">0</strong></div>
+          <div class="admin-stat-card"><span>有効セッション</span><strong id="admin-session-stat">0</strong></div>
+          <div class="admin-stat-card"><span>不審ログ24h</span><strong id="admin-suspicious-stat">0</strong></div>
+        </div>
+
+        <nav class="admin-navigation" aria-label="管理メニュー">
+          <div class="admin-nav-category">
+            <h2>📋 ログ</h2>
+            <div class="admin-nav-links">
+              <a href="#admin-logs">全ログ</a>
+              <a href="#admin-advanced">高度なログ・アラート</a>
+            </div>
+          </div>
+          <div class="admin-nav-category">
+            <h2>👤 ユーザー管理</h2>
+            <div class="admin-nav-links">
+              <a href="#admin-users">ユーザー一覧</a>
+              <a href="#admin-user-detail">ユーザー詳細</a>
+              <a href="#admin-ip-ban">BAN・IP制限</a>
+            </div>
+          </div>
+          <div class="admin-nav-category">
+            <h2>⚙️ サイト設定</h2>
+            <div class="admin-nav-links">
+              <a href="#admin-site-settings">サイト設定</a>
+              <a href="#admin-private-boards">掲示板管理</a>
+              <a href="#admin-bots">Bot管理</a>
+            </div>
+          </div>
+          <div class="admin-nav-category">
+            <h2>🛡️ セキュリティ</h2>
+            <div class="admin-nav-links">
+              <a href="#admin-security">セキュリティ監視</a>
+              <a href="#admin-advanced">高度な管理</a>
+            </div>
+          </div>
+          <div class="admin-nav-category">
+            <h2>🔑 セッション</h2>
+            <div class="admin-nav-links">
+              <a href="#admin-sessions">セッション管理</a>
+            </div>
+          </div>
+          <div class="admin-nav-category">
+            <h2>🧪 システム診断</h2>
+            <div class="admin-nav-links">
+              <a href="#admin-diagnostics">システム診断</a>
+            </div>
+          </div>
+          <div class="admin-nav-category">
+            <h2>📝 投稿管理</h2>
+            <div class="admin-nav-links">
+              <a href="#admin-posts">投稿管理</a>
+            </div>
+          </div>
+          <div class="admin-nav-category">
+            <h2>🚨 通報管理</h2>
+            <div class="admin-nav-links">
+              <a href="#admin-reports">通報管理</a>
+            </div>
+          </div>
+          <div class="admin-nav-category">
+            <h2>🔔 通知・お知らせ</h2>
+            <div class="admin-nav-links">
+              <a href="#admin-announcements">お知らせ管理</a>
+              <a href="#admin-notifications">全員にメッセージ送信</a>
+            </div>
+          </div>
+          <div class="admin-nav-category">
+            <h2>🔧 管理者設定</h2>
+            <div class="admin-nav-links">
+              <a href="#admin-users">管理者・権限</a>
+              <a href="#admin-second-factor">管理者追加認証</a>
+              <a href="#admin-emergency">緊急プロトコル</a>
+            </div>
+          </div>
+        </nav>    </div>
+    </section>
+
+
+    <!-- ================= ADMIN SESSIONS ================= -->
+    <section id="admin-sessions" class="page-section admin-page" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">SESSIONS</p>
+          <h1>セッション管理</h1>
+          <p>現在有効なログインセッションを確認できます。</p>
+        </div>
+        <div class="admin-section-header">
+          <span id="admin-session-count">0件</span>
+          <button type="button" class="secondary-button" id="admin-session-refresh">更新</button>
+        </div>
+        <div class="admin-table-wrapper">
+          <table class="admin-table"><thead><tr>
+            <th>ユーザー</th><th>メール</th><th>セッションID</th><th>最終更新</th><th>有効期限</th><th>IP</th>
+          </tr></thead><tbody id="admin-sessions-table-body"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ADMIN SECURITY ================= -->
+    <section id="admin-security" class="page-section admin-page" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">SECURITY MONITOR</p>
+          <h1>セキュリティ監視</h1>
+          <p>アクセス監視・不審ログ・検知イベントを確認できます。</p>
+        </div>
+        <div class="admin-section-header">
+          <label class="admin-security-filter"><input type="checkbox" id="admin-security-suspicious-only"><span>不審なログだけ表示</span></label>
+          <button type="button" class="secondary-button" id="admin-security-refresh">更新</button>
+        </div>
+        <div class="admin-table-wrapper">
+          <table class="admin-table"><thead><tr>
+            <th>日時</th><th>発生元</th><th>IP</th><th>結果</th><th>不審</th><th>理由</th><th>イベント</th>
+          </tr></thead><tbody id="admin-security-table-body"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ADMIN DIAGNOSTICS ================= -->
+    <section id="admin-diagnostics" class="page-section admin-page" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">SYSTEM DIAGNOSTICS</p>
+          <h1>システム診断</h1>
+          <p>認証・PostgREST・権限・RLS・監査ログの状態を確認します。</p>
+        </div>
+        <div id="admin-diagnostics-grid" class="admin-dashboard"></div>
+        <div class="account-panel" id="admin-diagnostics-detail">
+          <p>診断結果を読み込んでいます...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ADMIN ADVANCED ================= -->
+    <section id="admin-advanced" class="page-section admin-page" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">ADVANCED ADMIN</p>
+          <h1>高度な管理</h1>
+          <p>IP履歴・アラート・Auth整合性・限定掲示板の詳細管理をまとめて確認できます。</p>
+        </div>
+
+        <div class="admin-section-header">
+          <div>
+            <button type="button" class="secondary-button" id="admin-advanced-refresh">更新</button>
+            <button type="button" class="secondary-button" id="admin-generate-alerts">アラートを検知</button>
+          </div>
+        </div>
+
+        <div class="admin-dashboard" id="admin-security-summary-grid"></div>
+
+        <div class="home-card">
+          <h2>Auth / プロフィール整合性</h2>
+          <div id="admin-consistency-list" class="admin-post-list"></div>
+        </div>
+
+        <div class="home-card">
+          <h2>管理アラート</h2>
+          <div class="admin-table-wrapper">
+            <table class="admin-table"><thead><tr><th>日時</th><th>重要度</th><th>種類</th><th>内容</th><th>操作</th></tr></thead>
+            <tbody id="admin-alert-table-body"></tbody></table>
+          </div>
+        </div>
+
+        <div class="home-card">
+          <h2>IP BAN履歴</h2>
+          <form id="admin-ip-history-search-form" class="search-form">
+            <input id="admin-ip-history-search" type="search" placeholder="IPアドレスで検索">
+            <button type="submit" class="secondary-button">検索</button>
+          </form>
+          <div class="admin-table-wrapper">
+            <table class="admin-table"><thead><tr><th>日時</th><th>IP</th><th>操作</th><th>理由</th></tr></thead>
+            <tbody id="admin-ip-history-table-body"></tbody></table>
+          </div>
+        </div>
+
+        <div class="home-card">
+          <h2>限定掲示板の管理</h2>
+          <div class="admin-table-wrapper">
+            <table class="admin-table"><thead><tr><th>掲示板</th><th>状態</th><th>メンバー</th><th>操作</th></tr></thead>
+            <tbody id="admin-advanced-board-table-body"></tbody></table>
+          </div>
+        </div>
+
+        <div class="home-card">
+          <h2>限定掲示板アクセスログ</h2>
+          <div class="admin-table-wrapper">
+            <table class="admin-table"><thead><tr><th>日時</th><th>掲示板</th><th>ユーザー</th><th>IP</th><th>結果</th><th>理由</th></tr></thead>
+            <tbody id="admin-board-access-table-body"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ================= ADMIN LOGS ================= -->
+    <section id="admin-logs" class="page-section admin-page" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">AUDIT LOG</p>
+          <h1>ログ</h1>
+          <p>アカウント・投稿・通報・IP・管理操作などの履歴を確認できます。</p>
+        </div>
+
+        <div class="admin-section-header">
+          <div>
+            <label for="admin-log-action-filter">種類</label>
+            <select id="admin-log-action-filter">
+              <option value="">すべて</option>
+              <option value="INSERT">作成</option>
+              <option value="UPDATE">変更</option>
+              <option value="DELETE">削除</option>
+            </select>
+          </div>
+          <button type="button" class="secondary-button" id="admin-log-refresh">更新</button>
+        </div>
+
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>日時</th>
+                <th>種類</th>
+                <th>対象</th>
+                <th>ユーザーID</th>
+                <th>IP</th>
+                <th>詳細</th>
+              </tr>
+            </thead>
+            <tbody id="admin-logs-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ================= ADMIN USERS ================= -->
+    <section id="admin-users" class="page-section admin-page" hidden>
+      <div class="section-inner">
+
+        <div class="admin-section-header">
+          <div>
+            <p class="section-label">USERS</p>
+            <h1>ユーザー管理</h1>
+          </div>
+        </div>
+
+        <form id="admin-user-search-form" class="search-form">
+          <label for="admin-user-search" class="visually-hidden">ユーザー名を検索</label>
+          <input type="search" id="admin-user-search" placeholder="ユーザー名を検索">
+          <button type="submit" class="primary-button">検索</button>
+        </form>
+
+        <div class="admin-table-wrapper" id="admin-user-list">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <!-- JSが出力する5列に合わせた -->
+                <th>ユーザー名</th>
+                <th>メール</th>
+                <th>権限</th>
+                <th>状態</th>
+                <th>セッション</th>
+                <th>記録IP</th>
+                <th>作成日</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="admin-users-table-body"></tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= ADMIN USER DETAIL ================= -->
+    <section id="admin-user-detail" class="page-section admin-page" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <div>
+            <p class="section-label">USER CONTROL CENTER</p>
+            <h1>ユーザー詳細</h1>
+            <p>基本情報・セキュリティ・投稿・通報・監査履歴を1人のユーザー単位で確認できます。</p>
+          </div>
+          <div class="page-header-actions">
+            <button type="button" class="secondary-button" id="admin-user-detail-refresh">更新</button>
+            <a href="#admin-users" class="secondary-button">ユーザー一覧へ</a>
+          </div>
+        </div>
+
+        <input type="hidden" id="admin-target-user-id">
+
+        <div class="admin-user-hero">
+          <div class="admin-user-avatar" id="admin-target-avatar">?</div>
+          <div class="admin-user-hero-main">
+            <h2 id="admin-target-username">ユーザー</h2>
+            <p id="admin-target-email">メールアドレスを読み込み中...</p>
+            <small id="admin-target-id"></small>
+          </div>
+          <div class="admin-user-badges" id="admin-target-badges"></div>
+        </div>
+
+        <div class="admin-user-stat-grid">
+          <div class="admin-stat-card"><span>登録日</span><strong id="admin-user-stat-created">-</strong></div>
+          <div class="admin-stat-card"><span>最終ログイン</span><strong id="admin-user-stat-login">-</strong></div>
+          <div class="admin-stat-card"><span>セッション</span><strong id="admin-user-stat-sessions">-</strong></div>
+          <div class="admin-stat-card"><span>記録IP</span><strong id="admin-user-stat-ips">-</strong></div>
+          <div class="admin-stat-card"><span>投稿</span><strong id="admin-user-stat-posts">-</strong></div>
+          <div class="admin-stat-card"><span>返信</span><strong id="admin-user-stat-replies">-</strong></div>
+          <div class="admin-stat-card"><span>通報した件数</span><strong id="admin-user-stat-reports">-</strong></div>
+          <div class="admin-stat-card"><span>受けた通報</span><strong id="admin-user-stat-reported">-</strong></div>
+        </div>
+
+        <div class="admin-user-grid">
+          <section class="home-card">
+            <div class="admin-section-header">
+              <div><h2>アカウント・権限</h2><p>状態と権限を変更できます。</p></div>
+            </div>
+            <form id="admin-user-settings-form" class="settings-form">
+              <div class="form-group">
+                <label for="admin-target-status">アカウント状態</label>
+                <select id="admin-target-status">
+                  <option value="active">有効</option>
+                  <option value="suspended">停止</option>
+                  <option value="banned">BAN</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="admin-target-role">権限ロール</label>
+                <select id="admin-target-role">
+                  <option value="user">User</option>
+                  <option value="moderator">Moderator</option>
+                  <option value="admin">Admin</option>
+                  <option value="super_admin">Super Admin</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="admin-target-ban-reason">BAN/停止理由</label>
+                <input id="admin-target-ban-reason" maxlength="500">
+              </div>
+              <div class="form-option"><input type="checkbox" id="admin-disable-posting"><label for="admin-disable-posting">投稿を禁止</label></div>
+              <div class="form-option"><input type="checkbox" id="admin-disable-replies"><label for="admin-disable-replies">返信を禁止</label></div>
+              <div class="form-option"><input type="checkbox" id="admin-force-password-change"><label for="admin-force-password-change">次回ログイン時にパスワード変更を要求</label></div>
+              <div class="form-actions">
+                <button type="submit" class="primary-button">設定を保存</button>
+                <button type="button" class="secondary-button" id="admin-user-copy-id">ユーザーIDをコピー</button>
+              </div>
+              <div class="admin-danger-zone">
+                <strong>危険な操作</strong>
+                <p>強制ログアウトは全端末に適用されます。完全削除は元に戻せません。</p>
+                <div class="form-actions">
+                  <button type="button" class="danger-button" id="admin-force-logout">全端末を強制ログアウト</button>
+                  <button type="button" class="danger-button" id="admin-force-delete">アカウントを完全削除</button>
+                </div>
+              </div>
+            </form>
+          </section>
+
+          <section class="home-card">
+            <div class="admin-section-header">
+              <div><h2>セキュリティ情報</h2><p>ログインIPと投稿・返信時のIPを確認します。</p></div>
+            </div>
+            <div id="admin-user-ips" class="admin-user-detail-list"></div>
+          </section>
+        </div>
+
+        <div class="admin-user-grid">
+          <section class="home-card">
+            <div class="admin-section-header"><div><h2>投稿履歴</h2><p>このユーザーが作成した投稿です。</p></div></div>
+            <div id="admin-user-posts" class="admin-user-detail-list"></div>
+          </section>
+          <section class="home-card">
+            <div class="admin-section-header"><div><h2>返信履歴</h2><p>このユーザーが作成した返信です。</p></div></div>
+            <div id="admin-user-replies" class="admin-user-detail-list"></div>
+          </section>
+        </div>
+
+        <div class="admin-user-grid">
+          <section class="home-card">
+            <div class="admin-section-header"><div><h2>通報履歴</h2><p>送信した通報と、投稿が受けた通報を確認します。</p></div></div>
+            <div id="admin-user-reports" class="admin-user-detail-list"></div>
+          </section>
+          <section class="home-card">
+            <div class="admin-section-header"><div><h2>監査・操作履歴</h2><p>このユーザーが関係した管理・システム操作を確認します。</p></div></div>
+            <div id="admin-user-audit" class="admin-user-detail-list"></div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ADMIN POSTS ================= -->
+    <section id="admin-posts" class="page-section admin-page" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">POSTS</p>
+          <h1>投稿管理</h1>
+        </div>
+
+        <!-- JSがinnerHTMLで<article>を流し込むので、tableをやめて
+             CSSの .admin-post-list（grid）に合わせた -->
+        <div class="admin-post-list" id="admin-post-list"></div>
+      </div>
+    </section>
+
+
+    <!-- ================= ADMIN REPORTS ================= -->
+    <section id="admin-reports" class="page-section admin-page" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">REPORTS</p>
+          <h1>通報管理</h1>
+        </div>
+
+        <!-- 上と同じ理由でtableをやめた -->
+        <div class="report-list" id="admin-report-list"></div>
+      </div>
+    </section>
