@@ -2744,7 +2744,7 @@
     if(!userId){ navigate("#admin-users"); return; }
 
     const [detailResult, postsResult, repliesResult, reportsSentResult, userPostsForReports, auditResult, sessionsResult] = await Promise.all([
-      supabase.rpc("admin_list_user_details", { limit_count: 200, search_text: null }),
+      supabase.rpc("admin_list_user_details", { limit_count: 1, search_text: userId }),
       supabase.from("posts").select("id,title,content,category,created_at,updated_at").eq("user_id", userId).order("created_at",{ascending:false}).limit(50),
       supabase.from("replies").select("id,post_id,content,created_at").eq("user_id", userId).order("created_at",{ascending:false}).limit(50),
       supabase.from("reports").select("id,post_id,reason,detail,status,created_at").eq("reporter_id", userId).order("created_at",{ascending:false}).limit(50),
