@@ -2071,6 +2071,47 @@
     await loadNotifications();
   }
 
+  async function loadBroadcastNotificationHistory() {
+    if (!(await ensureAdmin())) return;
+
+    const list = document.getElementById("admin-notification-history");
+    if (!list) return;
+    list.innerHTML = '<div class="empty-state"><p>読み込み中...</p></div>';
+
+    const { data, error } = await supabase
+      .from("site_notifications")
+      .select("id,title,message,created_at,created_by")
+      .is("recipient_id", null)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error("loadBroadcastNotificationHistory:", error);
+      list.innerHTML = '<div class="empty-state"><p>送信履歴を読み込めませんでした。</p></div>';
+      return;
+    }
+
+    if (!data?.length) {
+      list.innerHTML = '<div class="empty-state"><p>まだ全員向けメッセージはありません。</p></div>';
+      return;
+    }
+
+    list.innerHTML = data.map(item => `
+      <article class="account-panel admin-notification-history-row">
+        <div>
+          <strong>${escapeHTML(item.title)}</strong>
+          <span class="admin-announcement-status">全員に送信</span>
+        </div>
+        <p>${escapeHTML(item.message)}</p>
+        <small>送信日時：${escapeHTML(formatDate(item.created_at))}</small>
+      </article>
+    `).join("");
+  }
+
+  async function clearAdminNotificationForm() {
+    document.getElementById("admin-notification-form")?.reset();
+  }
+
   async function sendBroadcastNotification() {
     if (!(await ensureAdmin())) return;
 
@@ -2079,6 +2120,10 @@
 
     if (!title || !message) {
       toast("タイトルとメッセージを入力してください。", "error");
+      return;
+    }
+
+    if (!confirm("このメッセージを全ユーザーに送信します。送信後は取り消せません。続行しますか？")) {
       return;
     }
 
@@ -2093,12 +2138,13 @@
 
     if (error) {
       console.error("sendBroadcastNotification:", error);
-      toast("全員への通知を送信できませんでした。", "error");
+      toast("全員へのメッセージを送信できませんでした。", "error");
       return;
     }
 
-    document.getElementById("admin-notification-form")?.reset();
-    toast("全員に通知を送信しました。", "success");
+    await clearAdminNotificationForm();
+    await loadBroadcastNotificationHistory();
+    toast("全員にメッセージを送信しました。", "success");
   }
 
   async function loadPublicAnnouncements() {
