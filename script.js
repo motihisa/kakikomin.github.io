@@ -367,6 +367,7 @@
       case "admin-private-boards": loadAdminPrivateBoards(); break;
       case "admin-bots": loadAdminBots(); break;
       case "admin-logs": loadAdminLogs(); break;
+      case "admin-user-detail": loadAdminUserDetail(); break;
       default:
         if (route.startsWith("admin")) loadAdminData();
     }
@@ -2715,21 +2716,135 @@
     if(!(await ensureAdmin()))return;
     const {data,error}=await supabase.rpc("admin_list_user_details",{limit_count:200,search_text:value?.trim()||null});
     if(error){console.error(error);toast("ユーザー検索に失敗しました。","error");return;}
-    renderAdminUsers((data||[]).map(u=>({...u,created_at:u.created_at})));
+    state.users = data || [];
+    renderAdminUsers(state.users);
   }
 
-  function openAdminUserDetail(userId){
-    const user=state.users.find(x=>x.id===userId)||{};
-    $("#admin-target-user-id").value=user.id||userId;
-    $("#admin-target-status").value=user.status||"active";
-    $("#admin-target-role").value=user.role||"user";
-    $("#admin-target-ban-reason").value=user.ban_reason||"";
-    $("#admin-disable-posting").checked=Boolean(user.disable_posting);
-    $("#admin-disable-replies").checked=Boolean(user.disable_replies);
-    $("#admin-force-password-change").checked=Boolean(user.force_password_change);
-    setText("admin-target-username",user.username||"ユーザー");
-    renderAdminUserIps(user.id||userId);
+  async function openAdminUserDetail(userId){
+    if(!(await ensureAdmin())) return;
+    const user = state.users.find(x => String(x.id) === String(userId)) || { id: userId };
+    $("#admin-target-user-id").value = user.id;
+    $("#admin-target-status").value = user.status || "active";
+    $("#admin-target-role").value = user.role || "user";
+    $("#admin-target-ban-reason").value = user.ban_reason || "";
+    $("#admin-disable-posting").checked = Boolean(user.disable_posting);
+    $("#admin-disable-replies").checked = Boolean(user.disable_replies);
+    $("#admin-force-password-change").checked = Boolean(user.force_password_change);
+    setText("admin-target-username", user.username || "ユーザー");
+    setText("admin-target-email", user.email || "メールアドレスを確認中...");
+    setText("admin-target-id", user.id ? "ID: " + user.id : "");
+    const avatar = $("#admin-target-avatar");
+    if (avatar) avatar.textContent = (user.username || "ユーザー").charAt(0) || "?";
     navigate("#admin-user-detail");
+  }
+
+  async function loadAdminUserDetail(){
+    if(!(await ensureAdmin())) return;
+    const userId = $("#admin-target-user-id")?.value;
+    if(!userId){ navigate("#admin-users"); return; }
+
+    const [detailResult, postsResult, repliesResult, reportsSentResult, userPostsForReports, auditResult, sessionsResult] = await Promise.all([
+      supabase.rpc("admin_list_user_details", { limit_count: 200, search_text: null }),
+      supabase.from("posts").select("id,title,content,category,created_at,updated_at").eq("user_id", userId).order("created_at",{ascending:false}).limit(50),
+      supabase.from("replies").select("id,post_id,content,created_at").eq("user_id", userId).order("created_at",{ascending:false}).limit(50),
+      supabase.from("reports").select("id,post_id,reason,detail,status,created_at").eq("reporter_id", userId).order("created_at",{ascending:false}).limit(50),
+      supabase.from("posts").select("id").eq("user_id", userId).limit(200),
+      supabase.rpc("admin_list_audit_logs", { limit_count: 200, action_filter: null }),
+      supabase.rpc("admin_list_sessions", { limit_count: 200 })
+    ]);
+
+    const user = (detailResult.data || []).find(u => String(u.id) === String(userId));
+    if(!user){
+      toast("ユーザー情報を取得できませんでした。","error");
+      navigate("#admin-users");
+      return;
+    }
+
+    state.users = state.users.filter(u => String(u.id) !== String(userId));
+    state.users.push(user);
+
+    $("#admin-target-status").value = user.status || "active";
+    $("#admin-target-role").value = user.role || "user";
+    $("#admin-target-ban-reason").value = user.ban_reason || "";
+    $("#admin-disable-posting").checked = Boolean(user.disable_posting);
+    $("#admin-disable-replies").checked = Boolean(user.disable_replies);
+    $("#admin-force-password-change").checked = Boolean(user.force_password_change);
+
+    setText("admin-target-username", user.username || "ユーザー");
+    setText("admin-target-email", user.email || "メールアドレス未取得");
+    setText("admin-target-id", "ID: " + user.id);
+    const avatar = $("#admin-target-avatar");
+    if(avatar) avatar.textContent = (user.username || "ユーザー").charAt(0) || "?";
+
+    const badges = $("#admin-target-badges");
+    if(badges){
+      badges.innerHTML = [
+        user.role ? `<span class="admin-user-badge">権限: ${escapeHTML(user.role)}</span>` : "",
+        user.status ? `<span class="admin-user-badge">状態: ${escapeHTML(user.status)}</span>` : "",
+        user.force_password_change ? '<span class="admin-user-badge">次回パスワード変更</span>' : "",
+        user.disable_posting ? '<span class="admin-user-badge">投稿制限</span>' : "",
+        user.disable_replies ? '<span class="admin-user-badge">返信制限</span>' : ""
+      ].join("");
+    }
+
+    setText("admin-user-stat-created", formatDate(user.created_at) || "-");
+    setText("admin-user-stat-login", formatDate(user.last_sign_in_at) || "記録なし");
+    setText("admin-user-stat-sessions", String(user.session_count ?? 0));
+    setText("admin-user-stat-ips", String(user.ip_count ?? 0));
+    setText("admin-user-stat-posts", String((postsResult.data || []).length));
+    setText("admin-user-stat-replies", String((repliesResult.data || []).length));
+    setText("admin-user-stat-reports", String((reportsSentResult.data || []).length));
+
+    const postIds = (userPostsForReports.data || []).map(p => p.id);
+    let receivedReports = [];
+    if(postIds.length){
+      const rr = await supabase.from("reports").select("id,post_id,reason,detail,status,created_at,reporter_id").in("post_id", postIds).order("created_at",{ascending:false}).limit(50);
+      if(!rr.error) receivedReports = rr.data || [];
+    }
+    setText("admin-user-stat-reported", String(receivedReports.length));
+
+    const listHtml = (items, empty, render) =>
+      items.length ? items.map(render).join("") : `<div class="empty-state"><p>${escapeHTML(empty)}</p></div>`;
+
+    const posts = postsResult.data || [];
+    const replies = repliesResult.data || [];
+    const sentReports = reportsSentResult.data || [];
+    const audits = (auditResult.data || []).filter(a =>
+      String(a.actor_user_id || "") === String(userId) || String(a.target_user_id || "") === String(userId)
+    );
+    const sessions = (sessionsResult.data || []).filter(s =>
+      String(s.user_id || "") === String(userId) || String(s.email || "") === String(user.email || "")
+    );
+
+    const ipsBox = $("#admin-user-ips");
+    if(ipsBox) ipsBox.innerHTML = '<p>読み込み中...</p>';
+    const [loginIps, contentIps] = await Promise.all([
+      supabase.from("user_ips").select("ip_address,first_seen,last_seen,seen_count").eq("user_id",userId).order("last_seen",{ascending:false}).limit(50),
+      supabase.from("content_ips").select("kind,ip_address,created_at,target_id").eq("user_id",userId).order("created_at",{ascending:false}).limit(50)
+    ]);
+    if(ipsBox){
+      const loginRows = loginIps.data || [];
+      const contentRows = contentIps.data || [];
+      ipsBox.innerHTML = `
+        ${loginRows.length ? '<h3>ログインIP</h3>' + loginRows.map(x => `<div class="admin-user-detail-row"><strong>${escapeHTML(x.ip_address || "記録なし")}</strong><small>初回 ${escapeHTML(formatDate(x.first_seen))} ・ 最終 ${escapeHTML(formatDate(x.last_seen))} ・ ${escapeHTML(String(x.seen_count || 0))}回</small></div>`).join("") : '<div class="empty-state"><p>ログインIPの記録はありません。</p></div>'}
+        ${contentRows.length ? '<h3>投稿・返信IP</h3>' + contentRows.map(x => `<div class="admin-user-detail-row"><strong>${escapeHTML(x.ip_address || "記録なし")}</strong><small>${x.kind === "post" ? "投稿" : "返信"} ・ ${escapeHTML(formatDate(x.created_at))}</small></div>`).join("") : ""}
+      `;
+    }
+
+    const postsBox=$("#admin-user-posts");
+    if(postsBox) postsBox.innerHTML=listHtml(posts,"投稿はありません。",p=>`<div class="admin-user-detail-row"><strong>${escapeHTML(p.title || "無題")}</strong><small>${escapeHTML(categoryName(p.category))} ・ ${escapeHTML(formatDate(p.created_at))}</small><p>${escapeHTML(p.content || "")}</p></div>`);
+    const repliesBox=$("#admin-user-replies");
+    if(repliesBox) repliesBox.innerHTML=listHtml(replies,"返信はありません。",p=>`<div class="admin-user-detail-row"><strong>投稿ID: ${escapeHTML(p.post_id)}</strong><small>${escapeHTML(formatDate(p.created_at))}</small><p>${escapeHTML(p.content || "")}</p></div>`);
+    const reportsBox=$("#admin-user-reports");
+    if(reportsBox) reportsBox.innerHTML=listHtml([...sentReports.map(x=>({...x,_type:"送信"})),...receivedReports.map(x=>({...x,_type:"受信"}))],"通報履歴はありません。",p=>`<div class="admin-user-detail-row"><strong>${escapeHTML(p._type)} ・ ${escapeHTML(p.reason || "理由なし")}</strong><small>${escapeHTML(p.status || "pending")} ・ ${escapeHTML(formatDate(p.created_at))} ・ 投稿ID: ${escapeHTML(p.post_id || "-")}</small><p>${escapeHTML(p.detail || "")}</p></div>`);
+    const auditBox=$("#admin-user-audit");
+    if(auditBox) auditBox.innerHTML=listHtml(audits,"関連する監査ログはありません。",a=>`<div class="admin-user-detail-row"><strong>${escapeHTML(a.action || "操作")}</strong><small>${escapeHTML(formatDate(a.created_at))} ・ IP: ${escapeHTML(a.ip_address || "記録なし")}</small><p>${escapeHTML(a.table_name || "-")} / ${escapeHTML(a.record_id || "-")}</p></div>`);
+
+    // セッションは既存のセッションRPCに含まれる範囲だけ表示し、秘密情報は表示しない。
+    const sessionSummary = sessions.length ? `<h3>関連セッション: ${sessions.length}件</h3>` : "";
+    if(ipsBox && sessionSummary){
+      ipsBox.insertAdjacentHTML("afterbegin", sessionSummary);
+    }
   }
 
   async function saveAdminUser(){
@@ -3267,6 +3382,11 @@
       if (openPrivate) location.hash = `#private-board-${openPrivate.dataset.openPrivateBoard}`;
       if (closest("#mark-notifications-read")) comingSoon("既読機能");
       if (closest("#admin-force-logout")) forceLogoutUser();
+      if (closest("#admin-user-detail-refresh")) loadAdminUserDetail();
+      if (closest("#admin-user-copy-id")) {
+        const id = $("#admin-target-user-id")?.value || "";
+        if (id && navigator.clipboard?.writeText) navigator.clipboard.writeText(id).then(() => toast("ユーザーIDをコピーしました。","success")).catch(() => {});
+      }
       if (closest("#emergency-auth-check")) authenticateEmergencyProtocol();
       if (closest("#emergency-preview")) previewEmergencyProtocol();
       if (closest("#emergency-execute")) executeEmergencyProtocol();
