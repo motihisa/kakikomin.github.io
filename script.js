@@ -298,6 +298,9 @@
     "admin-bots": "admin-bots",
     "admin-private-boards": "admin-private-boards",
     "admin-site-settings": "admin-site-settings",
+    "admin-announcements": "admin-announcements",
+    "admin-notifications": "admin-notifications",
+    "admin-second-factor": "admin-second-factor",
     "admin-logs": "admin-logs",
     "admin-sessions": "admin-sessions",
     "admin-security": "admin-security",
@@ -350,7 +353,12 @@
       case "private-boards": loadPrivateBoards(); break;
       case "private-board": loadPrivateBoardDetail(); break;
       case "bot": showPlaceholder("#bot-list", "Botはまだありません。"); break;
-      case "admin-site-settings": loadSiteSettings().then(async () => { fillSiteSettingsForm(); await loadAdminAnnouncements(); await loadBroadcastNotificationHistory(); }); break;
+      case "admin-site-settings": loadSiteSettings().then(() => fillSiteSettingsForm()); break;
+      case "admin-announcements": loadAdminAnnouncements(); break;
+      case "admin-notifications": loadBroadcastNotificationHistory(); break;
+      case "admin-second-factor":
+        setText("admin-second-factor-page-status", state.adminSecondFactorVerified ? "追加認証済み" : "未認証");
+        break;
       case "admin-sessions": loadAdminSessions(); break;
       case "admin-security": loadAdminSecurityLogs(); break;
       case "admin-diagnostics": loadAdminDiagnostics(); break;
@@ -3160,6 +3168,11 @@
     onSubmit("#admin-notification-form", sendBroadcastNotification);
     on("#admin-notification-clear", "click", clearAdminNotificationForm);
     on("#admin-notification-refresh", "click", loadBroadcastNotificationHistory);
+    on("#admin-second-factor-open", "click", async () => {
+      const ok = await requestAdminSecondFactor();
+      setText("admin-second-factor-page-status", ok ? "追加認証済み" : "未認証");
+      if (ok) toast("管理者追加認証が完了しました。", "success");
+    });
 
 
     // 管理画面
