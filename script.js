@@ -276,6 +276,7 @@
     "create-account": "Create_account",
     "register": "Create_account",
     "forgot-password": "forgot-password",
+    "banpage": "banpage",
 
     "profile": "profile",
     "account": "account",
