@@ -772,6 +772,7 @@
           <a href="#admin-sessions">セッション</a>
           <a href="#admin-security">セキュリティ監視</a>
           <a href="#admin-diagnostics">システム診断</a>
+          <a href="#admin-advanced">高度な管理</a>
           <a href="#admin-site-settings">サイト設定</a>
           <a href="#admin-logs">監査ログ</a>
         </nav>
@@ -834,6 +835,68 @@
         </div>
       </div>
     </section>
+
+    <!-- ================= ADMIN ADVANCED ================= -->
+    <section id="admin-advanced" class="page-section admin-page" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">ADVANCED ADMIN</p>
+          <h1>高度な管理</h1>
+          <p>IP履歴・アラート・Auth整合性・限定掲示板の詳細管理をまとめて確認できます。</p>
+        </div>
+
+        <div class="admin-section-header">
+          <div>
+            <button type="button" class="secondary-button" id="admin-advanced-refresh">更新</button>
+            <button type="button" class="secondary-button" id="admin-generate-alerts">アラートを検知</button>
+          </div>
+        </div>
+
+        <div class="admin-dashboard" id="admin-security-summary-grid"></div>
+
+        <div class="home-card">
+          <h2>Auth / プロフィール整合性</h2>
+          <div id="admin-consistency-list" class="admin-post-list"></div>
+        </div>
+
+        <div class="home-card">
+          <h2>管理アラート</h2>
+          <div class="admin-table-wrapper">
+            <table class="admin-table"><thead><tr><th>日時</th><th>重要度</th><th>種類</th><th>内容</th><th>操作</th></tr></thead>
+            <tbody id="admin-alert-table-body"></tbody></table>
+          </div>
+        </div>
+
+        <div class="home-card">
+          <h2>IP BAN履歴</h2>
+          <form id="admin-ip-history-search-form" class="search-form">
+            <input id="admin-ip-history-search" type="search" placeholder="IPアドレスで検索">
+            <button type="submit" class="secondary-button">検索</button>
+          </form>
+          <div class="admin-table-wrapper">
+            <table class="admin-table"><thead><tr><th>日時</th><th>IP</th><th>操作</th><th>理由</th></tr></thead>
+            <tbody id="admin-ip-history-table-body"></tbody></table>
+          </div>
+        </div>
+
+        <div class="home-card">
+          <h2>限定掲示板の管理</h2>
+          <div class="admin-table-wrapper">
+            <table class="admin-table"><thead><tr><th>掲示板</th><th>状態</th><th>メンバー</th><th>操作</th></tr></thead>
+            <tbody id="admin-advanced-board-table-body"></tbody></table>
+          </div>
+        </div>
+
+        <div class="home-card">
+          <h2>限定掲示板アクセスログ</h2>
+          <div class="admin-table-wrapper">
+            <table class="admin-table"><thead><tr><th>日時</th><th>掲示板</th><th>ユーザー</th><th>IP</th><th>結果</th><th>理由</th></tr></thead>
+            <tbody id="admin-board-access-table-body"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
 
     <!-- ================= ADMIN LOGS ================= -->
     <section id="admin-logs" class="page-section admin-page" hidden>
