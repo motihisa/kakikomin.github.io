@@ -389,6 +389,12 @@
   function renderRoute() {
     const route = getRoute();
 
+    // ルート描画直前にもDBから取得したアカウント状態を再確認し、
+    // BAN中にハッシュ変更などで通常ページへ戻らないようにする。
+    if (state.profile?.status && String(state.profile.status).toLowerCase() === "banned") {
+      state.accountBlocked = true;
+    }
+
     closeAllModals();
 
     if (state.accessBlocked || state.accountBlocked) {
@@ -755,14 +761,18 @@
      ========================================================= */
 
   function applyAccountRestriction(profile) {
-    const banned = profile?.status === "banned";
+    const banned = String(profile?.status || "").toLowerCase() === "banned";
     state.accountBlocked = banned;
-    if (!banned) return;
 
-    const reason = String(profile?.ban_reason || "").trim();
     const message = document.getElementById("account-blocked-message");
-    if (message) {
-      message.textContent = reason || "このアカウントではサイトを利用できません。";
+
+    if (banned) {
+      const reason = String(profile?.ban_reason || "").trim();
+      if (message) {
+        message.textContent = reason || "このアカウントではサイトを利用できません。";
+      }
+    } else if (message) {
+      message.textContent = "理由は登録されていません。";
     }
   }
 
