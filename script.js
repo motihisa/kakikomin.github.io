@@ -2312,6 +2312,19 @@
         const button = $("button[type='submit']", overlay);
         if (button) button.disabled = true;
 
+        // RPCの前にブラウザ側の現在セッションを確認する。
+        // セッションが切れている場合は「パスワード間違い」と誤表示しない。
+        let sessionResult = await supabase.auth.getSession();
+        if (!sessionResult.data?.session) {
+          sessionResult = await supabase.auth.refreshSession();
+        }
+
+        if (!sessionResult.data?.session) {
+          if (errorEl) errorEl.textContent = "ログインセッションがありません。もう一度ログインしてください。";
+          if (button) button.disabled = false;
+          return;
+        }
+
         const { data, error } = await supabase.rpc("verify_admin_second_factor", { p_password: password });
         if (!error && data === true) {
           state.adminSecondFactorVerified = true;
@@ -2320,7 +2333,9 @@
         }
 
         if (error) console.warn("admin second factor:", error);
-        if (errorEl) errorEl.textContent = "追加パスワードが正しくありません。";
+        if (errorEl) errorEl.textContent = error
+          ? "追加認証の確認に失敗しました。セッションを確認してもう一度お試しください。"
+          : "追加パスワードが正しくありません。";
         if (button) button.disabled = false;
         $("#admin-second-factor-password", overlay)?.select();
       });
