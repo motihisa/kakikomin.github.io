@@ -676,6 +676,9 @@
       await loadProfile();
       updateAuthUI();
 
+      // アカウント作成直後のIPも既存のIP記録処理で保存する。
+      await recordLoginIp(true);
+
       toast("アカウントを作成しました。", "success");
       navigate("#home");
     } catch (error) {
@@ -3550,7 +3553,10 @@
       await loadUserPreferences();
       await checkIpBan();
       startSessionWatch();
-      recordLoginIp();
+
+      // サイトへアクセスした時点で、ログイン済みユーザーのIPを記録する。
+      // 既存のrecord_login_ip()だけを使用し、DBの既存データは変更・削除しない。
+      await recordLoginIp(true);
 
       renderRoute();
     } catch (error) {
