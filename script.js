@@ -308,6 +308,7 @@
     "admin-user-detail": "admin-user-detail",
     "admin-posts": "admin-posts",
     "admin-reports": "admin-reports",
+    "admin-contact": "admin-contact",
     "admin-ip-ban": "admin-ip-ban",
     "admin-bots": "admin-bots",
     "admin-private-boards": "admin-private-boards",
