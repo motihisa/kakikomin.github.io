@@ -350,7 +350,7 @@
       case "private-boards": loadPrivateBoards(); break;
       case "private-board": loadPrivateBoardDetail(); break;
       case "bot": showPlaceholder("#bot-list", "Botはまだありません。"); break;
-      case "admin-site-settings": loadSiteSettings().then(async () => { fillSiteSettingsForm(); await loadAdminAnnouncements(); }); break;
+      case "admin-site-settings": loadSiteSettings().then(async () => { fillSiteSettingsForm(); await loadAdminAnnouncements(); await loadBroadcastNotificationHistory(); }); break;
       case "admin-sessions": loadAdminSessions(); break;
       case "admin-security": loadAdminSecurityLogs(); break;
       case "admin-diagnostics": loadAdminDiagnostics(); break;
@@ -3158,6 +3158,8 @@
     on("#user-dark-mode", "change", event => saveDarkMode(event.target.checked));
     on("#mark-notifications-read", "click", markAllNotificationsRead);
     onSubmit("#admin-notification-form", sendBroadcastNotification);
+    on("#admin-notification-clear", "click", clearAdminNotificationForm);
+    on("#admin-notification-refresh", "click", loadBroadcastNotificationHistory);
 
 
     // 管理画面
