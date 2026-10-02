@@ -1,6 +1,6 @@
 /* =========================================================
    KAKIKOMI - script.js (修正版)
-   BUILD 2026-10-02-I  ← このファイルの先頭にこの行が見えたら最新版
+   BUILD 2026-10-02-J  ← このファイルの先頭にこの行が見えたら最新版
    Supabase + Hash Router
    ========================================================= */
 
@@ -15,7 +15,7 @@
 
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  console.info("KAKIKOMI script BUILD 2026-10-01-E");
+  console.info("KAKIKOMI script BUILD 2026-10-02-J");
 
   /* ---------------------------------------------------------
      掲示板カテゴリ（★ここを実際のカテゴリに書き換えてね）
@@ -60,6 +60,7 @@
     openReplies: new Set(),  // 返信欄を開いている投稿ID
     adminRetry: false,
     adminVerified: false,
+    emergencyAuthenticated: false,
     forcedLogoutRunning: false,
     postsHasMore: false,
     adminCounts: null,
@@ -447,7 +448,110 @@
     if (el) el.innerHTML = `<div class="empty-state"><p>${escapeHTML(message)}</p></div>`;
   }
 
-  async function loadAdminEmergency() {\n    const statusEl = document.getElementById("emergency-auth-status");\n    if (!statusEl) return;\n    try {\n      const { data, error } = await supabase.rpc("emergency_protocol_credentials_configured");\n      if (error) throw error;\n      statusEl.textContent = data ? "専用認証情報は設定済みです。" : "専用認証情報が未設定です。";\n    } catch (error) {\n      console.error("emergency protocol status:", error);\n      statusEl.textContent = "認証設定を確認できませんでした。";\n    }\n  }\n\n  /* =========================================================
+  async function loadAdminEmergency() {
+    const statusEl = document.getElementById("emergency-auth-status");
+    const previewButton = document.getElementById("emergency-preview");
+    const executeButton = document.getElementById("emergency-execute");
+    if (!statusEl) return;
+
+    state.emergencyAuthenticated = false;
+    if (previewButton) previewButton.disabled = true;
+    if (executeButton) executeButton.disabled = true;
+
+    try {
+      const { data, error } = await supabase.rpc("emergency_protocol_credentials_configured");
+      if (error) throw error;
+      statusEl.textContent = data
+        ? "専用認証情報は設定済みです。パスワードと確認コードを入力して認証してください。"
+        : "専用認証情報が未設定です。";
+    } catch (error) {
+      console.error("emergency protocol status:", error);
+      statusEl.textContent = "認証設定を確認できませんでした。";
+    }
+  }
+
+  async function authenticateEmergencyProtocol() {
+    const statusEl = document.getElementById("emergency-auth-status");
+    const previewButton = document.getElementById("emergency-preview");
+    const executeButton = document.getElementById("emergency-execute");
+    const password = document.getElementById("emergency-password")?.value || "";
+    const code = document.getElementById("emergency-code")?.value || "";
+
+    state.emergencyAuthenticated = false;
+    if (previewButton) previewButton.disabled = true;
+    if (executeButton) executeButton.disabled = true;
+
+    if (!password || !code) {
+      if (statusEl) statusEl.textContent = "パスワードと確認コードを入力してください。";
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.rpc("emergency_protocol_verify", {
+        p_password: password,
+        p_code: code
+      });
+      if (error) throw error;
+
+      state.emergencyAuthenticated = data === true;
+      if (statusEl) {
+        statusEl.textContent = state.emergencyAuthenticated
+          ? "緊急プロトコル認証済みです。発動前確認を行えます。"
+          : "認証に失敗しました。";
+      }
+      if (previewButton) previewButton.disabled = !state.emergencyAuthenticated;
+      if (executeButton) executeButton.disabled = !state.emergencyAuthenticated;
+    } catch (error) {
+      console.error("emergency protocol auth:", error);
+      if (statusEl) statusEl.textContent = "認証に失敗しました。";
+    }
+  }
+
+  async function previewEmergencyProtocol() {
+    const output = document.getElementById("emergency-preview-result");
+    if (!output || !state.emergencyAuthenticated) return;
+
+    try {
+      const { data, error } = await supabase.rpc("emergency_protocol_preview");
+      if (error) throw error;
+      output.textContent = JSON.stringify(data, null, 2);
+    } catch (error) {
+      console.error("emergency protocol preview:", error);
+      output.textContent = "発動前確認に失敗しました。";
+    }
+  }
+
+  async function executeEmergencyProtocol() {
+    const output = document.getElementById("emergency-preview-result");
+    if (!state.emergencyAuthenticated) return;
+
+    const confirmed = window.confirm(
+      "緊急ロックを発動します。新規アクセスと投稿を停止し、公開サイトからSupabase APIへの通常アクセスも遮断します。続行しますか？"
+    );
+    if (!confirmed) return;
+
+    try {
+      const { data, error } = await supabase.rpc("emergency_protocol_lock");
+      if (error) throw error;
+
+      state.site.maintenance_mode = true;
+      state.site.posting_enabled = false;
+      state.emergencyAuthenticated = false;
+
+      if (output) output.textContent = JSON.stringify(data, null, 2);
+      const statusEl = document.getElementById("emergency-auth-status");
+      if (statusEl) statusEl.textContent = "緊急ロックを発動しました。";
+      const previewButton = document.getElementById("emergency-preview");
+      const executeButton = document.getElementById("emergency-execute");
+      if (previewButton) previewButton.disabled = true;
+      if (executeButton) executeButton.disabled = true;
+
+      renderRoute();
+    } catch (error) {
+      console.error("emergency protocol execute:", error);
+      if (output) output.textContent = "緊急ロックの発動に失敗しました。";
+    }
+  }\n\n  /* =========================================================
      AUTH
      ========================================================= */
 
@@ -2621,6 +2725,9 @@
       if (openPrivate) location.hash = `#private-board-${openPrivate.dataset.openPrivateBoard}`;
       if (closest("#mark-notifications-read")) comingSoon("既読機能");
       if (closest("#admin-force-logout")) forceLogoutUser();
+      if (closest("#emergency-auth-check")) authenticateEmergencyProtocol();
+      if (closest("#emergency-preview")) previewEmergencyProtocol();
+      if (closest("#emergency-execute")) executeEmergencyProtocol();
       if (closest("#admin-force-delete")) forceDeleteUser();
       const ackAlert=closest("[data-ack-alert]"); if(ackAlert) adminAcknowledgeAlert(ackAlert.dataset.ackAlert);
       const advBoard=closest("[data-advanced-board-action]"); if(advBoard) adminSetPrivateBoardStatus(advBoard.dataset.advancedBoardAction,advBoard.dataset.boardStatus==="suspended"?"active":"suspended");
