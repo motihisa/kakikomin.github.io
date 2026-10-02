@@ -2497,11 +2497,42 @@
 
   async function loadAdminLogs() {
     if (!(await ensureAdmin())) return;
-    const action=$("#admin-log-action-filter")?.value||null;
-    const {data,error}=await supabase.rpc("admin_list_audit_logs",{limit_count:200,action_filter:action});
-    if(error){ console.error(error); const body=$("#admin-logs-table-body"); if(body) body.innerHTML="<tr><td colspan=\"6\">ログを読み込めませんでした。</td></tr>"; return; }
-    state.auditLogs=data||[]; renderAdminLogs();
+
+    const { data, error } = await supabase.rpc("admin_list_all_logs", { limit_count: 500 });
+    const body = $("#admin-logs-table-body");
+
+    if (error) {
+      console.error("admin_list_all_logs:", error);
+      if (body) body.innerHTML = "<tr><td colspan=\"7\">全ログを読み込めませんでした。</td></tr>";
+      return;
+    }
+
+    const action = $("#admin-log-action-filter")?.value || "";
+    const logs = (data || []).filter(log => {
+      if (!action) return true;
+      return String(log.action || "").toUpperCase() === action;
+    });
+
+    state.auditLogs = logs;
+
+    if (!body) return;
+    body.innerHTML = logs.map(log => {
+      const details = log.details && typeof log.details === "object"
+        ? JSON.stringify(log.details)
+        : (log.details || "-");
+
+      return `<tr>
+        <td>${escapeHTML(formatDate(log.created_at))}</td>
+        <td>${escapeHTML(log.log_type || "-")}</td>
+        <td>${escapeHTML(log.source || "-")}</td>
+        <td>${escapeHTML(log.action || "-")}</td>
+        <td>${escapeHTML(log.ip_address || "-")}</td>
+        <td>${escapeHTML(log.user_id || "-")}</td>
+        <td><small>${escapeHTML(details)}</small></td>
+      </tr>`;
+    }).join("") || "<tr><td colspan=\"7\">ログはありません。</td></tr>";
   }
+
 
   async function loadAdminSessions() {
     if (!(await ensureAdmin())) return;
