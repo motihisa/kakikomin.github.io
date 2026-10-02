@@ -694,11 +694,24 @@
       return;
     }
 
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const allowedEmailDomains = new Set([
+      "gmail.com",
+      "outlook.jp",
+      "protonmail.com",
+      "apple.com"
+    ]);
+    const emailDomain = normalizedEmail.split("@").pop();
+    if (!allowedEmailDomains.has(emailDomain)) {
+      toast("@gmail.com、@outlook.jp、@protonmail.com、@apple.com のメールアドレスのみ登録できます。", "error");
+      return;
+    }
+
     setLoading(true);
 
     try {
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password,
         options: { data: { username } }
       });
