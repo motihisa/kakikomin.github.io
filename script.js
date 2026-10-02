@@ -610,6 +610,9 @@
 
       state.accessBlocked = false;
       applyAccountRestriction(state.profile);
+      if (state.accountBlocked) {
+        renderRoute();
+      }
     } else {
       state.profile = null;
       state.adminVerified = false;
@@ -761,7 +764,8 @@
      ========================================================= */
 
   function applyAccountRestriction(profile) {
-    const banned = String(profile?.status || "").toLowerCase() === "banned";
+    const status = String(profile?.status || "").trim().toLowerCase();
+    const banned = status === "banned" || status === "ban";
     state.accountBlocked = banned;
 
     const message = document.getElementById("account-blocked-message");
@@ -774,6 +778,25 @@
     } else if (message) {
       message.textContent = "理由は登録されていません。";
     }
+  }
+
+  // アカウントBANはIP BANとは別に、ログイン中のアカウント状態を
+  // サーバー側RPCから再確認して専用BAN画面へ固定する。
+  async function enforceAccountBan() {
+    if (!state.user) {
+      state.accountBlocked = false;
+      return false;
+    }
+
+    const profile = await loadProfile();
+    applyAccountRestriction(profile);
+
+    if (state.accountBlocked) {
+      renderRoute();
+      return true;
+    }
+
+    return false;
   }
 
   async function loadProfile() {
@@ -3626,6 +3649,11 @@
       await loadSiteSettings();
       await loadUserPreferences();
       await checkIpBan();
+
+      // BAN状態も初期表示前に明示的に再確認する。
+      if (!state.accessBlocked) {
+        await enforceAccountBan();
+      }
 
       // ログイン状態に関係なく、サイトへアクセスしたIPを記録する。
       await recordSiteAccessIp();
