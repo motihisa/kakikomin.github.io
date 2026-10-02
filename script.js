@@ -294,7 +294,8 @@
     "admin-sessions": "admin-sessions",
     "admin-security": "admin-security",
     "admin-diagnostics": "admin-diagnostics",
-    "admin-advanced": "admin-advanced"
+    "admin-advanced": "admin-advanced",
+    "admin-emergency": "admin-emergency"
   };
 
   // ログインが必要なページ
@@ -346,6 +347,7 @@
       case "admin-security": loadAdminSecurityLogs(); break;
       case "admin-diagnostics": loadAdminDiagnostics(); break;
       case "admin-advanced": loadAdminAdvanced(); break;
+      case "admin-emergency": loadAdminEmergency(); break;
       case "admin-private-boards": loadAdminPrivateBoards(); break;
       case "admin-bots": loadAdminBots(); break;
       case "admin-logs": loadAdminLogs(); break;
@@ -445,7 +447,7 @@
     if (el) el.innerHTML = `<div class="empty-state"><p>${escapeHTML(message)}</p></div>`;
   }
 
-  /* =========================================================
+  async function loadAdminEmergency() {\n    const statusEl = document.getElementById("emergency-auth-status");\n    if (!statusEl) return;\n    try {\n      const { data, error } = await supabase.rpc("emergency_protocol_credentials_configured");\n      if (error) throw error;\n      statusEl.textContent = data ? "専用認証情報は設定済みです。" : "専用認証情報が未設定です。";\n    } catch (error) {\n      console.error("emergency protocol status:", error);\n      statusEl.textContent = "認証設定を確認できませんでした。";\n    }\n  }\n\n  /* =========================================================
      AUTH
      ========================================================= */
 
