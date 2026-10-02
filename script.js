@@ -998,8 +998,15 @@
 
   // 1分ごと、またはタブに戻ってきたときに、強制ログアウトされていないか確認する
   function startSessionWatch() {
-    const check = () => {
-      if (state.user) loadProfile();
+    const check = async () => {
+      if (!state.user) return;
+
+      await loadProfile();
+      applyAccountRestriction(state.profile);
+
+      if (state.accountBlocked) {
+        renderRoute();
+      }
     };
 
     setInterval(check, 60 * 1000);
