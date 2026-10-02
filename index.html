@@ -1201,3 +1201,489 @@
         <div class="report-list" id="admin-report-list"></div>
       </div>
     </section>
+
+
+    <!-- ================= ADMIN IP BAN ================= -->
+    <section id="admin-ip-ban" class="page-section admin-page" hidden>
+      <div class="section-inner">
+        <div class="page-header">
+          <p class="section-label">IP BAN</p>
+          <h1>IP制限</h1>
+        </div>
+
+        <form id="ip-ban-form" class="settings-form">
+          <div class="form-group">
+            <label for="ban-ip">IPアドレス</label>
+            <input type="text" id="ban-ip" required>
+          </div>
+
+          <div class="form-group">
+            <label for="ban-reason">理由</label>
+            <input type="text" id="ban-reason" maxlength="500">
+          </div>
+
+          <div class="form-group">
+            <label for="ban-duration">期間</label>
+            <select id="ban-duration">
+              <option value="1">1日</option>
+              <option value="7">7日</option>
+              <option value="30">30日</option>
+              <option value="permanent">無期限</option>
+            </select>
+          </div>
+
+          <button type="submit" class="danger-button">アクセス制限を追加</button>
+        </form>
+
+        <div id="ip-ban-list" class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>IP</th>
+                <th>理由</th>
+                <th>期間</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="ip-ban-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ================= ADMIN BOTS ================= -->
+    <section id="admin-bots" class="page-section admin-page" hidden>
+      <div class="section-inner">
+
+        <div class="admin-section-header">
+          <div>
+            <p class="section-label">BOTS</p>
+            <h1>Bot管理</h1>
+          </div>
+          <button type="button" id="admin-create-bot" class="primary-button">Botを作成</button>
+        </div>
+
+        <div id="admin-bot-list" class="admin-bot-list"></div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= ADMIN PRIVATE BOARDS ================= -->
+    <section id="admin-private-boards" class="page-section admin-page" hidden>
+      <div class="section-inner">
+
+        <div class="admin-section-header">
+          <div>
+            <p class="section-label">PRIVATE BOARDS</p>
+            <h1>プライベート掲示板管理</h1>
+          </div>
+        </div>
+
+        <div id="admin-private-board-list" class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>掲示板名</th>
+                <th>作成者</th>
+                <th>公開設定</th>
+                <th>メンバー</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="admin-private-board-table-body"></tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ================= ADMIN SITE SETTINGS ================= -->
+    <section id="admin-site-settings" class="page-section admin-page" hidden>
+      <div class="section-inner narrow-section">
+        <div class="admin-section-header">
+          <div>
+            <p class="section-label">SITE SETTINGS</p>
+            <h1>サイト設定</h1>
+            <p>サイト全体の基本設定とメンテナンス設定だけを管理します。</p>
+          </div>
+        </div>
+        <form id="admin-site-settings-form" class="settings-form">
+          <div class="form-group">
+            <label for="site-name">サイト名</label>
+            <input type="text" id="site-name" value="KAKIKOMI" maxlength="100">
+          </div>
+          <div class="form-group">
+            <label for="site-description">サイト説明</label>
+            <textarea id="site-description" maxlength="1000">みんなで自由に書き込める総合掲示板</textarea>
+          </div>
+          <div class="form-option">
+            <input type="checkbox" id="site-registration-enabled" checked>
+            <label for="site-registration-enabled">新規アカウント登録を許可</label>
+          </div>
+          <div class="form-option">
+            <input type="checkbox" id="site-posting-enabled" checked>
+            <label for="site-posting-enabled">投稿を許可</label>
+          </div>
+          <div class="form-option">
+            <input type="checkbox" id="site-maintenance-mode">
+            <label for="site-maintenance-mode">メンテナンスモード</label>
+          </div>
+          <div class="form-group">
+            <label for="maintenance-title-input">メンテナンス画面のタイトル</label>
+            <input type="text" id="maintenance-title-input" maxlength="100" placeholder="メンテナンス中">
+          </div>
+          <div class="form-group">
+            <label for="maintenance-message-input">メンテナンス画面のメッセージ</label>
+            <textarea id="maintenance-message-input" maxlength="500" placeholder="必要な場合だけ入力してください。"></textarea>
+          </div>
+          <button type="submit" class="primary-button">サイト設定を保存</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ================= ADMIN ANNOUNCEMENTS ================= -->
+    <section id="admin-announcements" class="page-section admin-page" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">ANNOUNCEMENTS</p>
+          <h1>お知らせ管理</h1>
+          <p>ホームに表示するお知らせだけを管理します。</p>
+        </div>
+        <form id="admin-announcement-form" class="settings-form">
+          <input type="hidden" id="admin-announcement-id">
+          <div class="form-group">
+            <label for="admin-announcement-title">お知らせタイトル</label>
+            <input type="text" id="admin-announcement-title" maxlength="100" required>
+          </div>
+          <div class="form-group">
+            <label for="admin-announcement-message">お知らせ本文</label>
+            <textarea id="admin-announcement-message" maxlength="2000" required></textarea>
+          </div>
+          <div class="form-option">
+            <input type="checkbox" id="admin-announcement-published" checked>
+            <label for="admin-announcement-published">公開する</label>
+          </div>
+          <div class="form-group">
+            <label for="admin-announcement-starts">表示開始日時（任意）</label>
+            <input type="datetime-local" id="admin-announcement-starts">
+          </div>
+          <div class="form-group">
+            <label for="admin-announcement-ends">表示終了日時（任意）</label>
+            <input type="datetime-local" id="admin-announcement-ends">
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="primary-button">お知らせを保存</button>
+            <button type="button" class="secondary-button" id="admin-announcement-clear">入力をクリア</button>
+          </div>
+        </form>
+        <div id="admin-announcement-list" class="admin-list"></div>
+      </div>
+    </section>
+
+    <!-- ================= ADMIN NOTIFICATIONS ================= -->
+    <section id="admin-notifications" class="page-section admin-page" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">NOTIFICATIONS</p>
+          <h1>全員にメッセージ送信</h1>
+          <p>全ユーザーへの通知送信と送信履歴だけを管理します。</p>
+        </div>
+        <form id="admin-notification-form" class="settings-form">
+          <div class="form-group">
+            <label for="admin-notification-title">メッセージタイトル</label>
+            <input type="text" id="admin-notification-title" maxlength="100" placeholder="例：重要なお知らせ" required>
+          </div>
+          <div class="form-group">
+            <label for="admin-notification-message">全員に送るメッセージ</label>
+            <textarea id="admin-notification-message" maxlength="2000" placeholder="全ユーザーに表示するメッセージを入力してください。" required></textarea>
+          </div>
+          <div class="account-panel">
+            <strong>送信先：全ユーザー</strong>
+            <p>送信後の取り消しはできません。</p>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="primary-button">全員にメッセージを送信</button>
+            <button type="button" class="secondary-button" id="admin-notification-clear">入力をクリア</button>
+          </div>
+        </form>
+        <div class="admin-section-header">
+          <div>
+            <h2>送信履歴</h2>
+            <p>最近送信した全員向けメッセージを確認できます。</p>
+          </div>
+          <button type="button" class="secondary-button" id="admin-notification-refresh">履歴を更新</button>
+        </div>
+        <div id="admin-notification-history" class="admin-list"></div>
+      </div>
+    </section>
+
+    <!-- ================= ADMIN SECOND FACTOR ================= -->
+    <section id="admin-second-factor" class="page-section admin-page" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">ADMIN SECURITY</p>
+          <h1>管理者追加認証</h1>
+          <p>管理画面とは独立した追加認証画面です。</p>
+        </div>
+        <div class="account-panel">
+          <h2>追加認証</h2>
+          <p>管理者アカウントとは別に、管理者用の追加パスワードで認証します。</p>
+          <button type="button" class="primary-button" id="admin-second-factor-open">追加認証を開始</button>
+          <p id="admin-second-factor-page-status" role="status">未認証</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ADMIN EMERGENCY PROTOCOL ================= -->
+    <section id="admin-emergency" class="page-section admin-page" hidden>
+      <div class="section-inner narrow-section">
+        <div class="page-header">
+          <p class="section-label">EMERGENCY PROTOCOL</p>
+          <h1>緊急プロトコル</h1>
+        </div>
+
+        <div class="account-panel">
+          <h2>緊急時専用</h2>
+          <p>この画面は緊急プロトコルの認証と事前確認用です。ここを開いただけでは何も実行されません。</p>
+          <p><strong>許可されたUUID以外は実行できません。</strong></p>
+        </div>
+
+        <div class="settings-form">
+          <div class="form-group">
+            <label for="emergency-password">専用パスワード</label>
+            <input type="password" id="emergency-password" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="emergency-code">専用確認コード</label>
+            <input type="password" id="emergency-code" autocomplete="off">
+          </div>
+          <button type="button" class="secondary-button" id="emergency-auth-check">認証状態を確認</button>
+          <p id="emergency-auth-status" role="status">未認証</p>
+        </div>
+
+        <div class="account-panel">
+          <h2>発動前確認</h2>
+          <p>実際の緊急処理は、この画面を表示しただけでは発動しません。</p>
+          <button type="button" class="secondary-button" id="emergency-preview" disabled>対象データを確認</button>
+          <button type="button" class="danger-button" id="emergency-execute" disabled>緊急ロックを発動</button>
+          <pre id="emergency-preview-result" class="admin-diagnostic-output"></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ERROR ================= -->
+
+
+    <!-- ================= MAINTENANCE ================= -->
+    <section id="maintenance" class="page-section maintenance-page" hidden>
+      <div class="maintenance-inner">
+        <div class="maintenance-mark" aria-hidden="true">K</div>
+        <p class="maintenance-label">MAINTENANCE</p>
+        <h1 id="maintenance-title">メンテナンス中</h1>
+        <p id="maintenance-message"></p>
+      </div>
+    </section>
+
+    <section id="access-blocked" class="page-section access-blocked-page" hidden>
+      <div class="access-blocked-inner">
+        <div class="access-blocked-mark" aria-hidden="true">!</div>
+        <p class="access-blocked-label">IP ACCESS RESTRICTED</p>
+        <h1>アクセスが制限されています</h1>
+        <p>このIPアドレスからはサイトを利用できません。</p>
+      </div>
+    </section>
+
+    <section id="account-blocked" class="page-section access-blocked-page" hidden>
+      <div class="access-blocked-inner">
+        <div class="access-blocked-mark" aria-hidden="true">!</div>
+        <p class="access-blocked-label">ACCOUNT RESTRICTED</p>
+        <h1>アカウントが制限されています</h1>
+        <p id="account-blocked-message">このアカウントではサイトを利用できません。</p>
+      </div>
+    </section>
+
+    <section id="error-page" class="page-section" hidden>
+      <div class="section-inner narrow-section">
+        <h1>ページが見つかりません</h1>
+        <p>指定されたページは存在しません。</p>
+        <a href="#home" class="primary-button">ホームへ戻る</a>
+      </div>
+    </section>
+
+  </main>
+
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="site-footer" id="site-footer">
+    <div class="footer-inner">
+      <div>
+        <strong class="footer-brand">KAKIKOMI</strong>
+        <p>みんなで自由に書き込める総合掲示板</p>
+      </div>
+
+      <nav class="footer-navigation">
+        <a href="#rules">利用ルール</a>
+        <a href="#privacy">プライバシー</a>
+        <a href="#contact">お問い合わせ</a>
+      </nav>
+    </div>
+  </footer>
+
+
+  <!-- =====================================================
+       MODALS
+       CSSは .modal > .modal-backdrop + .modal-panel を想定しているので、
+       .modal-content をやめてその構造に合わせた。
+       背景クリックで閉じられるよう、backdropにも data-close-modal を付けてある。
+       （開閉のJSはまだ無いので、次のJS修正で追加する）
+  ====================================================== -->
+
+  <!-- 通報モーダル -->
+  <div class="modal" id="report-dialog" hidden>
+    <div class="modal-backdrop" data-close-modal="report-dialog"></div>
+
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="report-dialog-title">
+      <header class="modal-header">
+        <h2 id="report-dialog-title">投稿を通報</h2>
+        <button type="button" class="modal-close" data-close-modal="report-dialog" aria-label="閉じる">&times;</button>
+      </header>
+
+      <div class="modal-body">
+        <form id="modal-report-form" class="report-form">
+          <input type="hidden" id="modal-report-post-id">
+
+          <div class="form-group">
+            <label for="modal-report-reason">通報理由</label>
+            <select id="modal-report-reason" required>
+              <option value="">選択してください</option>
+              <option value="spam">スパム・迷惑行為</option>
+              <option value="harassment">嫌がらせ</option>
+              <option value="illegal">不適切な内容</option>
+              <option value="copyright">著作権に関する問題</option>
+              <option value="impersonation">なりすまし</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="modal-report-detail">詳細</label>
+            <textarea id="modal-report-detail" maxlength="2000"></textarea>
+          </div>
+
+          <button type="submit" class="danger-button">通報する</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 投稿削除モーダル -->
+  <div class="modal" id="delete-post-dialog" hidden>
+    <div class="modal-backdrop" data-close-modal="delete-post-dialog"></div>
+
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="delete-post-dialog-title" aria-describedby="delete-post-dialog-description">
+      <header class="modal-header">
+        <h2 id="delete-post-dialog-title">投稿を削除</h2>
+        <button type="button" class="modal-close" data-close-modal="delete-post-dialog" aria-label="閉じる">&times;</button>
+      </header>
+
+      <div class="modal-body">
+        <p id="delete-post-dialog-description">この投稿を削除しますか？</p>
+
+        <form id="delete-post-form" class="settings-form">
+          <input type="hidden" id="delete-post-id">
+
+          <div class="modal-footer">
+            <button type="button" class="secondary-button" data-close-modal="delete-post-dialog">キャンセル</button>
+            <button type="submit" class="danger-button">削除する</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- アカウント削除モーダル -->
+  <div class="modal" id="delete-account-dialog" hidden>
+    <div class="modal-backdrop" data-close-modal="delete-account-dialog"></div>
+
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="delete-account-dialog-title" aria-describedby="delete-account-dialog-description">
+      <header class="modal-header">
+        <h2 id="delete-account-dialog-title">アカウント削除</h2>
+        <button type="button" class="modal-close" data-close-modal="delete-account-dialog" aria-label="閉じる">&times;</button>
+      </header>
+
+      <div class="modal-body">
+        <p id="delete-account-dialog-description">アカウントを削除しますか？</p>
+
+        <form id="delete-account-form" class="settings-form">
+          <label for="delete-account-username" class="visually-hidden">メールアドレス</label>
+          <input type="email" id="delete-account-username" name="username" autocomplete="username" class="visually-hidden" tabindex="-1">
+
+          <div class="form-group">
+            <label for="delete-account-password">パスワード</label>
+            <input type="password" id="delete-account-password" name="password" autocomplete="current-password" required>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="secondary-button" data-close-modal="delete-account-dialog">キャンセル</button>
+            <button type="submit" class="danger-button">アカウントを削除</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Bot作成モーダル
+       formをpanelの外側に出さず、form自体をflex縦並びのpanelにした
+       （.modal-panel の flex レイアウトが header/body/footer に効くようにするため） -->
+  <div class="modal" id="create-bot-dialog" hidden>
+    <div class="modal-backdrop" data-close-modal="create-bot-dialog"></div>
+
+    <form class="modal-panel" id="create-bot-form" role="dialog" aria-modal="true" aria-labelledby="create-bot-dialog-title">
+      <header class="modal-header">
+        <h2 id="create-bot-dialog-title">Botを作成</h2>
+        <button type="button" class="modal-close" data-close-modal="create-bot-dialog" aria-label="閉じる">&times;</button>
+      </header>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="bot-name">Bot名</label>
+          <input type="text" id="bot-name" maxlength="50" required>
+        </div>
+
+        <div class="form-group">
+          <label for="bot-description">説明</label>
+          <textarea id="bot-description" maxlength="500"></textarea>
+        </div>
+      </div>
+
+      <footer class="modal-footer">
+        <button type="button" class="secondary-button" data-close-modal="create-bot-dialog">キャンセル</button>
+        <button type="submit" class="primary-button">作成</button>
+      </footer>
+    </form>
+  </div>
+
+
+  <!-- ================= TOAST ================= -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+
+  <!-- ================= LOADING ================= -->
+  <div class="global-loading" id="global-loading" aria-hidden="true" hidden>
+    <div class="loading-spinner"></div>
+    <p>読み込み中...</p>
+  </div>
+
+
+  <!-- ================= SCRIPTS ================= -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js?v=20261002-7"></script>
+
+</body>
+</html>
