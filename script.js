@@ -55,7 +55,12 @@
       site_description: "みんなで自由に書き込める総合掲示板",
       registration_enabled: true,
       posting_enabled: true,
-      maintenance_mode: false
+      maintenance_mode: false,
+      maintenance_title: "メンテナンス中",
+      maintenance_message: ""
+    },
+    preferences: {
+      dark_mode: false
     },
     openReplies: new Set(),  // 返信欄を開いている投稿ID
     adminRetry: false,
@@ -341,7 +346,7 @@
       case "questions": loadCategoryPosts(QUESTION_CATEGORY, "#question-list"); break;
       case "consultations": loadCategoryPosts(CONSULTATION_CATEGORY, "#consultation-list"); break;
       case "bookmarks": showPlaceholder("#bookmark-list", "ブックマーク機能は準備中です。"); break;
-      case "notifications": showPlaceholder("#notification-list", "通知はありません。"); break;
+      case "notifications": loadNotifications(); break;
       case "private-boards": loadPrivateBoards(); break;
       case "private-board": loadPrivateBoardDetail(); break;
       case "bot": showPlaceholder("#bot-list", "Botはまだありません。"); break;
@@ -1775,6 +1780,210 @@
   }
 
   /* =========================================================
+     USER DISPLAY / NOTIFICATIONS
+     ========================================================= */
+
+  async function loadUserPreferences() {
+    if (!state.user) {
+      state.preferences.dark_mode = false;
+      applyDarkMode();
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("user_preferences")
+      .select("dark_mode")
+      .eq("user_id", state.user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("user_preferences:", error);
+      return;
+    }
+
+    state.preferences.dark_mode = data?.dark_mode === true;
+    applyDarkMode();
+  }
+
+  function applyDarkMode() {
+    document.documentElement.dataset.theme = state.preferences.dark_mode ? "dark" : "light";
+    const toggle = document.getElementById("user-dark-mode");
+    if (toggle) toggle.checked = state.preferences.dark_mode;
+  }
+
+  async function saveDarkMode(enabled) {
+    if (!state.user) {
+      toast("ダークモードを変更するにはログインしてください。", "error");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("user_preferences")
+      .upsert({
+        user_id: state.user.id,
+        dark_mode: Boolean(enabled),
+        updated_at: new Date().toISOString()
+      }, { onConflict: "user_id" });
+
+    if (error) {
+      console.error("saveDarkMode:", error);
+      toast("ダークモード設定を保存できませんでした。", "error");
+      return;
+    }
+
+    state.preferences.dark_mode = Boolean(enabled);
+    applyDarkMode();
+  }
+
+  async function loadNotifications() {
+    const list = document.getElementById("notification-list");
+    if (!list || !state.user) return;
+
+    list.innerHTML = '<div class="empty-state"><p>読み込み中...</p></div>';
+
+    const { data: notifications, error } = await supabase
+      .from("site_notifications")
+      .select("id,title,message,created_at,created_by")
+      .or(`recipient_id.is.null,recipient_id.eq.${state.user.id}`)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error) {
+      console.error("loadNotifications:", error);
+      list.innerHTML = '<div class="empty-state"><p>通知を読み込めませんでした。</p></div>';
+      return;
+    }
+
+    const ids = (notifications || []).map(n => n.id);
+    let readIds = new Set();
+
+    if (ids.length) {
+      const { data: reads, error: readError } = await supabase
+        .from("site_notification_reads")
+        .select("notification_id")
+        .eq("user_id", state.user.id)
+        .in("notification_id", ids);
+
+      if (!readError) readIds = new Set((reads || []).map(r => r.notification_id));
+    }
+
+    if (!notifications?.length) {
+      list.innerHTML = '<div class="empty-state"><p>通知はありません。</p></div>';
+      return;
+    }
+
+    list.innerHTML = notifications.map(n => {
+      const read = readIds.has(n.id);
+      return `
+        <article class="notification-item${read ? " is-read" : " is-unread"}" data-notification-id="${escapeHTML(n.id)}">
+          <div class="notification-item-header">
+            <strong>${escapeHTML(n.title)}</strong>
+            <time datetime="${escapeHTML(n.created_at)}">${escapeHTML(formatDate(n.created_at))}</time>
+          </div>
+          <p>${escapeHTML(n.message)}</p>
+          <small>${n.created_by ? "管理者からの通知" : "全体通知"}</small>
+        </article>
+      `;
+    }).join("");
+  }
+
+  async function markAllNotificationsRead() {
+    if (!state.user) return;
+
+    const { data: notifications, error } = await supabase
+      .from("site_notifications")
+      .select("id")
+      .or(`recipient_id.is.null,recipient_id.eq.${state.user.id}`)
+      .limit(100);
+
+    if (error) {
+      toast("既読処理に失敗しました。", "error");
+      return;
+    }
+
+    const rows = (notifications || []).map(n => ({
+      notification_id: n.id,
+      user_id: state.user.id
+    }));
+
+    if (rows.length) {
+      const { error: insertError } = await supabase
+        .from("site_notification_reads")
+        .upsert(rows, { onConflict: "notification_id,user_id" });
+
+      if (insertError) {
+        console.error("markAllNotificationsRead:", insertError);
+        toast("既読処理に失敗しました。", "error");
+        return;
+      }
+    }
+
+    toast("すべて既読にしました。", "success");
+    await loadNotifications();
+  }
+
+  async function sendBroadcastNotification() {
+    if (!(await ensureAdmin())) return;
+
+    const title = document.getElementById("admin-notification-title")?.value.trim();
+    const message = document.getElementById("admin-notification-message")?.value.trim();
+
+    if (!title || !message) {
+      toast("タイトルとメッセージを入力してください。", "error");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("site_notifications")
+      .insert({
+        recipient_id: null,
+        title,
+        message,
+        created_by: state.user.id
+      });
+
+    if (error) {
+      console.error("sendBroadcastNotification:", error);
+      toast("全員への通知を送信できませんでした。", "error");
+      return;
+    }
+
+    document.getElementById("admin-notification-form")?.reset();
+    toast("全員に通知を送信しました。", "success");
+  }
+
+  async function loadPublicAnnouncements() {
+    const list = document.getElementById("announcement-list");
+    if (!list) return;
+
+    const { data, error } = await supabase
+      .from("site_announcements")
+      .select("id,title,message,created_at")
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (error) {
+      console.warn("loadPublicAnnouncements:", error);
+      return;
+    }
+
+    if (!data?.length) {
+      list.innerHTML = '<div class="announcement-item">お知らせはありません。</div>';
+      return;
+    }
+
+    list.innerHTML = data.map(a => `
+      <article class="announcement-item">
+        <div class="announcement-item-header">
+          <strong>${escapeHTML(a.title)}</strong>
+          <time datetime="${escapeHTML(a.created_at)}">${escapeHTML(formatDate(a.created_at))}</time>
+        </div>
+        <p>${escapeHTML(a.message)}</p>
+      </article>
+    `).join("");
+  }
+
+  /* =========================================================
      SEARCH
      ========================================================= */
 
@@ -2736,6 +2945,9 @@
 
     on("#report-board-select", "change", onReportBoardChange);
     on("#report-post-select", "change", onReportPostChange);
+    on("#user-dark-mode", "change", event => saveDarkMode(event.target.checked));
+    on("#mark-notifications-read", "click", markAllNotificationsRead);
+
 
     // 管理画面
     setupAdminAutoRefresh();
@@ -2974,6 +3186,7 @@
 
       await loadCurrentUser();
       await loadSiteSettings();
+      await loadUserPreferences();
       await checkIpBan();
       startSessionWatch();
       recordLoginIp();
