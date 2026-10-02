@@ -602,12 +602,8 @@
     if (state.user) {
       await loadProfile();
 
-      if (state.profile?.status === "banned") {
-        state.accessBlocked = false;
-        state.accountBlocked = true;
-        const message = document.getElementById("account-blocked-message");
-        if (message) message.textContent = state.profile?.ban_reason || "このアカウントではサイトを利用できません。";
-      }
+      state.accessBlocked = false;
+      applyAccountRestriction(state.profile);
     } else {
       state.profile = null;
       state.adminVerified = false;
@@ -630,8 +626,14 @@
 
       state.user = data.user;
       await loadProfile();
+      applyAccountRestriction(state.profile);
       updateAuthUI();
       recordLoginIp(true);
+
+      if (state.accountBlocked) {
+        renderRoute();
+        return;
+      }
 
       toast("ログインしました。", "success");
       navigate("#home");
@@ -751,6 +753,18 @@
   /* =========================================================
      PROFILE
      ========================================================= */
+
+  function applyAccountRestriction(profile) {
+    const banned = profile?.status === "banned";
+    state.accountBlocked = banned;
+    if (!banned) return;
+
+    const reason = String(profile?.ban_reason || "").trim();
+    const message = document.getElementById("account-blocked-message");
+    if (message) {
+      message.textContent = reason || "このアカウントではサイトを利用できません。";
+    }
+  }
 
   async function loadProfile() {
     const userAtStart = state.user;
@@ -3554,12 +3568,9 @@
 
           if ((state.user?.id || null) !== eventUserId) return;
 
-          if (state.profile?.status === "banned") {
-            state.accessBlocked = false;
-            state.accountBlocked = true;
-            const message = document.getElementById("account-blocked-message");
-            if (message) message.textContent = state.profile?.ban_reason || "このアカウントではサイトを利用できません。";
-          }
+          state.accessBlocked = false;
+          applyAccountRestriction(state.profile);
+          if (state.accountBlocked) renderRoute();
         } else {
           state.profile = null;
           state.adminVerified = false;
