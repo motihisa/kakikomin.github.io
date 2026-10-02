@@ -1349,15 +1349,31 @@
 
         <form id="admin-notification-form" class="settings-form">
           <div class="form-group">
-            <label for="admin-notification-title">通知タイトル</label>
-            <input type="text" id="admin-notification-title" maxlength="100" required>
+            <label for="admin-notification-title">メッセージタイトル</label>
+            <input type="text" id="admin-notification-title" maxlength="100" placeholder="例：重要なお知らせ" required>
           </div>
           <div class="form-group">
-            <label for="admin-notification-message">メッセージ</label>
-            <textarea id="admin-notification-message" maxlength="2000" required></textarea>
+            <label for="admin-notification-message">全員に送るメッセージ</label>
+            <textarea id="admin-notification-message" maxlength="2000" placeholder="全ユーザーに表示するメッセージを入力してください。" required></textarea>
           </div>
-          <button type="submit" class="primary-button">全員に通知を送信</button>
+          <div class="account-panel">
+            <strong>送信先：全ユーザー</strong>
+            <p>送信すると、通知ページに全員向けメッセージとして表示されます。送信後の取り消しはできません。</p>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="primary-button">全員にメッセージを送信</button>
+            <button type="button" class="secondary-button" id="admin-notification-clear">入力をクリア</button>
+          </div>
         </form>
+
+        <div class="admin-section-header">
+          <div>
+            <h3>送信履歴</h3>
+            <p>最近送信した全員向けメッセージを確認できます。</p>
+          </div>
+          <button type="button" class="secondary-button" id="admin-notification-refresh">履歴を更新</button>
+        </div>
+        <div id="admin-notification-history" class="admin-list"></div>
 
       </div>
     </section>
