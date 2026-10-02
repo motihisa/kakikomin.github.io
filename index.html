@@ -622,6 +622,15 @@
           <button type="submit" class="primary-button">保存</button>
         </form>
 
+        <div class="account-panel user-display-settings">
+          <h2>表示設定</h2>
+          <div class="form-option">
+            <input type="checkbox" id="user-dark-mode">
+            <label for="user-dark-mode">ダークモード</label>
+          </div>
+          <p class="settings-help">この設定は自分のアカウントだけに保存されます。</p>
+        </div>
+
         <hr>
 
         <div class="settings-danger-zone">
@@ -1230,6 +1239,28 @@
           </div>
 
           <button type="submit" class="primary-button">サイト設定を保存</button>
+
+          <div class="admin-section-divider"></div>
+
+          <div class="admin-section-header">
+            <div>
+              <p class="section-label">NOTIFICATION</p>
+              <h2>全員への通知</h2>
+              <p>管理者だけが全ユーザーへ通知を送信できます。</p>
+            </div>
+          </div>
+
+          <form id="admin-notification-form" class="settings-form">
+            <div class="form-group">
+              <label for="admin-notification-title">通知タイトル</label>
+              <input type="text" id="admin-notification-title" maxlength="100" required>
+            </div>
+            <div class="form-group">
+              <label for="admin-notification-message">メッセージ</label>
+              <textarea id="admin-notification-message" maxlength="2000" required></textarea>
+            </div>
+            <button type="submit" class="primary-button">全員に通知を送信</button>
+          </form>
         </form>
 
       </div>
