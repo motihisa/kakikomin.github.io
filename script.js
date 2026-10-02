@@ -403,7 +403,9 @@
         section.classList.remove("active");
       });
 
-      const id = state.accountBlocked ? "account-blocked" : "access-blocked";
+      const id = state.ipBanned
+        ? "access-blocked"
+        : (state.accountBlocked ? "account-blocked" : "access-blocked");
       const blocked = document.getElementById(id);
       if (blocked) {
         blocked.hidden = false;
@@ -608,9 +610,9 @@
     if (state.user) {
       await loadProfile();
 
-      state.accessBlocked = false;
+      state.accessBlocked = state.ipBanned === true;
       applyAccountRestriction(state.profile);
-      if (state.accountBlocked) {
+      if (state.accountBlocked || state.ipBanned) {
         renderRoute();
       }
     } else {
@@ -3608,13 +3610,15 @@
 
           if ((state.user?.id || null) !== eventUserId) return;
 
-          state.accessBlocked = false;
+          // 認証状態の更新でIP BAN状態を解除しない。
+          state.accessBlocked = state.ipBanned === true;
           applyAccountRestriction(state.profile);
-          if (state.accountBlocked) renderRoute();
+          if (state.accountBlocked || state.ipBanned) renderRoute();
         } else {
           state.profile = null;
           state.adminVerified = false;
-          state.accessBlocked = false;
+          // ログアウトしてもIP BANは解除しない。
+          state.accessBlocked = state.ipBanned === true;
           state.preferences.dark_mode = false;
           applyDarkMode();
         }
@@ -3650,9 +3654,12 @@
       await loadUserPreferences();
       await checkIpBan();
 
-      // BAN状態も初期表示前に明示的に再確認する。
-      if (!state.accessBlocked) {
+      // BAN状態を初期表示前に確定し、認証イベントによる上書き後も専用画面を優先する。
+      if (state.user && !state.accessBlocked) {
         await enforceAccountBan();
+      }
+      if (state.accountBlocked || state.ipBanned) {
+        renderRoute();
       }
 
       // ログイン状態に関係なく、サイトへアクセスしたIPを記録する。
