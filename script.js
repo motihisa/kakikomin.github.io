@@ -2453,19 +2453,6 @@
       const overlay = document.createElement("div");
       overlay.id = "admin-second-factor-overlay";
       overlay.style.cssText = "position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px;";
-      overlay.innerHTML = `
-        <form id="admin-second-factor-form" style="width:min(420px,100%);background:#fff;border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
-          <h2 style="margin-top:0">管理者追加認証</h2>
-          <p>管理画面を開くには、管理者用の追加パスワードが必要です。</p>
-          <label for="admin-second-factor-password">追加パスワード</label>
-          <input id="admin-second-factor-password" type="password" autocomplete="current-password" required style="width:100%;box-sizing:border-box;margin:10px 0 16px;padding:12px">
-          <div style="display:flex;gap:10px;justify-content:flex-end">
-            <button type="button" id="admin-second-factor-cancel" class="secondary-button">キャンセル</button>
-            <button type="submit" class="primary-button">認証</button>
-          </div>
-          <p id="admin-second-factor-error" style="min-height:1.4em;color:#b42318;margin-bottom:0"></p>
-        </form>`;
-      document.body.appendChild(overlay);
 
       const finish = value => {
         overlay.remove();
@@ -2473,43 +2460,157 @@
         resolve(value);
       };
 
-      $("#admin-second-factor-cancel", overlay)?.addEventListener("click", () => finish(false));
-      $("#admin-second-factor-form", overlay)?.addEventListener("submit", async event => {
-        event.preventDefault();
-        const password = $("#admin-second-factor-password", overlay)?.value || "";
-        const errorEl = $("#admin-second-factor-error", overlay);
-        const button = $("button[type='submit']", overlay);
-        if (button) button.disabled = true;
+      const showFirstFactor = () => {
+        overlay.innerHTML = `
+          <form id="admin-first-factor-form" style="width:min(420px,100%);background:#fff;border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+            <h2 style="margin-top:0">管理者追加認証 1/2</h2>
+            <p>管理画面を開くには、管理者用の追加パスワードが必要です。</p>
+            <label for="admin-first-factor-password">追加パスワード</label>
+            <input id="admin-first-factor-password" type="password" autocomplete="current-password" required style="width:100%;box-sizing:border-box;margin:10px 0 16px;padding:12px">
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+              <button type="button" id="admin-second-factor-cancel" class="secondary-button">キャンセル</button>
+              <button type="submit" class="primary-button">次へ</button>
+            </div>
+            <p id="admin-first-factor-error" style="min-height:1.4em;color:#b42318;margin-bottom:0"></p>
+          </form>`;
+        document.body.appendChild(overlay);
 
-        // RPCの前にブラウザ側の現在セッションを確認する。
-        // セッションが切れている場合は「パスワード間違い」と誤表示しない。
-        let sessionResult = await supabase.auth.getSession();
-        if (!sessionResult.data?.session) {
-          sessionResult = await supabase.auth.refreshSession();
-        }
+        $("#admin-second-factor-cancel", overlay)?.addEventListener("click", () => finish(false));
+        $("#admin-first-factor-form", overlay)?.addEventListener("submit", async event => {
+          event.preventDefault();
+          const currentPassword = $("#admin-first-factor-password", overlay)?.value || "";
+          const errorEl = $("#admin-first-factor-error", overlay);
+          const button = $("button[type='submit']", overlay);
+          if (button) button.disabled = true;
 
-        if (!sessionResult.data?.session) {
-          if (errorEl) errorEl.textContent = "ログインセッションがありません。もう一度ログインしてください。";
-          if (button) button.disabled = false;
-          return;
-        }
+          let sessionResult = await supabase.auth.getSession();
+          if (!sessionResult.data?.session) sessionResult = await supabase.auth.refreshSession();
+          if (!sessionResult.data?.session) {
+            if (errorEl) errorEl.textContent = "ログインセッションがありません。もう一度ログインしてください。";
+            if (button) button.disabled = false;
+            return;
+          }
 
-        const { data, error } = await supabase.rpc("verify_admin_second_factor", { p_password: password });
-        if (!error && data === true) {
-          state.adminSecondFactorVerified = true;
-          finish(true);
-          return;
-        }
+          const { data, error } = await supabase.rpc("verify_admin_second_factor", { p_password: currentPassword });
+          if (error || data !== true) {
+            if (error) console.warn("admin first factor:", error);
+            if (errorEl) errorEl.textContent = error
+              ? "追加認証の確認に失敗しました。セッションを確認してください。"
+              : "追加パスワードが正しくありません。";
+            if (button) button.disabled = false;
+            $("#admin-first-factor-password", overlay)?.select();
+            return;
+          }
 
-        if (error) console.warn("admin second factor:", error);
-        if (errorEl) errorEl.textContent = error
-          ? "追加認証の確認に失敗しました。セッションを確認してもう一度お試しください。"
-          : "追加パスワードが正しくありません。";
-        if (button) button.disabled = false;
-        $("#admin-second-factor-password", overlay)?.select();
-      });
+          const configuredResult = await supabase.rpc("admin_second_factor_2_configured");
+          if (configuredResult.error) {
+            console.warn("admin second factor 2 configured:", configuredResult.error);
+            if (errorEl) errorEl.textContent = "第2追加認証の設定状態を確認できませんでした。";
+            if (button) button.disabled = false;
+            return;
+          }
 
-      setTimeout(() => $("#admin-second-factor-password", overlay)?.focus(), 0);
+          if (configuredResult.data !== true) {
+            overlay.innerHTML = `
+              <form id="admin-second-factor-setup-form" style="width:min(420px,100%);background:#fff;border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+                <h2 style="margin-top:0">管理者追加認証 2/2 の設定</h2>
+                <p>初回のみ、第2追加パスワードを設定してください。12文字以上で設定します。</p>
+                <label for="admin-second-factor-new-password">第2追加パスワード</label>
+                <input id="admin-second-factor-new-password" type="password" minlength="12" autocomplete="new-password" required style="width:100%;box-sizing:border-box;margin:10px 0 12px;padding:12px">
+                <label for="admin-second-factor-new-password-confirm">第2追加パスワード（確認）</label>
+                <input id="admin-second-factor-new-password-confirm" type="password" minlength="12" autocomplete="new-password" required style="width:100%;box-sizing:border-box;margin:10px 0 16px;padding:12px">
+                <div style="display:flex;gap:10px;justify-content:flex-end">
+                  <button type="button" id="admin-second-factor-setup-cancel" class="secondary-button">キャンセル</button>
+                  <button type="submit" class="primary-button">設定して次へ</button>
+                </div>
+                <p id="admin-second-factor-setup-error" style="min-height:1.4em;color:#b42318;margin-bottom:0"></p>
+              </form>`;
+
+            $("#admin-second-factor-setup-cancel", overlay)?.addEventListener("click", () => finish(false));
+            $("#admin-second-factor-setup-form", overlay)?.addEventListener("submit", async setupEvent => {
+              setupEvent.preventDefault();
+              const newPassword = $("#admin-second-factor-new-password", overlay)?.value || "";
+              const confirmPassword = $("#admin-second-factor-new-password-confirm", overlay)?.value || "";
+              const setupError = $("#admin-second-factor-setup-error", overlay);
+              const setupButton = $("button[type='submit']", overlay);
+              if (newPassword !== confirmPassword) {
+                if (setupError) setupError.textContent = "2つのパスワードが一致しません。";
+                return;
+              }
+              if (newPassword.length < 12) {
+                if (setupError) setupError.textContent = "第2追加パスワードは12文字以上にしてください。";
+                return;
+              }
+              if (setupButton) setupButton.disabled = true;
+
+              const { data: setData, error: setError } = await supabase.rpc("set_admin_second_factor_2", {
+                p_current_password: currentPassword,
+                p_new_password: newPassword
+              });
+
+              if (setError || setData !== true) {
+                console.warn("admin second factor 2 setup:", setError);
+                if (setupError) setupError.textContent = "第2追加パスワードを設定できませんでした。";
+                if (setupButton) setupButton.disabled = false;
+                return;
+              }
+
+              showSecondFactor2();
+            });
+            return;
+          }
+
+          showSecondFactor2();
+        });
+
+        setTimeout(() => $("#admin-first-factor-password", overlay)?.focus(), 0);
+      };
+
+      const showSecondFactor2 = () => {
+        overlay.innerHTML = `
+          <form id="admin-second-factor-2-form" style="width:min(420px,100%);background:#fff;border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+            <h2 style="margin-top:0">管理者追加認証 2/2</h2>
+            <p>第2追加パスワードを入力してください。1回でも間違えると、このIPアドレスを即時BANします。</p>
+            <label for="admin-second-factor-2-password">第2追加パスワード</label>
+            <input id="admin-second-factor-2-password" type="password" autocomplete="current-password" required style="width:100%;box-sizing:border-box;margin:10px 0 16px;padding:12px">
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+              <button type="button" id="admin-second-factor-2-cancel" class="secondary-button">キャンセル</button>
+              <button type="submit" class="primary-button">認証</button>
+            </div>
+            <p id="admin-second-factor-2-error" style="min-height:1.4em;color:#b42318;margin-bottom:0"></p>
+          </form>`;
+
+        $("#admin-second-factor-2-cancel", overlay)?.addEventListener("click", () => finish(false));
+        $("#admin-second-factor-2-form", overlay)?.addEventListener("submit", async event => {
+          event.preventDefault();
+          const password = $("#admin-second-factor-2-password", overlay)?.value || "";
+          const errorEl = $("#admin-second-factor-2-error", overlay);
+          const button = $("button[type='submit']", overlay);
+          if (button) button.disabled = true;
+
+          const { data, error } = await supabase.rpc("verify_admin_second_factor_2", { p_password: password });
+          if (!error && data === true) {
+            state.adminSecondFactorVerified = true;
+            state.adminSecondFactorVerified = true;
+            finish(true);
+            return;
+          }
+
+          if (error) console.warn("admin second factor 2:", error);
+          state.ipBanned = true;
+          state.accessBlocked = true;
+          if (errorEl) errorEl.textContent = "認証に失敗しました。このIPアドレスは制限されました。";
+          toast("第2追加認証に失敗したため、このIPアドレスを制限しました。", "error");
+          setTimeout(() => {
+            finish(false);
+            navigate("#home");
+          }, 500);
+        });
+
+        setTimeout(() => $("#admin-second-factor-2-password", overlay)?.focus(), 0);
+      };
+
+      showFirstFactor();
     });
 
     return state.adminSecondFactorPromise;
