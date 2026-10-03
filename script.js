@@ -2555,7 +2555,11 @@
                 return;
               }
 
-              showSecondFactor2();
+              // 設定直後は、入力済みの第2パスワードをもう一度入力させない。
+              // set_admin_second_factor_2 が成功した時点でサーバー側で保存済みなので、
+              // そのまま第2段階の認証済み状態として扱う。
+              state.adminSecondFactorVerified = true;
+              finish(true);
             });
             return;
           }
