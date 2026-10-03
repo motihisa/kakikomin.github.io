@@ -136,14 +136,9 @@
   }
 
   function isAdminUser() {
-    // サーバー側の権限は必ずRLS/RPCで保護する。
-    // ただし、is_admin() の一時的なセッション判定失敗で
-    // 正しい管理者を一般ユーザー扱いしないよう、取得済みの自分の
-    // プロフィールもUI表示のフォールバックとして確認する。
-    const profileAdmin =
-      state.profile?.role === "admin" &&
-      state.profile?.status === "active";
-    return Boolean(state.user && (state.adminVerified === true || profileAdmin));
+    // 管理者判定は専用テーブル＋サーバー側認証の結果だけを信頼する。
+    // profiles.role は表示用のダミー情報として扱い、権限判定には使わない。
+    return Boolean(state.user && state.adminVerified === true && state.adminSecondFactorVerified === true && state.adminOneTimeCodeVerified === true);
   }
 
   function comingSoon(name = "この機能") {
@@ -2460,6 +2455,178 @@
         resolve(value);
       };
 
+      const showOneTimeCode = () => {
+        let timer = null;
+        let remaining = 0;
+
+        const render = message => {
+          overlay.innerHTML = `
+            <form id="admin-one-time-code-form" style="width:min(420px,100%);background:#fff;border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+              <h2 style="margin-top:0">管理者ワンタイム認証</h2>
+              <p>確認コードを登録済みの管理者用メールアドレスへ送信しました。</p>
+              <p id="admin-one-time-countdown" style="font-weight:700">確認コードの有効期限を確認中...</p>
+              <label for="admin-one-time-code">6桁の確認コード</label>
+              <input id="admin-one-time-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required style="width:100%;box-sizing:border-box;margin:10px 0 16px;padding:12px;font-size:20px;letter-spacing:6px">
+              <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+                <button type="button" id="admin-one-time-resend" class="secondary-button">新しいコードを送信</button>
+                <button type="button" id="admin-one-time-cancel" class="secondary-button">キャンセル</button>
+                <button type="submit" class="primary-button">認証</button>
+              </div>
+              <p id="admin-one-time-code-error" style="min-height:1.4em;color:#b42318;margin-bottom:0"></p>
+            </form>`;
+          document.body.appendChild(overlay);
+
+          const errorEl = $("#admin-one-time-code-error", overlay);
+          if (message && errorEl) errorEl.textContent = message;
+
+          const updateCountdown = () => {
+            const countdown = $("#admin-one-time-countdown", overlay);
+            const resend = $("#admin-one-time-resend", overlay);
+            if (countdown) {
+              countdown.textContent = remaining > 0
+                ? `確認コードの有効期限：あと ${remaining} 秒`
+                : "確認コードの有効期限が切れています。新しいコードを送信してください。";
+            }
+            if (resend) resend.disabled = remaining > 0;
+          };
+
+          const startCountdown = seconds => {
+            if (timer) clearInterval(timer);
+            remaining = Math.max(0, Number(seconds) || 0);
+            updateCountdown();
+            timer = setInterval(() => {
+              remaining = Math.max(0, remaining - 1);
+              updateCountdown();
+              if (remaining <= 0) {
+                clearInterval(timer);
+                timer = null;
+              }
+            }, 1000);
+          };
+
+          $("#admin-one-time-cancel", overlay)?.addEventListener("click", () => {
+            if (timer) clearInterval(timer);
+            finish(false);
+          });
+
+          $("#admin-one-time-resend", overlay)?.addEventListener("click", async event => {
+            const button = event.currentTarget;
+            button.disabled = true;
+            const { data, error } = await supabase.functions.invoke("send-admin-one-time-code", { body: {} });
+            if (error || data?.sent !== true) {
+              console.warn("admin one-time code resend:", error, data);
+              if (errorEl) {
+                errorEl.textContent = data?.error === "email_provider_not_configured"
+                  ? "メール送信設定がまだ完了していません。"
+                  : "確認コードを再送信できませんでした。";
+              }
+              button.disabled = false;
+              return;
+            }
+            if (errorEl) errorEl.textContent = "新しい確認コードを送信しました。";
+            startCountdown(Math.max(0, Math.ceil((new Date(data.expires_at).getTime() - Date.now()) / 1000)));
+          });
+
+          $("#admin-one-time-code-form", overlay)?.addEventListener("submit", async event => {
+            event.preventDefault();
+            const code = ($("#admin-one-time-code", overlay)?.value || "").trim();
+            const errorEl = $("#admin-one-time-code-error", overlay);
+            const button = $("button[type='submit']", overlay);
+            if (!/^\\d{6}$/.test(code)) {
+              if (errorEl) errorEl.textContent = "6桁の確認コードを入力してください。";
+              return;
+            }
+            if (remaining <= 0) {
+              if (errorEl) errorEl.textContent = "確認コードの期限が切れています。新しいコードを送信してください。";
+              return;
+            }
+            if (button) button.disabled = true;
+
+            const { data, error } = await supabase.rpc("verify_admin_one_time_code", { p_code: code });
+            if (!error && data === true) {
+              state.adminOneTimeCodeVerified = true;
+              if (timer) clearInterval(timer);
+              finish(true);
+              return;
+            }
+
+            if (error) console.warn("admin one-time code:", error);
+            if (errorEl) errorEl.textContent = "確認コードが正しくないか、期限切れです。";
+            if (button) button.disabled = false;
+            $("#admin-one-time-code", overlay)?.select();
+          });
+
+          startCountdown(Math.max(0, Math.ceil((new Date(overlay.dataset.expiresAt || Date.now()).getTime() - Date.now()) / 1000)));
+          setTimeout(() => $("#admin-one-time-code", overlay)?.focus(), 0);
+        };
+
+        const sendCode = async () => {
+          const { data, error } = await supabase.functions.invoke("send-admin-one-time-code", { body: {} });
+          if (error || data?.sent !== true) {
+            console.warn("admin one-time code:", error, data);
+            render(data?.error === "email_provider_not_configured"
+              ? "メール送信設定がまだ完了していません。"
+              : "確認コードを送信できませんでした。");
+            return;
+          }
+          render("");
+          const expiresAt = new Date(data.expires_at).getTime();
+          const countdown = $("#admin-one-time-countdown", overlay);
+          const resend = $("#admin-one-time-resend", overlay);
+          if (countdown) countdown.textContent = `確認コードの有効期限：あと ${Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000))} 秒`;
+          if (resend) resend.disabled = true;
+          overlay.dataset.expiresAt = data.expires_at;
+          const input = $("#admin-one-time-code", overlay);
+          if (input) input.focus();
+        };
+
+        sendCode();
+      };
+
+      const showSecondFactor2 = () => {
+        overlay.innerHTML = `
+          <form id="admin-second-factor-2-form" style="width:min(420px,100%);background:#fff;border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+            <h2 style="margin-top:0">管理者追加認証 2/2</h2>
+            <p>第2追加パスワードを入力してください。1回でも間違えると、このIPアドレスを即時BANします。</p>
+            <label for="admin-second-factor-2-password">第2追加パスワード</label>
+            <input id="admin-second-factor-2-password" type="password" autocomplete="current-password" required style="width:100%;box-sizing:border-box;margin:10px 0 16px;padding:12px">
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+              <button type="button" id="admin-second-factor-2-cancel" class="secondary-button">キャンセル</button>
+              <button type="submit" class="primary-button">認証</button>
+            </div>
+            <p id="admin-second-factor-2-error" style="min-height:1.4em;color:#b42318;margin-bottom:0"></p>
+          </form>`;
+        document.body.appendChild(overlay);
+
+        $("#admin-second-factor-2-cancel", overlay)?.addEventListener("click", () => finish(false));
+        $("#admin-second-factor-2-form", overlay)?.addEventListener("submit", async event => {
+          event.preventDefault();
+          const password = $("#admin-second-factor-2-password", overlay)?.value || "";
+          const errorEl = $("#admin-second-factor-2-error", overlay);
+          const button = $("button[type='submit']", overlay);
+          if (button) button.disabled = true;
+
+          const { data, error } = await supabase.rpc("verify_admin_second_factor_2", { p_password: password });
+          if (!error && data === true) {
+            state.adminSecondFactorVerified = true;
+            showOneTimeCode();
+            return;
+          }
+
+          if (error) console.warn("admin second factor 2:", error);
+          state.ipBanned = true;
+          state.accessBlocked = true;
+          if (errorEl) errorEl.textContent = "認証に失敗しました。このIPアドレスは制限されました。";
+          toast("第2追加認証に失敗したため、このIPアドレスを制限しました。", "error");
+          setTimeout(() => {
+            finish(false);
+            navigate("#home");
+          }, 500);
+        });
+
+        setTimeout(() => $("#admin-second-factor-2-password", overlay)?.focus(), 0);
+      };
+
       const showFirstFactor = () => {
         overlay.innerHTML = `
           <form id="admin-first-factor-form" style="width:min(420px,100%);background:#fff;border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
@@ -2525,7 +2692,6 @@
                 </div>
                 <p id="admin-second-factor-setup-error" style="min-height:1.4em;color:#b42318;margin-bottom:0"></p>
               </form>`;
-
             $("#admin-second-factor-setup-cancel", overlay)?.addEventListener("click", () => finish(false));
             $("#admin-second-factor-setup-form", overlay)?.addEventListener("submit", async setupEvent => {
               setupEvent.preventDefault();
@@ -2555,11 +2721,8 @@
                 return;
               }
 
-              // 設定直後は、入力済みの第2パスワードをもう一度入力させない。
-              // set_admin_second_factor_2 が成功した時点でサーバー側で保存済みなので、
-              // そのまま第2段階の認証済み状態として扱う。
               state.adminSecondFactorVerified = true;
-              finish(true);
+              showOneTimeCode();
             });
             return;
           }
@@ -2568,49 +2731,6 @@
         });
 
         setTimeout(() => $("#admin-first-factor-password", overlay)?.focus(), 0);
-      };
-
-      const showSecondFactor2 = () => {
-        overlay.innerHTML = `
-          <form id="admin-second-factor-2-form" style="width:min(420px,100%);background:#fff;border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
-            <h2 style="margin-top:0">管理者追加認証 2/2</h2>
-            <p>第2追加パスワードを入力してください。1回でも間違えると、このIPアドレスを即時BANします。</p>
-            <label for="admin-second-factor-2-password">第2追加パスワード</label>
-            <input id="admin-second-factor-2-password" type="password" autocomplete="current-password" required style="width:100%;box-sizing:border-box;margin:10px 0 16px;padding:12px">
-            <div style="display:flex;gap:10px;justify-content:flex-end">
-              <button type="button" id="admin-second-factor-2-cancel" class="secondary-button">キャンセル</button>
-              <button type="submit" class="primary-button">認証</button>
-            </div>
-            <p id="admin-second-factor-2-error" style="min-height:1.4em;color:#b42318;margin-bottom:0"></p>
-          </form>`;
-
-        $("#admin-second-factor-2-cancel", overlay)?.addEventListener("click", () => finish(false));
-        $("#admin-second-factor-2-form", overlay)?.addEventListener("submit", async event => {
-          event.preventDefault();
-          const password = $("#admin-second-factor-2-password", overlay)?.value || "";
-          const errorEl = $("#admin-second-factor-2-error", overlay);
-          const button = $("button[type='submit']", overlay);
-          if (button) button.disabled = true;
-
-          const { data, error } = await supabase.rpc("verify_admin_second_factor_2", { p_password: password });
-          if (!error && data === true) {
-            state.adminSecondFactorVerified = true;
-            finish(true);
-            return;
-          }
-
-          if (error) console.warn("admin second factor 2:", error);
-          state.ipBanned = true;
-          state.accessBlocked = true;
-          if (errorEl) errorEl.textContent = "認証に失敗しました。このIPアドレスは制限されました。";
-          toast("第2追加認証に失敗したため、このIPアドレスを制限しました。", "error");
-          setTimeout(() => {
-            finish(false);
-            navigate("#home");
-          }, 500);
-        });
-
-        setTimeout(() => $("#admin-second-factor-2-password", overlay)?.focus(), 0);
       };
 
       showFirstFactor();
@@ -2627,30 +2747,25 @@
     }
 
     try {
-      const { data, error } = await supabase.rpc("is_admin");
-      if (!error) {
-        state.adminVerified = data === true;
-      } else {
-        console.warn("is_admin:", error);
+      const { data, error } = await supabase.rpc("is_admin_authorized");
+      if (error) {
+        console.warn("is_admin_authorized:", error);
+        toast("管理者権限を確認できませんでした。", "error");
+        navigate("#home");
+        return false;
       }
+      state.adminVerified = data === true;
     } catch (error) {
-      console.warn("admin verification:", error);
-    }
-
-    const profileAdmin =
-      state.profile?.id === state.user.id &&
-      state.profile?.role === "admin" &&
-      state.profile?.status === "active";
-
-    if (!(state.adminVerified === true || profileAdmin)) {
-      console.warn("ensureAdmin failed: DB is_admin() and profile check both denied");
-      toast("管理者権限が必要です。", "error");
+      console.warn("admin authorization:", error);
+      toast("管理者権限を確認できませんでした。", "error");
       navigate("#home");
       return false;
     }
 
-    if (state.adminVerified !== true && profileAdmin) {
-      console.warn("ensureAdmin: using verified profile fallback for UI access");
+    if (state.adminVerified !== true) {
+      toast("管理者権限が必要です。", "error");
+      navigate("#home");
+      return false;
     }
 
     const secondFactorOk = await requestAdminSecondFactor();
@@ -2660,7 +2775,6 @@
       return false;
     }
 
-    state.adminVerified = state.adminVerified === true;
     updateAuthUI();
     return true;
   }
