@@ -2576,6 +2576,7 @@
           if (countdown) countdown.textContent = `確認コードの有効期限：あと ${Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000))} 秒`;
           if (resend) resend.disabled = true;
           overlay.dataset.expiresAt = data.expires_at;
+          startCountdown(Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)));
           const input = $("#admin-one-time-code", overlay);
           if (input) input.focus();
         };
