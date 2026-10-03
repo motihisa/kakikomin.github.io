@@ -2441,7 +2441,7 @@
      ========================================================= */
 
   function requestAdminSecondFactor() {
-    if (state.adminSecondFactorVerified) return Promise.resolve(true);
+    if (state.adminSecondFactorVerified && state.adminOneTimeCodeVerified) return Promise.resolve(true);
     if (state.adminSecondFactorPromise) return state.adminSecondFactorPromise;
 
     state.adminSecondFactorPromise = new Promise(resolve => {
