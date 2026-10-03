@@ -2591,7 +2591,6 @@
           const { data, error } = await supabase.rpc("verify_admin_second_factor_2", { p_password: password });
           if (!error && data === true) {
             state.adminSecondFactorVerified = true;
-            state.adminSecondFactorVerified = true;
             finish(true);
             return;
           }
