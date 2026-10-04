@@ -183,10 +183,39 @@
   async function checkIpBan() {
     try {
       const { data, error } = await supabase.rpc("is_ip_banned");
+
       if (error) {
+        // pgrst.db_pre_request が有効なため、BAN中はRPC自体が403(IP_BANNED)で拒否される。
+        // この403を「未BAN」と誤判定すると通常画面へ進んでしまうため、BANエラーを明示的に検出する。
+        const raw = [
+          error?.message,
+          error?.details,
+          error?.hint,
+          error?.code
+        ].filter(Boolean).join(" ");
+        let blockedByIpBan = /IP_BANNED/i.test(raw);
+
+        try {
+          const parsed = JSON.parse(error?.message || "");
+          blockedByIpBan = blockedByIpBan || parsed?.code === "IP_BANNED";
+        } catch (_) {}
+
+        if (blockedByIpBan || Number(error?.status) === 403) {
+          state.ipBanned = true;
+          state.accessBlocked = true;
+
+          const title = document.getElementById("access-blocked-title");
+          const message = document.getElementById("access-blocked-message");
+          if (title) title.textContent = "アクセスが制限されています";
+          if (message) message.textContent = "このネットワークからはサイトを利用できません。";
+
+          return true;
+        }
+
         console.warn("is_ip_banned:", error);
         return false;
       }
+
       state.ipBanned = data === true;
       if (state.ipBanned) {
         state.accessBlocked = true;
@@ -197,7 +226,7 @@
       }
       return state.ipBanned;
     } catch (error) {
-      console.warn(error);
+      console.warn("checkIpBan:", error);
       return false;
     }
   }
