@@ -690,11 +690,11 @@
         resolve(value);
       };
 
-      overlay.innerHTML = \`
+      overlay.innerHTML = `
         <form id="signup-email-verification-form" style="width:min(420px,100%);background:#fff;border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
           <h2 style="margin-top:0">メールアドレスの確認</h2>
           <p>登録したメールアドレスに確認コードを送信しました。</p>
-          <p style="font-size:14px;word-break:break-all">\${escapeHTML(email)}</p>
+          <p style="font-size:14px;word-break:break-all">${escapeHTML(email)}</p>
           <label for="signup-email-verification-code">6桁の確認コード</label>
           <input id="signup-email-verification-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required style="width:100%;box-sizing:border-box;margin:10px 0 16px;padding:12px;font-size:20px;letter-spacing:6px">
           <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
@@ -703,7 +703,7 @@
             <button type="submit" class="primary-button">確認する</button>
           </div>
           <p id="signup-email-verification-error" style="min-height:1.4em;color:#b42318;margin-bottom:0"></p>
-        </form>\`;
+        </form>`;
       document.body.appendChild(overlay);
 
       const errorEl = $("#signup-email-verification-error", overlay);
@@ -733,7 +733,7 @@
       $("#signup-email-verification-form", overlay)?.addEventListener("submit", async event => {
         event.preventDefault();
         const code = normalizeCode(input?.value);
-        if (!/^\\d{6}$/.test(code)) {
+        if (!/^\d{6}$/.test(code)) {
           if (errorEl) errorEl.textContent = "6桁の確認コードを入力してください。";
           return;
         }
