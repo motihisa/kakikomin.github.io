@@ -678,6 +678,110 @@
     }
   }
 
+
+  function showSignupEmailVerification(email, username) {
+    return new Promise(resolve => {
+      const overlay = document.createElement("div");
+      overlay.id = "signup-email-verification-overlay";
+      overlay.style.cssText = "position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px;";
+
+      const finish = value => {
+        overlay.remove();
+        resolve(value);
+      };
+
+      overlay.innerHTML = \`
+        <form id="signup-email-verification-form" style="width:min(420px,100%);background:#fff;border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+          <h2 style="margin-top:0">メールアドレスの確認</h2>
+          <p>登録したメールアドレスに確認コードを送信しました。</p>
+          <p style="font-size:14px;word-break:break-all">\${escapeHTML(email)}</p>
+          <label for="signup-email-verification-code">6桁の確認コード</label>
+          <input id="signup-email-verification-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required style="width:100%;box-sizing:border-box;margin:10px 0 16px;padding:12px;font-size:20px;letter-spacing:6px">
+          <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+            <button type="button" id="signup-email-verification-resend" class="secondary-button">コードを再送信</button>
+            <button type="button" id="signup-email-verification-cancel" class="secondary-button">キャンセル</button>
+            <button type="submit" class="primary-button">確認する</button>
+          </div>
+          <p id="signup-email-verification-error" style="min-height:1.4em;color:#b42318;margin-bottom:0"></p>
+        </form>\`;
+      document.body.appendChild(overlay);
+
+      const errorEl = $("#signup-email-verification-error", overlay);
+      const input = $("#signup-email-verification-code", overlay);
+      input?.focus();
+
+      const normalizeCode = value => String(value ?? "")
+        .trim()
+        .replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xfee0));
+
+      $("#signup-email-verification-cancel", overlay)?.addEventListener("click", () => finish(false));
+
+      $("#signup-email-verification-resend", overlay)?.addEventListener("click", async event => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        const { error } = await supabase.auth.resend({ type: "signup", email });
+        if (error) {
+          console.error("signup verification resend:", error);
+          if (errorEl) errorEl.textContent = error.message || "確認コードを再送信できませんでした。";
+          button.disabled = false;
+          return;
+        }
+        if (errorEl) errorEl.textContent = "新しい確認コードを送信しました。";
+        setTimeout(() => { button.disabled = false; }, 60000);
+      });
+
+      $("#signup-email-verification-form", overlay)?.addEventListener("submit", async event => {
+        event.preventDefault();
+        const code = normalizeCode(input?.value);
+        if (!/^\\d{6}$/.test(code)) {
+          if (errorEl) errorEl.textContent = "6桁の確認コードを入力してください。";
+          return;
+        }
+
+        const button = $("button[type='submit']", overlay);
+        if (button) button.disabled = true;
+
+        const { data, error } = await supabase.auth.verifyOtp({
+          email,
+          token: code,
+          type: "email"
+        });
+
+        if (error) {
+          console.error("signup verification:", error);
+          if (errorEl) errorEl.textContent = "確認コードが正しくないか、期限切れです。";
+          if (button) button.disabled = false;
+          return;
+        }
+
+        const verifiedUser = data?.user || (await supabase.auth.getUser()).data?.user;
+        if (!verifiedUser) {
+          if (errorEl) errorEl.textContent = "メール確認後のアカウント情報を取得できませんでした。";
+          if (button) button.disabled = false;
+          return;
+        }
+
+        try {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .upsert({ id: verifiedUser.id, username, bio: "" });
+
+          if (profileError) throw profileError;
+
+          state.user = verifiedUser;
+          await loadProfile();
+          updateAuthUI();
+          await recordLoginIp(true);
+          finish(true);
+        } catch (profileError) {
+          console.error("signup profile creation:", profileError);
+          if (errorEl) errorEl.textContent = "メール確認は完了しましたが、プロフィール作成に失敗しました。";
+          if (button) button.disabled = false;
+        }
+      });
+    });
+  }
+
   async function register(username, email, password) {
     if (state.site.registration_enabled === false) {
       toast("現在、新規登録を受け付けていません。", "error");
@@ -713,13 +817,9 @@
       if (error) throw error;
       if (!data.user) throw new Error("アカウントを作成できませんでした。");
 
-      // メール確認がONだとここではセッションがない。
-      // その場合のプロフィール作成はDBトリガー（auth.users → profiles）に任せる。
       if (!data.session) {
-        // メール確認前でも「アカウント作成時のアクセスIP」を記録する。
         await recordSiteAccessIp();
-        toast("確認メールを送信しました。メール内のリンクを開いてからログインしてください。", "success");
-        navigate("#login");
+        await showSignupEmailVerification(normalizedEmail, username);
         return;
       }
 
