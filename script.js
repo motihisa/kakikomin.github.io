@@ -2532,7 +2532,7 @@
             const code = ($("#admin-one-time-code", overlay)?.value || "").trim();
             const errorEl = $("#admin-one-time-code-error", overlay);
             const button = $("button[type='submit']", overlay);
-            if (!/^\\d{6}$/.test(code)) {
+            if (!/^\d{6}$/.test(code)) {
               if (errorEl) errorEl.textContent = "6桁の確認コードを入力してください。";
               return;
             }
