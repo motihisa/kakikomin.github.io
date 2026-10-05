@@ -96,8 +96,6 @@
   };
 
   async function refresh() {
-    if (preview) return;
-
     const session = readSession();
     const token = session ? session.access_token : null;
     const result = await callRpc(token ? "get_my_account_state" : "get_public_site_settings", token);
@@ -244,12 +242,7 @@
 
     const actions = el("div", "display:flex;flex-wrap:wrap;gap:8px;margin-top:24px;");
 
-    if (preview) {
-      actions.appendChild(button("プレビューを閉じる", "button", function () {
-        location.href = location.pathname + location.hash;
-      }));
-      card.appendChild(el("p", "margin:12px 0 0;font-size:.78rem;color:var(--text-muted,#98a2b3);", "（プレビュー表示です。実際にBANはされていません）"));
-    } else if (g.kind === "banned" || g.kind === "suspended") {
+    if (g.kind === "banned" || g.kind === "suspended") {
       actions.appendChild(button("ログアウト", "button", logout));
     } else {
       actions.appendChild(button("再読み込み", "button", function () { location.reload(); }));
@@ -274,9 +267,8 @@
   }
 
   function render() {
-    const active = preview || gate;
+    const active = gate;
     const hidden =
-      !preview &&
       active &&
       active.kind === "maintenance" &&
       MAINTENANCE_OPEN_HASHES.indexOf(location.hash) !== -1;
@@ -306,12 +298,6 @@
   }
 
   function start() {
-    if (preview) {
-      gate = preview;
-      render();
-      return;
-    }
-
     refresh();
 
     window.addEventListener("hashchange", function () {
