@@ -83,7 +83,7 @@
     // IP BANはログイン状態に関係なく最優先で判定する。
     const ipResult = await callRpc("is_ip_banned", null);
     if (ipResult && ipResult.ok && ipResult.body === true) {
-      setGate({ kind: "ip", reason: "このIPアドレスは利用停止中です。" });
+      setGate({ kind: "banned", reason: "このIPアドレスは利用停止中です。" });
       return;
     }
 
@@ -96,12 +96,16 @@
     }
 
     if (token && result.body) {
-      if (result.body.status === "banned") {
-        setGate({ kind: "banned", reason: result.body.ban_reason || "" });
-        return;
-      }
-      if (result.body.status === "suspended") {
-        setGate({ kind: "suspended", reason: result.body.ban_reason || "" });
+      const accountStatus = String(result.body.status || "").trim().toLowerCase();
+
+      // BANの種類に関係なく、利用停止状態なら必ずBAN画面へ送る。
+      if (accountStatus === "banned" || accountStatus === "suspended" ||
+          accountStatus === "ban" || accountStatus === "blocked" ||
+          accountStatus === "disabled") {
+        setGate({
+          kind: "banned",
+          reason: result.body.ban_reason || "このアカウントは利用停止中です。"
+        });
         return;
       }
     }
