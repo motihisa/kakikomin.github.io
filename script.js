@@ -68,6 +68,7 @@
     adminVerified: false,
     adminSecondFactorVerified: false,
     adminSecondFactorPromise: null,
+    adminOneTimeCodeVerified: false,
     emergencyAuthenticated: false,
     forcedLogoutRunning: false,
     postsHasMore: false,
@@ -2679,6 +2680,10 @@
             const { data, error } = await supabase.rpc("verify_admin_one_time_code", { p_code: code });
             if (!error && data === true) {
               state.adminOneTimeCodeVerified = true;
+              const { data: trustSaved, error: trustError } = await supabase.rpc("admin_record_one_time_code_success");
+              if (trustError || trustSaved !== true) {
+                console.warn("admin one-time code trust save:", trustError);
+              }
               if (timer) clearInterval(timer);
               finish(true);
               return;
@@ -2744,6 +2749,14 @@
           const { data, error } = await supabase.rpc("verify_admin_second_factor_2", { p_password: password });
           if (!error && data === true) {
             state.adminSecondFactorVerified = true;
+
+            const { data: skipCode, error: skipError } = await supabase.rpc("admin_one_time_code_skip_allowed");
+            if (!skipError && skipCode === true) {
+              state.adminOneTimeCodeVerified = true;
+              finish(true);
+              return;
+            }
+
             showOneTimeCode();
             return;
           }
