@@ -297,6 +297,7 @@
     "register": "Create_account",
     "forgot-password": "forgot-password",
     "banpage": "banpage",
+    "ip-ban-home": "ip-ban-home",
 
     "profile": "profile",
     "account": "account",
@@ -360,7 +361,9 @@
     if (!route.startsWith("#")) route = `#${route}`;
 
     // BAN中は、ホームなどへの遷移をすべて拒否してBANページへ固定する。
-    if (state.accountBlocked && route !== "#banpage") {
+    if (state.ipBanned && route !== "#ip-ban-home") {
+      route = "#ip-ban-home";
+    } else if (state.accountBlocked && route !== "#banpage") {
       route = "#banpage";
     }
 
@@ -423,11 +426,11 @@
       state.accountBlocked = true;
     }
 
-    if (state.accountBlocked) {
-      if (location.hash !== "#banpage") {
-        history.replaceState(null, "", "#banpage");
+    if (state.ipBanned) {
+      if (location.hash !== "#ip-ban-home") {
+        history.replaceState(null, "", "#ip-ban-home");
       }
-      const blocked = document.getElementById("banpage");
+      const blocked = document.getElementById("ip-ban-home");
       $(".page-section").forEach(section => {
         section.hidden = true;
         section.classList.remove("active");
@@ -435,11 +438,10 @@
       if (blocked) {
         blocked.hidden = false;
         blocked.classList.add("active");
-        const message = document.getElementById("banpage-message");
-        const accountReason = String(state.profile?.ban_reason || "").trim();
+        const message = document.getElementById("ip-ban-home-message");
         const ipReason = String(state.ipBanReason || "").trim();
         if (message) {
-          message.textContent = ipReason || accountReason || "理由は登録されていません。";
+          message.textContent = ipReason || "このIPアドレスは利用停止中です。";
         }
       }
       return;
@@ -447,16 +449,13 @@
 
     closeAllModals();
 
-    if (state.accessBlocked || state.accountBlocked) {
+    if (state.accountBlocked) {
       $(".page-section").forEach(section => {
         section.hidden = true;
         section.classList.remove("active");
       });
 
-      const id = state.ipBanned
-        ? "access-blocked"
-        : (state.accountBlocked ? "account-blocked" : "access-blocked");
-      const blocked = document.getElementById(id);
+      const blocked = document.getElementById("account-blocked");
       if (blocked) {
         blocked.hidden = false;
         blocked.classList.add("active");
@@ -4065,6 +4064,10 @@
 
   window.addEventListener("hashchange", () => {
     // BAN中にURLを直接変更されても、通常ページへ移動させない。
+    if (state.ipBanned && location.hash !== "#ip-ban-home") {
+      location.hash = "#ip-ban-home";
+      return;
+    }
     if (state.accountBlocked && location.hash !== "#banpage") {
       location.hash = "#banpage";
       return;
