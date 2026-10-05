@@ -203,11 +203,8 @@
         if (blockedByIpBan || Number(error?.status) === 403) {
           state.ipBanned = true;
           state.accessBlocked = true;
-
-          const title = document.getElementById("access-blocked-title");
-          const message = document.getElementById("access-blocked-message");
-          if (title) title.textContent = "アクセスが制限されています";
-          if (message) message.textContent = "このネットワークからはサイトを利用できません。";
+          state.accountBlocked = true;
+          state.ipBanReason = "このIPアドレスは利用停止中です。";
 
           return true;
         }
@@ -219,10 +216,8 @@
       state.ipBanned = data === true;
       if (state.ipBanned) {
         state.accessBlocked = true;
-        const title = document.getElementById("access-blocked-title");
-        const message = document.getElementById("access-blocked-message");
-        if (title) title.textContent = "アクセスが制限されています";
-        if (message) message.textContent = "このネットワークからはサイトを利用できません。";
+        state.accountBlocked = true;
+        state.ipBanReason = "このIPアドレスは利用停止中です。";
       }
       return state.ipBanned;
     } catch (error) {
@@ -440,8 +435,11 @@
         blocked.hidden = false;
         blocked.classList.add("active");
         const message = document.getElementById("banpage-message");
-        const reason = String(state.profile?.ban_reason || "").trim();
-        if (message) message.textContent = reason || "理由は登録されていません。";
+        const accountReason = String(state.profile?.ban_reason || "").trim();
+        const ipReason = String(state.ipBanReason || "").trim();
+        if (message) {
+          message.textContent = ipReason || accountReason || "理由は登録されていません。";
+        }
       }
       return;
     }
