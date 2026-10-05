@@ -2,11 +2,6 @@
    KAKIKOMIN - ban-screen.js
    BAN / IP BAN / メンテナンス専用ゲート
    script.js / supabase.js より前に読み込む。
-   プレビュー:
-     index.html?gate-preview=ip
-     index.html?gate-preview=banned
-     index.html?gate-preview=suspended
-     index.html?gate-preview=maintenance
    ========================================================= */
 
 (function () {
