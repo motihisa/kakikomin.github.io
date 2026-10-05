@@ -183,22 +183,26 @@
   // このリクエスト元IPがBAN中か（サーバー側の is_ip_banned() を呼ぶ）
   async function checkIpBan() {
     try {
-      const { data, error } = await supabase.rpc("is_ip_banned");
+      // IP BAN判定は、IPをサーバー側で取得する check_ip_ban() を使う。
+      // is_ip_banned() を直接呼ぶより、プロキシ/CDN経由でもサーバー側の
+      // 実IP判定と同じ経路になるため、管理画面で登録したIP BANを確実に反映する。
+      const { error } = await supabase.rpc("check_ip_ban");
 
       if (error) {
-        // pgrst.db_pre_request が有効なため、BAN中はRPC自体が403(IP_BANNED)で拒否される。
-        // この403を「未BAN」と誤判定すると通常画面へ進んでしまうため、BANエラーを明示的に検出する。
         const raw = [
           error?.message,
           error?.details,
           error?.hint,
           error?.code
         ].filter(Boolean).join(" ");
+
         let blockedByIpBan = /IP_BANNED/i.test(raw);
 
         try {
           const parsed = JSON.parse(error?.message || "");
-          blockedByIpBan = blockedByIpBan || parsed?.code === "IP_BANNED";
+          blockedByIpBan = blockedByIpBan
+            || parsed?.code === "IP_BANNED"
+            || parsed?.error?.code === "IP_BANNED";
         } catch (_) {}
 
         if (blockedByIpBan || Number(error?.status) === 403) {
@@ -206,21 +210,17 @@
           state.accessBlocked = true;
           state.accountBlocked = true;
           state.ipBanReason = "このIPアドレスは利用停止中です。";
-
           return true;
         }
 
-        console.warn("is_ip_banned:", error);
+        console.warn("check_ip_ban:", error);
         return false;
       }
 
-      state.ipBanned = data === true;
-      if (state.ipBanned) {
-        state.accessBlocked = true;
-        state.accountBlocked = true;
-        state.ipBanReason = "このIPアドレスは利用停止中です。";
-      }
-      return state.ipBanned;
+      // BANされていない場合は check_ip_ban() が正常終了する。
+      state.ipBanned = false;
+      state.accessBlocked = false;
+      return false;
     } catch (error) {
       console.warn("checkIpBan:", error);
       return false;
