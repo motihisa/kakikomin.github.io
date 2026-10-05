@@ -1,0 +1,12 @@
+{
+  "name": "kakikomi-access-deny-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Access-deny server for Render",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
