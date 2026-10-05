@@ -50,6 +50,7 @@
     ipBanned: false,
     accessBlocked: false,
     accountBlocked: false,
+    ipBanReason: "",
     site: {
       site_name: "KAKIKOMI",
       site_description: "みんなで自由に書き込める総合掲示板",
@@ -797,8 +798,7 @@
 
           state.user = verifiedUser;
           await loadProfile();
-          updateAuthUI();
-          await recordLoginIp(true);
+          updateAuthUI();          await recordLoginIp(true);
           finish(true);
         } catch (profileError) {
           console.error("signup profile creation:", profileError);
@@ -930,7 +930,9 @@
   function applyAccountRestriction(profile) {
     const status = String(profile?.status || "").trim().toLowerCase();
     const banned = status === "banned" || status === "ban";
-    state.accountBlocked = banned;
+    // IP BAN中は、プロフィールがactiveでも制限状態を解除しない。
+    // 認証イベントやプロフィール再取得でIP BANが上書きされるのを防ぐ。
+    state.accountBlocked = banned || state.ipBanned === true;
 
     const message = document.getElementById("account-blocked-message");
 
@@ -1598,7 +1600,6 @@
       navigate("#login");
       return;
     }
-
     const category = $("#post-category")?.value;
     const title = $("#post-title")?.value.trim();
     const content = $("#post-content")?.value.trim();
@@ -2397,8 +2398,7 @@
     if (!list) return;
 
     const { data, error } = await supabase
-      .from("site_announcements")
-      .select("id,title,message,created_at")
+      .from("site_announcements")      .select("id,title,message,created_at")
       .order("created_at", { ascending: false })
       .limit(20);
 
@@ -3197,8 +3197,7 @@
     </div><button type="button" class="secondary-button" data-resolve-report="${escapeHTML(r.id)}">${r.status==="pending"?"対応済みにする":"再オープン"}</button></article>`).join(""):"<div class=\"empty-state\"><p>通報はありません。</p></div>";
   }
 
-  function renderIPBans(){
-    const body=$("#ip-ban-table-body"); if(!body)return;
+  function renderIPBans(){    const body=$("#ip-ban-table-body"); if(!body)return;
     if(!state.ipBans.length){body.innerHTML="<tr><td colspan=\"4\">BANされているIPはありません。</td></tr>";return;}
     body.innerHTML=state.ipBans.map(b=>`<tr><td>${escapeHTML(b.ip)}</td><td>${escapeHTML(b.reason||"")}</td><td>${escapeHTML(b.expires_at?formatDate(b.expires_at):"無期限")}</td><td><button type="button" class="danger-button" data-delete-ip-ban="${escapeHTML(b.id)}">解除</button></td></tr>`).join("");
   }
@@ -3997,8 +3996,7 @@
           if ((state.user?.id || null) !== eventUserId) return;
 
           // 認証状態の更新でIP BAN状態を解除しない。
-          state.accessBlocked = state.ipBanned === true;
-          applyAccountRestriction(state.profile);
+          state.accessBlocked = state.ipBanned === true;          applyAccountRestriction(state.profile);
           if (state.accountBlocked || state.ipBanned) renderRoute();
         } else {
           state.profile = null;
