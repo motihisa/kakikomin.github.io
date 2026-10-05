@@ -21,21 +21,6 @@
   const originalFetch = window.fetch.bind(window);
 
   let gate = null;
-  let preview = null;
-
-  const PREVIEWS = {
-    ip: { kind: "ip", reason: "荒らし行為のため（サンプル）", until: "2026-12-31 23:59" },
-    banned: { kind: "banned", reason: "利用ルールに違反する投稿があったため（サンプル）" },
-    suspended: { kind: "suspended", reason: "内容を確認するため、一時的に停止しています（サンプル）" },
-    maintenance: { kind: "maintenance", message: "現在メンテナンス中です。しばらくしてからもう一度お試しください。" }
-  };
-
-  try {
-    const name = new URLSearchParams(location.search).get("gate-preview");
-    if (name && PREVIEWS[name]) preview = PREVIEWS[name];
-  } catch (error) {
-    preview = null;
-  }
 
   function readSession() {
     try {
@@ -98,6 +83,14 @@
   async function refresh() {
     const session = readSession();
     const token = session ? session.access_token : null;
+
+    // IP BANはログイン状態に関係なく最優先で判定する。
+    const ipResult = await callRpc("is_ip_banned", null);
+    if (ipResult && ipResult.ok && ipResult.body === true) {
+      setGate({ kind: "ip", reason: "このIPアドレスは利用停止中です。" });
+      return;
+    }
+
     const result = await callRpc(token ? "get_my_account_state" : "get_public_site_settings", token);
     if (!result) return;
 
