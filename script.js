@@ -183,10 +183,10 @@
   // このリクエスト元IPがBAN中か（サーバー側の is_ip_banned() を呼ぶ）
   async function checkIpBan() {
     try {
-      // IP BAN判定は、IPをサーバー側で取得する check_ip_ban() を使う。
-      // is_ip_banned() を直接呼ぶより、プロキシ/CDN経由でもサーバー側の
-      // 実IP判定と同じ経路になるため、管理画面で登録したIP BANを確実に反映する。
-      const { error } = await supabase.rpc("check_ip_ban");
+      // IP BAN判定は、引数なしのサーバー側関数で実行する。
+      // check_ip_ban() は x-forwarded-for の取得経路に依存するため、
+      // ホスティング経路が変わっても is_ip_banned() 側の複数ヘッダー判定を使う。
+      const { data: ipBanned, error } = await supabase.rpc("is_ip_banned");
 
       if (error) {
         const raw = [
@@ -217,7 +217,15 @@
         return false;
       }
 
-      // BANされていない場合は check_ip_ban() が正常終了する。
+      // is_ip_banned() が true なら、エラーを返さなくてもIP BAN中。
+      if (ipBanned === true) {
+        state.ipBanned = true;
+        state.accessBlocked = true;
+        state.accountBlocked = true;
+        state.ipBanReason = "このIPアドレスは利用停止中です。";
+        return true;
+      }
+
       state.ipBanned = false;
       state.accessBlocked = false;
       return false;
