@@ -1,7 +1,7 @@
 /* =========================================================
    KAKIKOMIN - ban-screen.js
    BAN / IP BAN / メンテナンス専用ゲート
-   GitHub Pages deploy trigger: 20261005-2
+   GitHub Pages deploy trigger: 20261005-3
    script.js / supabase.js より前に読み込む。
    ========================================================= */
 
@@ -80,7 +80,6 @@
     const session = readSession();
     const token = session ? session.access_token : null;
 
-    // IP BANはログイン状態に関係なく最優先で判定する。
     const ipResult = await callRpc("is_ip_banned", null);
     if (ipResult && ipResult.ok && ipResult.body === true) {
       setGate({ kind: "banned", reason: "このIPアドレスは利用停止中です。" });
@@ -98,13 +97,13 @@
     if (token && result.body) {
       const accountStatus = String(result.body.status || "").trim().toLowerCase();
 
-      // BANの種類に関係なく、利用停止状態なら必ずBAN画面へ送る。
       if (accountStatus === "banned" || accountStatus === "suspended" ||
           accountStatus === "ban" || accountStatus === "blocked" ||
           accountStatus === "disabled") {
         setGate({
           kind: "banned",
-          reason: result.body.ban_reason || "このアカウントは利用停止中です。"
+          reason: result.body.ban_reason || "このアカウントは利用停止中です。",
+          until: result.body.ban_expires_at || result.body.expires_at || result.body.banned_until || ""
         });
         return;
       }
@@ -185,6 +184,21 @@
     location.reload();
   }
 
+  function formatExpiry(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+
+    return new Intl.DateTimeFormat("ja-JP", {
+      timeZone: "Asia/Tokyo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(date);
+  }
+
   function buildGate(g) {
     const copy = COPY[g.kind];
     const isMaintenance = g.kind === "maintenance";
@@ -222,11 +236,14 @@
       const box = el("div", "margin-top:16px;padding:12px 14px;background:var(--surface-soft,#f1f3f6);border-radius:8px;");
       box.appendChild(el("p", "margin:0 0 4px;font-size:.78rem;font-weight:700;color:var(--text-secondary,#667085);", "理由"));
       box.appendChild(el("p", "margin:0;white-space:pre-wrap;overflow-wrap:anywhere;", g.reason));
-      card.appendChild(box);
-    }
 
-    if (g.kind === "ip" && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(g.until || "")) {
-      card.appendChild(el("p", "margin:12px 0 0;font-size:.9rem;", "解除予定: " + g.until + "（日本時間）"));
+      const expiry = formatExpiry(g.until);
+      if (expiry) {
+        box.appendChild(el("p", "margin:12px 0 0;font-size:.78rem;font-weight:700;color:var(--text-secondary,#667085);", "期限"));
+        box.appendChild(el("p", "margin:0;overflow-wrap:anywhere;", expiry + "（日本時間）"));
+      }
+
+      card.appendChild(box);
     }
 
     if (copy.note) {
