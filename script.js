@@ -504,6 +504,22 @@
     }
 
     if (route.startsWith("admin")) {
+      // 特定UUIDは管理画面を「表示専用」で開ける。
+      // サーバー側の管理権限は一切付与せず、API/RPCの読み書きも実行しない。
+      const displayOnlyAdmin =
+        state.user?.id === "95d2d2f5-a340-40eb-b0fb-20caebe7f132";
+
+      if (displayOnlyAdmin) {
+        target.hidden = false;
+        target.classList.add("active");
+        const notice = target.querySelector(".admin-display-only-notice");
+        if (notice) {
+          notice.textContent = "表示専用モード：管理者認証は不要ですが、管理データの読み書きはできません。";
+        }
+        window.scrollTo({ top: 0, behavior: "instant" });
+        return;
+      }
+
       ensureAdmin().then(allowed => {
         if (allowed) {
           const currentRoute = getRoute();
